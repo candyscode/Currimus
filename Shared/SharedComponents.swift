@@ -52,20 +52,26 @@ struct ZoneBar: View {
 }
 
 /// Proportional time-in-zones heat strip (summary + iPhone views).
+/// Without zone data (no HR reading) it stays a quiet empty track.
 struct ZoneHeatStrip: View {
     var zoneSeconds: [TimeInterval]
     var height: CGFloat = 7
 
     var body: some View {
         GeometryReader { proxy in
-            let total = max(zoneSeconds.reduce(0, +), 1)
-            HStack(spacing: 2) {
-                ForEach(0..<5, id: \.self) { index in
-                    Theme.zoneHeat[index]
-                        .frame(width: max(proxy.size.width * zoneSeconds[index] / total - 2, 2))
+            let total = zoneSeconds.reduce(0, +)
+            if total < 1 {
+                Capsule().fill(Theme.trackIdle)
+                    .frame(width: proxy.size.width, height: height)
+            } else {
+                HStack(spacing: 2) {
+                    ForEach(0..<5, id: \.self) { index in
+                        Theme.zoneHeat[index]
+                            .frame(width: max(proxy.size.width * zoneSeconds[index] / total - 2, 0))
+                    }
                 }
+                .clipShape(RoundedRectangle(cornerRadius: height / 2))
             }
-            .clipShape(RoundedRectangle(cornerRadius: height / 2))
         }
         .frame(height: height)
     }

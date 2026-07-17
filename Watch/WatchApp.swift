@@ -134,6 +134,17 @@ struct WatchRootView: View {
             finishedRun = session.end()
         case "trail", "elevation", "elevation-noroute":
             session.debugFastForward(.trail, seconds: 4500)
+        case "trail-early":
+            session.debugFastForward(.trail, seconds: 10)
+        case "summary-empty":
+            // The degenerate case a real recording can produce: ended after
+            // seconds, before HR/GPS delivered anything.
+            finishedRun = Run(
+                date: .now, type: .quick, name: "Run",
+                distanceKm: 0.01, duration: 19, avgHR: 0,
+                splits: [], zoneSeconds: [0, 0, 0, 0, 0]
+            )
+            session.debugShowSummary()
         case "kmalert": session.debugFastForward(.quick, seconds: 2593, keepAlert: true)
         case "paused": session.debugFastForward(.quick, seconds: 2537, paused: true)
         case "summary":

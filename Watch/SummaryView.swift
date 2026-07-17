@@ -21,7 +21,7 @@ struct SummaryView: View {
                 HStack(alignment: .top, spacing: 14) {
                     BigStat(value: Format.clock(run.duration), label: "TIME", size: 13)
                     BigStat(value: Format.pace(run.paceSecPerKm), label: "PACE", valueColor: Theme.signal, size: 13)
-                    BigStat(value: "\(run.avgHR)", label: "AVG HR", size: 13)
+                    BigStat(value: run.avgHR > 0 ? "\(run.avgHR)" : "–", label: "AVG HR", size: 13)
                 }
                 .padding(.top, 13)
 
@@ -31,7 +31,7 @@ struct SummaryView: View {
                 HStack {
                     Text("TIME IN ZONES").kicker(8, color: Theme.bright, tracking: 0.1)
                     Spacer()
-                    Text("mostly \(run.dominantZone)")
+                    Text(run.dominantZone > 0 ? "mostly \(run.dominantZone)" : "–")
                         .font(.stat(7, weight: .regular))
                         .foregroundStyle(Theme.muted)
                 }

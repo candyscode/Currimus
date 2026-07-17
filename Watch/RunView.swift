@@ -56,7 +56,7 @@ struct RunView: View {
             HStack {
                 Text("ZONE").kicker(8, color: Theme.bright, tracking: 0.1)
                 Spacer()
-                Text("\(zone)")
+                Text(zone > 0 ? "\(zone)" : "–")
                     .font(.stat(7.5))
                     .foregroundStyle(zone >= 3 ? Theme.signal : Theme.ink)
             }

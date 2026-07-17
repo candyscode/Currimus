@@ -7,11 +7,19 @@ struct TrailRunPager: View {
         .contains(UserDefaults.standard.string(forKey: "screen") ?? "") ? 1 : 0
 
     var body: some View {
-        TabView(selection: $page) {
-            trailGlance.tag(0)
-            TrailElevationView(session: session).tag(1)
+        // TabView pages size to fit their content, which would collapse the
+        // spacers early in a run — pin every page to the full screen height.
+        GeometryReader { proxy in
+            TabView(selection: $page) {
+                trailGlance
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .tag(0)
+                TrailElevationView(session: session)
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .tag(1)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
         .contentShape(Rectangle())
         .onTapGesture { session.pause() }
         .overlay {
@@ -64,12 +72,15 @@ struct TrailRunPager: View {
             HStack {
                 Text("ZONE").kicker(8, color: Theme.bright, tracking: 0.1)
                 Spacer()
-                Text("\(session.currentZone)")
+                Text(session.currentZone > 0 ? "\(session.currentZone)" : "–")
                     .font(.stat(7.5))
                     .foregroundStyle(session.currentZone >= 3 ? Theme.signal : Theme.ink)
             }
             .padding(.top, 4.5)
         }
+        // TabView pages don't stretch on their own — without this the
+        // spacers collapse and the glance sticks to the top.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(EdgeInsets(top: 2, leading: 22, bottom: 23, trailing: 22))
     }
 }
@@ -127,6 +138,7 @@ struct TrailElevationView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(EdgeInsets(top: 2, leading: 22, bottom: 23, trailing: 22))
     }
 

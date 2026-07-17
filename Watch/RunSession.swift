@@ -87,7 +87,8 @@ final class RunSession: NSObject, ObservableObject {
 
     // MARK: - Derived
 
-    var currentZone: Int { zones.zone(for: max(heartRate, 1)) }
+    /// 0 = no heart-rate reading yet — the zone bar stays unlit.
+    var currentZone: Int { heartRate > 0 ? zones.zone(for: heartRate) : 0 }
     var averagePace: TimeInterval { distanceKm > 0.05 ? elapsed / distanceKm : 0 }
     var averageHR: Int { hrSampleCount > 0 ? hrSampleSum / hrSampleCount : heartRate }
     /// Pacer: + means slower than target.
@@ -379,6 +380,11 @@ final class RunSession: NSObject, ObservableObject {
     // MARK: - Simulation (DEBUG screenshots / simulator demos only)
 
     #if DEBUG
+    /// Screenshot helper: show the summary phase for an externally built run.
+    func debugShowSummary() {
+        phase = .finished
+    }
+
     /// Screenshot / demo helper: jump straight into a simulated run N seconds in.
     func debugFastForward(_ type: RunType, seconds: Int, paused: Bool = false, keepAlert: Bool = false) {
         isSimulated = true
