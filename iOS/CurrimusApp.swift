@@ -6,6 +6,10 @@ struct CurrimusApp: App {
         seeded: !UserDefaults.standard.bool(forKey: "empty")
     )
 
+    init() {
+        FontLoader.registerAll()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -87,7 +91,7 @@ struct RootView: View {
                     tab = item
                 } label: {
                     Text(item.rawValue)
-                        .font(.system(size: 13, weight: tab == item ? .semibold : .regular))
+                        .font(.sg(13, weight: tab == item ? .semibold : .regular))
                         .foregroundStyle(tab == item ? Theme.ink : Theme.muted)
                         .frame(maxWidth: .infinity)
                 }
@@ -108,7 +112,7 @@ struct FirstLaunchView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("CURRIMUS")
-                .font(.system(size: 19, weight: .bold))
+                .font(.sg(19, weight: .bold))
                 .kerning(1.2)
 
             Spacer()
@@ -116,11 +120,11 @@ struct FirstLaunchView: View {
             VStack(alignment: .leading, spacing: 18) {
                 (Text("Time.\nDistance.\nZone.\n")
                     + Text("Pace.").foregroundStyle(Theme.signal))
-                    .font(.system(size: 40, weight: .semibold))
+                    .font(.sg(40, weight: .semibold))
                     .lineSpacing(4)
                     .kerning(-0.8)
                 Text("The four things that matter, on your wrist. Everything else stays out of the way.")
-                    .font(.system(size: 15))
+                    .font(.sg(15))
                     .foregroundStyle(Theme.muted)
                     .lineSpacing(4)
                     .frame(maxWidth: 300, alignment: .leading)
@@ -130,9 +134,9 @@ struct FirstLaunchView: View {
 
             VStack(spacing: 6) {
                 Text("Runs start on your watch")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.sg(14, weight: .semibold))
                 Text("Open Currimus on your Apple Watch — your first run will appear here.")
-                    .font(.system(size: 12))
+                    .font(.sg(12))
                     .foregroundStyle(Theme.muted)
                     .multilineTextAlignment(.center)
                     .lineSpacing(3)

@@ -17,7 +17,7 @@ struct HomeView: View {
                     Spacer()
                     NavigationLink(value: "settings") {
                         Text("Settings")
-                            .font(.system(size: 13))
+                            .font(.sg(13))
                             .foregroundStyle(Theme.muted)
                     }
                 }
@@ -27,7 +27,7 @@ struct HomeView: View {
                         .font(.stat(52))
                         .kerning(-1.5)
                     Text("km")
-                        .font(.system(size: 17))
+                        .font(.sg(17))
                         .foregroundStyle(Theme.muted)
                     Spacer()
                     Text(weekDelta)
@@ -80,7 +80,7 @@ struct WeekBars: View {
                         .fill(isLatest ? Theme.signal : (ran ? Theme.track : Theme.trackIdle))
                         .frame(height: ran ? max(kmPerDay[day] / maxKm * 64, 8) : 5)
                     Text(labels[day])
-                        .font(.system(size: 11, weight: isLatest ? .semibold : .regular))
+                        .font(.sg(11, weight: isLatest ? .semibold : .regular))
                         .foregroundStyle(isLatest ? Theme.ink : Theme.muted)
                 }
                 .frame(maxWidth: .infinity)
@@ -99,10 +99,10 @@ struct LastRunCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(run.name)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.sg(14, weight: .semibold))
                     Spacer()
                     Text(run.date, format: .relative(presentation: .named))
-                        .font(.system(size: 12))
+                        .font(.sg(12))
                         .foregroundStyle(Theme.muted)
                 }
                 HStack(spacing: 26) {
@@ -131,7 +131,7 @@ struct CardStat: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(value).font(.stat(22))
             Text(label)
-                .font(.system(size: 11))
+                .font(.sg(11))
                 .foregroundStyle(Theme.muted)
         }
     }

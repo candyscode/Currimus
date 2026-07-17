@@ -11,7 +11,7 @@ struct SettingsView: View {
                 BackLink(title: "Home") { dismiss() }
 
                 Text("Settings")
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.sg(26, weight: .semibold))
                     .kerning(-0.5)
                     .padding(.top, 16)
 
@@ -23,7 +23,7 @@ struct SettingsView: View {
                             RoundedRectangle(cornerRadius: 6)
                                 .fill(Theme.zoneHeat[zone - 1])
                                 .frame(width: 26, height: 12)
-                            Text("Zone \(zone)").font(.system(size: 14))
+                            Text("Zone \(zone)").font(.sg(14))
                             Spacer()
                             Text(store.zones.label(forZone: zone))
                                 .font(.stat(14, weight: .regular))
@@ -38,7 +38,7 @@ struct SettingsView: View {
                 VStack(spacing: 0) {
                     SettingsRow(label: "Units") {
                         Text(store.usesKilometers ? "Kilometers" : "Miles")
-                            .font(.system(size: 14))
+                            .font(.sg(14))
                             .foregroundStyle(Theme.muted)
                     }
                     Theme.hairline.frame(height: 1)
@@ -66,7 +66,7 @@ struct SettingsView: View {
                     Theme.hairline.frame(height: 1)
                     SettingsRow(label: "Apple Health") {
                         Text("Connected")
-                            .font(.system(size: 14))
+                            .font(.sg(14))
                             .foregroundStyle(Theme.signal)
                     }
                 }
@@ -85,7 +85,7 @@ struct SettingsRow<Trailing: View>: View {
 
     var body: some View {
         HStack {
-            Text(label).font(.system(size: 14))
+            Text(label).font(.sg(14))
             Spacer()
             trailing
         }
@@ -106,7 +106,7 @@ struct PacerTargetView: View {
                 BackLink(title: "Settings") { dismiss() }
 
                 Text("Pacer target")
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.sg(26, weight: .semibold))
                     .kerning(-0.5)
                     .padding(.top, 16)
 
@@ -124,7 +124,7 @@ struct PacerTargetView: View {
                 .padding(.top, 6)
 
                 Text("Syncs to your Apple Watch. You can still change it there with the crown.")
-                    .font(.system(size: 12))
+                    .font(.sg(12))
                     .foregroundStyle(Theme.muted)
                     .lineSpacing(3)
                     .padding(.top, 14)
@@ -142,7 +142,7 @@ struct PaceProjection: View {
 
     var body: some View {
         HStack {
-            Text(label).font(.system(size: 14))
+            Text(label).font(.sg(14))
             Spacer()
             Text(Format.clock(seconds)).font(.stat(14))
         }
@@ -174,7 +174,7 @@ struct PaceWheel: View {
                     .font(.stat(44))
                     .kerning(-1.2)
                     .contentTransition(.numericText())
-                Text("/km").font(.system(size: 14)).foregroundStyle(Theme.muted)
+                Text("/km").font(.sg(14)).foregroundStyle(Theme.muted)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)

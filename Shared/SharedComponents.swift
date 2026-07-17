@@ -1,5 +1,25 @@
 import SwiftUI
 
+/// Inline hard-edged triangle + number, e.g. "▲ 642".
+struct ClimbStat: View {
+    var value: String
+    var size: CGFloat
+    var color: Color = Theme.ink
+    var pointingDown = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: size * 0.28) {
+            TriangleMark(pointingDown: pointingDown)
+                .fill(color)
+                .frame(width: size * 0.62, height: size * 0.52)
+            Text(value)
+                .font(.stat(size))
+                .foregroundStyle(color)
+                .lineLimit(1)
+        }
+    }
+}
+
 /// Five-segment live zone indicator. The active zone lights up; zone 5 sets
 /// the whole bar burning, per the design.
 struct ZoneBar: View {

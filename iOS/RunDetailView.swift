@@ -14,7 +14,7 @@ struct RunDetailView: View {
                     .kicker(12)
                     .padding(.top, 16)
                 Text(run.name)
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.sg(26, weight: .semibold))
                     .kerning(-0.5)
                     .padding(.top, 4)
 
@@ -23,7 +23,10 @@ struct RunDetailView: View {
                     DetailStat(value: Format.clock(run.duration), label: "TIME")
                     DetailStat(value: Format.pace(run.paceSecPerKm), label: "AVG PACE", color: Theme.signal)
                     if run.type == .trail, let climb = run.climbMeters {
-                        DetailStat(value: "▲ \(Int(climb))", label: "CLIMB")
+                        VStack(alignment: .leading, spacing: 5) {
+                            ClimbStat(value: "\(Int(climb))", size: 30)
+                            Text("CLIMB").kicker(11)
+                        }
                     }
                 }
                 .padding(.top, 22)
@@ -60,7 +63,7 @@ struct BackLink: View {
     var body: some View {
         Button(action: action) {
             Text("‹ \(title)")
-                .font(.system(size: 14))
+                .font(.sg(14))
                 .foregroundStyle(Theme.signal)
         }
         .buttonStyle(.plain)
@@ -96,7 +99,7 @@ struct MapCard: View {
                     .position(x: 0.89 * proxy.size.width, y: 0.39 * proxy.size.height)
             }
             Text("MAP")
-                .font(.system(size: 10, weight: .medium))
+                .font(.sg(10, weight: .medium))
                 .kerning(1)
                 .foregroundStyle(Color(hex: 0x4A4A4A))
                 .padding([.bottom, .trailing], 12)

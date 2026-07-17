@@ -47,22 +47,51 @@ extension Color {
 }
 
 extension Font {
-    /// Numeric display type — semibold, tight, tabular digits.
-    static func stat(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
-        .system(size: size, weight: weight).monospacedDigit()
+    /// Bundled Space Grotesk face for a given weight.
+    static func sg(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        let face: String
+        switch weight {
+        case .bold, .heavy, .black: face = "SpaceGrotesk-Bold"
+        case .semibold: face = "SpaceGrotesk-SemiBold"
+        case .medium: face = "SpaceGrotesk-Medium"
+        case .light, .thin, .ultraLight: face = "SpaceGrotesk-Light"
+        default: face = "SpaceGrotesk-Regular"
+        }
+        return .custom(face, size: size)
     }
 
-    /// Small uppercase label type.
-    static func label(_ size: CGFloat) -> Font {
-        .system(size: size, weight: .regular)
+    /// Numeric display type — Space Grotesk semibold with tabular digits.
+    static func stat(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+        sg(size, weight: weight).monospacedDigit()
     }
 }
 
 extension View {
     /// Uppercase tracked label in muted gray, e.g. "LAST RUN".
-    func kicker(_ size: CGFloat, color: Color = Theme.muted) -> some View {
-        font(.system(size: size, weight: .medium))
-            .kerning(size * 0.12)
+    /// `tracking` is the CSS letter-spacing in em (design uses 0.10–0.20).
+    func kicker(_ size: CGFloat, color: Color = Theme.muted, tracking: CGFloat = 0.14) -> some View {
+        font(.sg(size))
+            .kerning(size * tracking)
             .foregroundStyle(color)
+    }
+}
+
+/// The trail mark — hard-edged filled triangle, like the design's ▲ glyph.
+struct TriangleMark: Shape {
+    var pointingDown = false
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        if pointingDown {
+            path.move(to: .init(x: rect.minX, y: rect.minY))
+            path.addLine(to: .init(x: rect.maxX, y: rect.minY))
+            path.addLine(to: .init(x: rect.midX, y: rect.maxY))
+        } else {
+            path.move(to: .init(x: rect.midX, y: rect.minY))
+            path.addLine(to: .init(x: rect.maxX, y: rect.maxY))
+            path.addLine(to: .init(x: rect.minX, y: rect.maxY))
+        }
+        path.closeSubpath()
+        return path
     }
 }

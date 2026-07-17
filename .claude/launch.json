@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "design-refs",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8873", "--directory", "/private/tmp/claude-501/-Users-athaler-Documents-knx-web-app/c4154122-bbcb-4d9f-8431-942c29ccfd9b/scratchpad/refs"],
+      "port": 8873
+    }
+  ]
+}

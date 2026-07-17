@@ -20,6 +20,8 @@ targets:
     sources:
       - iOS
       - Shared
+      - path: Fonts
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app
@@ -37,6 +39,8 @@ targets:
     sources:
       - Watch
       - Shared
+      - path: Fonts
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.watchkitapp
@@ -52,6 +56,8 @@ targets:
     sources:
       - WatchWidgets
       - Shared
+      - path: Fonts
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.watchkitapp.widgets

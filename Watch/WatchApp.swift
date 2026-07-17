@@ -4,6 +4,10 @@ import SwiftUI
 struct CurrimusWatchApp: App {
     @StateObject private var store = RunStore()
 
+    init() {
+        FontLoader.registerAll()
+    }
+
     var body: some Scene {
         WindowGroup {
             WatchRootView()
@@ -18,11 +22,21 @@ struct WatchRootView: View {
     @State private var finishedRun: Run?
 
     var body: some View {
-        ZStack {
-            Theme.bg.ignoresSafeArea()
-            content
+        // NavigationStack + hidden bar removes the system clock so the layout
+        // can own the full canvas, exactly like the design frames.
+        NavigationStack {
+            ZStack {
+                Theme.bg.ignoresSafeArea()
+                // The top safe area stays — the system clock owns that corner
+                // (it cannot be hidden); sides and bottom are full-bleed like
+                // the design frames.
+                content
+                    .ignoresSafeArea(edges: [.horizontal, .bottom])
+            }
+            .foregroundStyle(Theme.ink)
+            .toolbar(.hidden, for: .navigationBar)
+            .persistentSystemOverlays(.hidden)
         }
-        .foregroundStyle(Theme.ink)
         .onAppear(perform: handleLaunchRoute)
     }
 

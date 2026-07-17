@@ -3,6 +3,10 @@ import SwiftUI
 
 @main
 struct CurrimusWidgets: WidgetBundle {
+    init() {
+        FontLoader.registerAll()
+    }
+
     var body: some Widget {
         WeekWidget()
     }
@@ -68,12 +72,12 @@ struct WeekWidgetView: View {
     private var circular: some View {
         VStack(spacing: 2) {
             Text("WEEK")
-                .font(.system(size: 7, weight: .medium))
+                .font(.sg(7, weight: .medium))
                 .kerning(0.8)
                 .foregroundStyle(Theme.muted)
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text("\(Int(entry.weekKm))").font(.stat(17))
-                Text("km").font(.system(size: 9)).foregroundStyle(Theme.muted)
+                Text("km").font(.sg(9)).foregroundStyle(Theme.muted)
             }
             ProgressCapsule(fraction: entry.weekKm / max(entry.goalKm, 1))
                 .frame(width: 30, height: 3)
@@ -84,15 +88,15 @@ struct WeekWidgetView: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
                 Text("THIS WEEK")
-                    .font(.system(size: 8, weight: .medium))
+                    .font(.sg(8, weight: .medium))
                     .kerning(0.9)
                     .foregroundStyle(Theme.muted)
                 Spacer()
-                Text("C").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.signal)
+                Text("C").font(.sg(9, weight: .bold)).foregroundStyle(Theme.signal)
             }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(Format.km(entry.weekKm, decimals: 1)).font(.stat(19))
-                Text("of \(Int(entry.goalKm)) km").font(.system(size: 9)).foregroundStyle(Theme.muted)
+                Text("of \(Int(entry.goalKm)) km").font(.sg(9)).foregroundStyle(Theme.muted)
                 Spacer()
                 Text("last \(Format.pace(entry.lastPace)) /km")
                     .font(.stat(9, weight: .regular))

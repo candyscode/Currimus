@@ -7,33 +7,51 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		07C5CEEF37DA02B813DDA920 /* CurrimusWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1242EDB609907C5835F455E1 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
 		18D1C40B1D4614C0E2361BEE /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
+		2981B3EADB4136CEB5C61AD3 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
 		2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD88986EEA97DE1411F9263F /* Assets.xcassets */; };
+		2CB91D71E6B6E6FA24F1C95F /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
+		2ECACF05656A544A071E091E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
 		36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
+		46CDAB9D5A52183942BD873E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
 		47CE54F292D14E7AD6062FA0 /* CurrimusWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		4A93497D731DA4D66AE0ED2B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D336F171455FDB718A18387 /* HomeView.swift */; };
 		4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		4F5B2CED42029C3BED5B683E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
+		5871CAE9414DFEAD955B7C4B /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
 		59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591C33FACB6B9A5D87A858BB /* RunSession.swift */; };
+		5DAB3C3134575691D9112096 /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
+		5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
 		69210F511F8BCE4784B38B3C /* WatchHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3F1A48729A6BD0B5FC67DE /* WatchHomeView.swift */; };
+		6B518FFE68FA01C3ADD13FDD /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
 		6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F243526819E3203BC8EC68 /* PacerViews.swift */; };
+		6CDF6CAC52FFF686C46A9587 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		6CEAFA77482B7929938A2DE1 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
+		7106A2CF88A06C1A9832676F /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
 		7689C91808C6D09BB947694D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		76EC5DB3393322A4BE112ABE /* RunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1A0FA13132AED3D257C31B /* RunView.swift */; };
 		7F84D2D9C84563F992B44A82 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
+		830260335BDEAF3CD5BCBE7F /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		8911108B369D36350F47DAE3 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
+		8A2BD53B1D4CF409BCE14B29 /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
 		8B6414D964170CF94DE59755 /* CurrimusWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 367A4044965F5409D34C5401 /* CurrimusWidgets.swift */; };
 		8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */; };
 		921B31AB79D2FBF173A9B1C7 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		95057FCF29C634615715C893 /* ProgressTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2093769E1832392AF743C8EC /* ProgressTabView.swift */; };
 		9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6CFB5CC07067218F2414163 /* Assets.xcassets */; };
+		A28A4016C9EF471DC28C03A9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315BB07B29A7E2F717AFC457 /* SettingsView.swift */; };
 		A50593043F2F4E43C5CF7D98 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2A0A8C374CC2DF912776427 /* LogView.swift */; };
 		A931CDE83BEE82558E4CE220 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		AB3F9B670C35A7DF7524C002 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
+		AF8B59555800E52D952805DD /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
+		B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
 		D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752748C2C4376164266AC885 /* CurrimusApp.swift */; };
 		D687CD7AA9868B8B982FE26E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		DB7737B26FB59423A7ADD549 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55F4CF421595E439C843775 /* WatchApp.swift */; };
@@ -94,9 +112,14 @@
 		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
 		65B6A62A4E92A05F4D05C253 /* RunStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStore.swift; sourceTree = "<group>"; };
+		7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontLoader.swift; sourceTree = "<group>"; };
 		70F243526819E3203BC8EC68 /* PacerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacerViews.swift; sourceTree = "<group>"; };
+		741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Medium.ttf"; sourceTree = "<group>"; };
 		742835D6D8B7C6204427A3C0 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
 		752748C2C4376164266AC885 /* CurrimusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusApp.swift; sourceTree = "<group>"; };
+		7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Regular.ttf"; sourceTree = "<group>"; };
+		858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Bold.ttf"; sourceTree = "<group>"; };
+		8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Light.ttf"; sourceTree = "<group>"; };
 		9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		9B6CDF2A60DB7B8C7B810C1A /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
 		9D336F171455FDB718A18387 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -110,12 +133,14 @@
 		D2A0A8C374CC2DF912776427 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
 		DD88986EEA97DE1411F9263F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E47BCF44600BC83F472F7AE0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-SemiBold.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		0955E5EB3EAD559243A19707 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */,
 				CF3515C4DD609F7375C055AA /* Models.swift */,
 				65B6A62A4E92A05F4D05C253 /* RunStore.swift */,
 				9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */,
@@ -128,12 +153,25 @@
 		4204BD4FA7344B17146FAF3A = {
 			isa = PBXGroup;
 			children = (
+				43CCB28E418F22ACA597CA06 /* Fonts */,
 				5C62DF926D8D3642EBDDEFC5 /* iOS */,
 				0955E5EB3EAD559243A19707 /* Shared */,
 				64931F4C1BECC8078974DD90 /* Watch */,
 				4520411446D3456FD8A99652 /* WatchWidgets */,
 				F82FB9F92023F70ED54D274A /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		43CCB28E418F22ACA597CA06 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */,
+				8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */,
+				741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */,
+				7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */,
+				E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */,
+			);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 		4520411446D3456FD8A99652 /* WatchWidgets */ = {
@@ -192,6 +230,7 @@
 			buildConfigurationList = D9FB804E6FF2935E57FE6DDE /* Build configuration list for PBXNativeTarget "CurrimusWatchWidgets" */;
 			buildPhases = (
 				D59DACB25A846B610CC7F199 /* Sources */,
+				7D4387F052062F8B7CA67DEA /* Resources */,
 			);
 			buildRules = (
 			);
@@ -291,6 +330,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */,
+				6B518FFE68FA01C3ADD13FDD /* SpaceGrotesk-Bold.ttf in Resources */,
+				2CB91D71E6B6E6FA24F1C95F /* SpaceGrotesk-Light.ttf in Resources */,
+				830260335BDEAF3CD5BCBE7F /* SpaceGrotesk-Medium.ttf in Resources */,
+				8A2BD53B1D4CF409BCE14B29 /* SpaceGrotesk-Regular.ttf in Resources */,
+				4F5B2CED42029C3BED5B683E /* SpaceGrotesk-SemiBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -299,6 +343,23 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */,
+				5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */,
+				B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */,
+				A28A4016C9EF471DC28C03A9 /* SpaceGrotesk-Medium.ttf in Resources */,
+				7106A2CF88A06C1A9832676F /* SpaceGrotesk-Regular.ttf in Resources */,
+				46CDAB9D5A52183942BD873E /* SpaceGrotesk-SemiBold.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7D4387F052062F8B7CA67DEA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF8B59555800E52D952805DD /* SpaceGrotesk-Bold.ttf in Resources */,
+				6CDF6CAC52FFF686C46A9587 /* SpaceGrotesk-Light.ttf in Resources */,
+				046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */,
+				5DAB3C3134575691D9112096 /* SpaceGrotesk-Regular.ttf in Resources */,
+				2ECACF05656A544A071E091E /* SpaceGrotesk-SemiBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -309,6 +370,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */,
 				921B31AB79D2FBF173A9B1C7 /* Models.swift in Sources */,
 				6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */,
 				59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */,
@@ -329,6 +391,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8B6414D964170CF94DE59755 /* CurrimusWidgets.swift in Sources */,
+				2981B3EADB4136CEB5C61AD3 /* FontLoader.swift in Sources */,
 				D687CD7AA9868B8B982FE26E /* Models.swift in Sources */,
 				4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */,
 				36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */,
@@ -342,6 +405,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */,
+				5871CAE9414DFEAD955B7C4B /* FontLoader.swift in Sources */,
 				4A93497D731DA4D66AE0ED2B /* HomeView.swift in Sources */,
 				A50593043F2F4E43C5CF7D98 /* LogView.swift in Sources */,
 				7689C91808C6D09BB947694D /* Models.swift in Sources */,

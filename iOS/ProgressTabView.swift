@@ -9,7 +9,7 @@ struct ProgressTabView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Progress")
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.sg(26, weight: .semibold))
                     .kerning(-0.5)
 
                 Text("AVG PACE · LAST 12 WEEKS").kicker(12).padding(.top, 26)
@@ -17,7 +17,7 @@ struct ProgressTabView: View {
                     Text(Format.pace(trend.last ?? 0))
                         .font(.stat(36))
                         .kerning(-1)
-                    Text("/km").font(.system(size: 13)).foregroundStyle(Theme.muted)
+                    Text("/km").font(.sg(13)).foregroundStyle(Theme.muted)
                     Spacer()
                     Text("−\(Format.pace((trend.first ?? 0) - (trend.last ?? 0))) since April")
                         .font(.stat(13))
@@ -29,7 +29,7 @@ struct ProgressTabView: View {
                     .padding(.top, 16)
                 HStack {
                     ForEach(["Apr", "May", "Jun", "Jul"], id: \.self) { month in
-                        Text(month).font(.system(size: 11)).foregroundStyle(Theme.muted)
+                        Text(month).font(.sg(11)).foregroundStyle(Theme.muted)
                         if month != "Jul" { Spacer() }
                     }
                 }
@@ -39,9 +39,9 @@ struct ProgressTabView: View {
 
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Heart rate at 5:30 pace").font(.system(size: 14))
+                        Text("Heart rate at 5:30 pace").font(.sg(14))
                         Text("Same effort, less work")
-                            .font(.system(size: 11.5))
+                            .font(.sg(11.5))
                             .foregroundStyle(Theme.muted)
                     }
                     Spacer()
@@ -59,7 +59,7 @@ struct ProgressTabView: View {
 
                 NavigationLink(value: "records") {
                     HStack {
-                        Text("Records").font(.system(size: 14))
+                        Text("Records").font(.sg(14))
                         Spacer()
                         Text("\(store.records.first?.value ?? "") 5k ›")
                             .font(.stat(14, weight: .regular))
@@ -136,7 +136,7 @@ struct MonthlyBars: View {
                         .fill(isCurrent ? Theme.signal : Theme.track)
                         .frame(height: max(item.km / maxKm * 66, 4))
                     Text(item.month.formatted(.dateTime.month(.abbreviated)))
-                        .font(.system(size: 11, weight: isCurrent ? .semibold : .regular))
+                        .font(.sg(11, weight: isCurrent ? .semibold : .regular))
                         .foregroundStyle(isCurrent ? Theme.ink : Theme.muted)
                 }
                 .frame(maxWidth: .infinity)
@@ -155,7 +155,7 @@ struct RecordsView: View {
                 BackLink(title: "Progress") { dismiss() }
 
                 Text("Records")
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.sg(26, weight: .semibold))
                     .kerning(-0.5)
                     .padding(.top, 16)
 
@@ -165,7 +165,7 @@ struct RecordsView: View {
                             Text("NEW · \(newest.label.uppercased())").kicker(12, color: Theme.signal)
                             Spacer()
                             Text(newest.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                                .font(.system(size: 12))
+                                .font(.sg(12))
                                 .foregroundStyle(Theme.muted)
                         }
                         HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -187,12 +187,12 @@ struct RecordsView: View {
                     ForEach(Array(store.records.filter { !$0.isNew }.enumerated()), id: \.element.id) { index, record in
                         if index > 0 { Theme.hairline.frame(height: 1) }
                         HStack(alignment: .firstTextBaseline) {
-                            Text(record.label).font(.system(size: 14))
+                            Text(record.label).font(.sg(14))
                             Spacer()
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text(record.value).font(.stat(17))
                                 Text(record.date.formatted(.dateTime.day().month(.abbreviated)))
-                                    .font(.system(size: 11))
+                                    .font(.sg(11))
                                     .foregroundStyle(Theme.muted)
                             }
                         }
@@ -202,7 +202,7 @@ struct RecordsView: View {
                 .padding(.top, 18)
 
                 Text("Records come from your runs automatically. No badges, no confetti.")
-                    .font(.system(size: 12))
+                    .font(.sg(12))
                     .foregroundStyle(Theme.muted)
                     .lineSpacing(3)
                     .padding(.top, 14)

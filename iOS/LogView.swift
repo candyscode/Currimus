@@ -8,7 +8,7 @@ struct LogView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Runs")
-                        .font(.system(size: 26, weight: .semibold))
+                        .font(.sg(26, weight: .semibold))
                         .kerning(-0.5)
                     Spacer()
                     if let current = store.runsByMonth.first {
@@ -62,7 +62,7 @@ struct LogRow: View {
         HStack(spacing: 14) {
             Text(run.date.formatted(.dateTime.weekday(.abbreviated)).uppercased()
                  + "\n" + run.date.formatted(.dateTime.day(.twoDigits).month(.twoDigits)))
-                .font(.system(size: 11))
+                .font(.sg(11))
                 .foregroundStyle(Theme.muted)
                 .lineSpacing(3)
                 .frame(width: 52, alignment: .leading)
@@ -70,7 +70,9 @@ struct LogRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     if run.type == .trail {
-                        Text("▲").font(.system(size: 11)).foregroundStyle(Theme.signal)
+                        TriangleMark()
+                            .fill(Theme.signal)
+                            .frame(width: 9, height: 8)
                     }
                     Text("\(Format.km(run.distanceKm)) km").font(.stat(16))
                 }
