@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// One screen, three ways to run. Start stays primary; Trail and Pacer share
-/// the quiet row. The design's "9:41" slot belongs to the system clock.
+/// the quiet row. The system clock owns the top line (watchOS 10 rule) —
+/// the wordmark lives in content.
 struct WatchHomeView: View {
     var lastRun: Run?
     var onStart: () -> Void
@@ -11,13 +12,14 @@ struct WatchHomeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("CURRIMUS")
-                .font(.sg(9.5, weight: .bold))
-                .kerning(9.5 * 0.06)
+                .font(.sg(13.5, weight: .bold))
+                .kerning(13.5 * 0.06)
+                .padding(.top, 8)
 
             Spacer(minLength: 0)
 
             if let run = lastRun {
-                Text("LAST RUN").kicker(7.5)
+                Text("LAST RUN").kicker(8, color: Theme.bright, tracking: 0.1)
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     StatInline(value: Format.km(run.distanceKm), unit: "km")
                     StatInline(value: Format.pace(run.paceSecPerKm), unit: "/km")
@@ -71,8 +73,8 @@ struct StatInline: View {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
             Text(value).font(.stat(size)).foregroundStyle(color)
             Text(unit)
-                .font(.sg(size * 0.58))
-                .foregroundStyle(Theme.muted)
+                .font(.sg(size * 0.66))
+                .foregroundStyle(Theme.bright)
         }
     }
 }
@@ -84,8 +86,8 @@ struct CountdownView: View {
         VStack(spacing: 4) {
             Text("GET READY").kicker(7.5, tracking: 0.2)
             Text("\(count)")
-                .font(.stat(100))
-                .kerning(-5)
+                .font(.stat(85))
+                .kerning(-4.25)
                 .foregroundStyle(Theme.signal)
                 .contentTransition(.numericText(countsDown: true))
                 .animation(.snappy, value: count)

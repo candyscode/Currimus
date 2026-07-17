@@ -1,10 +1,12 @@
 import Foundation
 import Combine
 
-/// App-wide state: run log, records, settings. Sample data stands in for
-/// HealthKit / WatchConnectivity sync in this build.
+/// App-wide state: run log, records, settings. Recorded runs persist locally;
+/// demo content is only seeded when launched with `-demo 1` (screenshots).
 final class RunStore: ObservableObject {
-    @Published var runs: [Run]
+    @Published var runs: [Run] {
+        didSet { persist() }
+    }
     @Published var zones = HRZones()
     @Published var weeklyGoalKm: Double = 35
     @Published var pacerTargetSecPerKm: TimeInterval {
@@ -13,17 +15,35 @@ final class RunStore: ObservableObject {
     @Published var kilometerAlert = true
     @Published var usesKilometers = true
 
-    init(seeded: Bool = true) {
-        runs = seeded ? SampleData.runs : []
+    private static let runsKey = "runs.v1"
+
+    init(seeded: Bool = UserDefaults.standard.bool(forKey: "demo")) {
+        if seeded {
+            runs = SampleData.runs
+        } else if let data = UserDefaults.standard.data(forKey: Self.runsKey),
+                  let stored = try? JSONDecoder().decode([Run].self, from: data) {
+            runs = stored
+        } else {
+            runs = []
+        }
         let stored = UserDefaults.standard.double(forKey: "pacerTarget")
         pacerTargetSecPerKm = stored > 0 ? stored : 315 // 5:15
+        RunSync.shared.onReceive = { [weak self] run in self?.add(run) }
+        RunSync.shared.activate()
     }
 
     var lastRun: Run? { runs.first }
 
     func add(_ run: Run) {
+        guard !runs.contains(where: { $0.id == run.id }) else { return }
         runs.insert(run, at: 0)
         runs.sort { $0.date > $1.date }
+    }
+
+    private func persist() {
+        guard !UserDefaults.standard.bool(forKey: "demo"),
+              let data = try? JSONEncoder().encode(runs) else { return }
+        UserDefaults.standard.set(data, forKey: Self.runsKey)
     }
 
     // MARK: - Aggregates

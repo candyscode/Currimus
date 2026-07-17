@@ -9,8 +9,10 @@
 /* Begin PBXBuildFile section */
 		046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		07C5CEEF37DA02B813DDA920 /* CurrimusWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0AF2B49944699FB95A35180D /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		1242EDB609907C5835F455E1 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
 		18D1C40B1D4614C0E2361BEE /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
+		29202736108BECE52768BC98 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		2981B3EADB4136CEB5C61AD3 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
 		2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD88986EEA97DE1411F9263F /* Assets.xcassets */; };
 		2CB91D71E6B6E6FA24F1C95F /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
@@ -18,9 +20,11 @@
 		36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		46CDAB9D5A52183942BD873E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
 		47CE54F292D14E7AD6062FA0 /* CurrimusWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		487CD92918738997F3DB723F /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D363B4FE9688A032EED38C4 /* OFL.txt */; };
 		4A93497D731DA4D66AE0ED2B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D336F171455FDB718A18387 /* HomeView.swift */; };
 		4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
 		4F5B2CED42029C3BED5B683E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
+		5843214DF0F756E312673578 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D363B4FE9688A032EED38C4 /* OFL.txt */; };
 		5871CAE9414DFEAD955B7C4B /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
 		59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591C33FACB6B9A5D87A858BB /* RunSession.swift */; };
 		5DAB3C3134575691D9112096 /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
@@ -30,6 +34,7 @@
 		6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F243526819E3203BC8EC68 /* PacerViews.swift */; };
 		6CDF6CAC52FFF686C46A9587 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		6CEAFA77482B7929938A2DE1 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
+		6EB9B6945D9E649D58FC53D1 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		7106A2CF88A06C1A9832676F /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
 		7689C91808C6D09BB947694D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		76EC5DB3393322A4BE112ABE /* RunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1A0FA13132AED3D257C31B /* RunView.swift */; };
@@ -49,6 +54,7 @@
 		A931CDE83BEE82558E4CE220 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		AB3F9B670C35A7DF7524C002 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		AF8B59555800E52D952805DD /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
+		B749CFE69D9A5A8A4D6D3A8D /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D363B4FE9688A032EED38C4 /* OFL.txt */; };
 		B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
 		CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
@@ -118,15 +124,18 @@
 		742835D6D8B7C6204427A3C0 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
 		752748C2C4376164266AC885 /* CurrimusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusApp.swift; sourceTree = "<group>"; };
 		7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Regular.ttf"; sourceTree = "<group>"; };
+		7D363B4FE9688A032EED38C4 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Bold.ttf"; sourceTree = "<group>"; };
 		8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Light.ttf"; sourceTree = "<group>"; };
 		9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		99659A5B888C4EF67485D477 /* RunSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSync.swift; sourceTree = "<group>"; };
 		9B6CDF2A60DB7B8C7B810C1A /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
 		9D336F171455FDB718A18387 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		9F1A0FA13132AED3D257C31B /* RunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunView.swift; sourceTree = "<group>"; };
 		A55F4CF421595E439C843775 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
 		A6CFB5CC07067218F2414163 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CurrimusWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BB4A80647FF8D963E8F48FFA /* CurrimusWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatch.entitlements; sourceTree = "<group>"; };
 		CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunDetailView.swift; sourceTree = "<group>"; };
 		CF3515C4DD609F7375C055AA /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurrimusWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -143,6 +152,7 @@
 				7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */,
 				CF3515C4DD609F7375C055AA /* Models.swift */,
 				65B6A62A4E92A05F4D05C253 /* RunStore.swift */,
+				99659A5B888C4EF67485D477 /* RunSync.swift */,
 				9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */,
 				742835D6D8B7C6204427A3C0 /* SharedComponents.swift */,
 				E47BCF44600BC83F472F7AE0 /* Theme.swift */,
@@ -165,6 +175,7 @@
 		43CCB28E418F22ACA597CA06 /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
+				7D363B4FE9688A032EED38C4 /* OFL.txt */,
 				858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */,
 				8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */,
 				741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */,
@@ -201,6 +212,7 @@
 			isa = PBXGroup;
 			children = (
 				DD88986EEA97DE1411F9263F /* Assets.xcassets */,
+				BB4A80647FF8D963E8F48FFA /* CurrimusWatch.entitlements */,
 				70F243526819E3203BC8EC68 /* PacerViews.swift */,
 				591C33FACB6B9A5D87A858BB /* RunSession.swift */,
 				9F1A0FA13132AED3D257C31B /* RunView.swift */,
@@ -330,6 +342,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */,
+				B749CFE69D9A5A8A4D6D3A8D /* OFL.txt in Resources */,
 				6B518FFE68FA01C3ADD13FDD /* SpaceGrotesk-Bold.ttf in Resources */,
 				2CB91D71E6B6E6FA24F1C95F /* SpaceGrotesk-Light.ttf in Resources */,
 				830260335BDEAF3CD5BCBE7F /* SpaceGrotesk-Medium.ttf in Resources */,
@@ -343,6 +356,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */,
+				5843214DF0F756E312673578 /* OFL.txt in Resources */,
 				5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */,
 				B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */,
 				A28A4016C9EF471DC28C03A9 /* SpaceGrotesk-Medium.ttf in Resources */,
@@ -355,6 +369,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				487CD92918738997F3DB723F /* OFL.txt in Resources */,
 				AF8B59555800E52D952805DD /* SpaceGrotesk-Bold.ttf in Resources */,
 				6CDF6CAC52FFF686C46A9587 /* SpaceGrotesk-Light.ttf in Resources */,
 				046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */,
@@ -375,6 +390,7 @@
 				6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */,
 				59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */,
 				1242EDB609907C5835F455E1 /* RunStore.swift in Sources */,
+				29202736108BECE52768BC98 /* RunSync.swift in Sources */,
 				76EC5DB3393322A4BE112ABE /* RunView.swift in Sources */,
 				6CEAFA77482B7929938A2DE1 /* SampleData.swift in Sources */,
 				DC5F3F32B0274951D97B1959 /* SharedComponents.swift in Sources */,
@@ -394,6 +410,7 @@
 				2981B3EADB4136CEB5C61AD3 /* FontLoader.swift in Sources */,
 				D687CD7AA9868B8B982FE26E /* Models.swift in Sources */,
 				4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */,
+				0AF2B49944699FB95A35180D /* RunSync.swift in Sources */,
 				36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */,
 				7F84D2D9C84563F992B44A82 /* SharedComponents.swift in Sources */,
 				8911108B369D36350F47DAE3 /* Theme.swift in Sources */,
@@ -412,6 +429,7 @@
 				95057FCF29C634615715C893 /* ProgressTabView.swift in Sources */,
 				8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */,
 				BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */,
+				6EB9B6945D9E649D58FC53D1 /* RunSync.swift in Sources */,
 				9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */,
 				A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */,
 				A931CDE83BEE82558E4CE220 /* SharedComponents.swift in Sources */,
@@ -526,8 +544,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Watch/CurrimusWatch.entitlements;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads heart rate and distance to show live pace and zones during your run.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Currimus uses GPS to record your route, distance and elevation while you run.";
 				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKBackgroundModes = "workout-processing";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.currimus.app;
 				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app.watchkitapp;
 				SDKROOT = watchos;
@@ -557,8 +580,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Watch/CurrimusWatch.entitlements;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads heart rate and distance to show live pace and zones during your run.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Currimus uses GPS to record your route, distance and elevation while you run.";
 				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKBackgroundModes = "workout-processing";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.currimus.app;
 				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app.watchkitapp;
 				SDKROOT = watchos;

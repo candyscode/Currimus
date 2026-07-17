@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// The one glance: time, distance, pace, zone. Tap to pause.
+/// The one glance: time, distance, pace, zone. The screen title lives in
+/// content ("RUN" / "MAX"); the system clock owns the top line.
+/// Tap to pause (the both-buttons hardware gesture pauses too).
 struct RunView: View {
     @ObservedObject var session: RunSession
 
@@ -25,34 +27,34 @@ struct RunView: View {
     private var quickRun: some View {
         let zone = session.currentZone
         return VStack(alignment: .leading, spacing: 0) {
-            RunHeader(
-                title: zone >= 5 ? "MAX" : "RUN",
-                titleColor: zone >= 5 ? Theme.signal : Theme.muted,
-                titleWeight: zone >= 5 ? .semibold : .regular,
-                heartRate: session.heartRate,
-                hrColor: zone >= 5 ? Theme.signal : (zone == 4 ? Theme.ink : Theme.muted)
-            )
-
             Spacer(minLength: 0)
 
             VStack(alignment: .leading, spacing: 0) {
+                if zone >= 5 {
+                    Text("MAX").kicker(7.5, color: Theme.signal, tracking: 0.14)
+                        .fontWeight(.semibold)
+                        .padding(.bottom, 6)
+                } else {
+                    Text("RUN").kicker(8, color: Theme.bright, tracking: 0.1)
+                        .padding(.bottom, 6)
+                }
                 Text(Format.clock(session.elapsed))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                HStack(alignment: .top, spacing: 18) {
-                    BigStat(value: Format.km(session.distanceKm), label: "KM")
-                    BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", valueColor: Theme.signal)
+                HStack(alignment: .top, spacing: 20) {
+                    BigStat(value: Format.km(session.distanceKm), label: "KM", size: 22)
+                    BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", valueColor: Theme.signal, size: 22)
                 }
-                .padding(.top, 11)
+                .padding(.top, 10)
             }
 
             Spacer(minLength: 0)
 
             ZoneBar(zone: zone)
             HStack {
-                Text("ZONE").kicker(7.5, tracking: 0.12)
+                Text("ZONE").kicker(8, color: Theme.bright, tracking: 0.1)
                 Spacer()
                 Text("\(zone)")
                     .font(.stat(7.5))
@@ -64,43 +66,12 @@ struct RunView: View {
     }
 }
 
-struct RunHeader: View {
-    var title: String
-    var titleColor: Color = Theme.muted
-    var titleWeight: Font.Weight = .regular
-    var heartRate: Int
-    var hrColor: Color = Theme.muted
-    var hrWeight: Font.Weight = .regular
-    /// Leading mark before the title (the trail triangle).
-    var mark: Bool = false
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            HStack(spacing: 5) {
-                if mark {
-                    TriangleMark()
-                        .fill(Theme.signal)
-                        .frame(width: 8, height: 7)
-                }
-                Text(title)
-                    .font(.sg(8.5, weight: titleWeight))
-                    .kerning(8.5 * 0.14)
-                    .foregroundStyle(titleColor)
-            }
-            Spacer()
-            Text("♥\u{FE0E} \(heartRate)")
-                .font(.stat(8.5, weight: hrWeight))
-                .foregroundStyle(hrColor)
-        }
-    }
-}
-
 struct BigStat: View {
     var value: String
     var label: String
     var valueColor: Color = Theme.ink
     var size: CGFloat = 21
-    var labelSize: CGFloat = 7.5
+    var labelSize: CGFloat = 8
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -108,7 +79,10 @@ struct BigStat: View {
                 .font(.stat(size))
                 .foregroundStyle(valueColor)
                 .lineLimit(1)
-            Text(label).kicker(labelSize, tracking: 0.12)
+            Text(label)
+                .kicker(labelSize, color: Theme.bright, tracking: 0.1)
+                .lineLimit(1)
+                .fixedSize()
         }
     }
 }
@@ -129,8 +103,8 @@ struct KilometerAlertView: View {
                 .foregroundStyle(Theme.signal)
                 .padding(.top, 10)
             Text("\(Format.paceDelta(alert.deltaVsAvg)) vs avg")
-                .font(.stat(8, weight: .regular))
-                .foregroundStyle(Theme.muted)
+                .font(.stat(8.5, weight: .regular))
+                .foregroundStyle(Theme.bright)
                 .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -138,27 +112,26 @@ struct KilometerAlertView: View {
     }
 }
 
+/// Same screen in every mode.
 struct PausedView: View {
     @ObservedObject var session: RunSession
     var onEnd: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            RunHeader(
-                title: "PAUSED", titleColor: Theme.signal, titleWeight: .semibold,
-                heartRate: session.heartRate
-            )
-
             Spacer(minLength: 0)
 
             VStack(alignment: .leading, spacing: 0) {
+                Text("PAUSED").kicker(7.5, color: Theme.signal, tracking: 0.14)
+                    .fontWeight(.semibold)
+                    .padding(.bottom, 6)
                 Text(Format.clock(session.elapsed))
                     .font(.stat(42))
                     .kerning(-1.9)
                     .foregroundStyle(Theme.dim)
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
-                    StatInline(value: Format.km(session.distanceKm), unit: "km", size: 13, color: Theme.dim)
-                    StatInline(value: Format.pace(session.averagePace), unit: "/km", size: 13, color: Theme.dim)
+                    StatInline(value: Format.km(session.distanceKm), unit: "km", size: 15, color: Theme.dim)
+                    StatInline(value: Format.pace(session.averagePace), unit: "/km", size: 15, color: Theme.dim)
                 }
                 .padding(.top, 8)
             }

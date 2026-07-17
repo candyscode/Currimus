@@ -6,6 +6,7 @@ struct CurrimusWatchApp: App {
 
     init() {
         FontLoader.registerAll()
+        RunSync.shared.activate()
     }
 
     var body: some Scene {
@@ -22,20 +23,17 @@ struct WatchRootView: View {
     @State private var finishedRun: Run?
 
     var body: some View {
-        // NavigationStack + hidden bar removes the system clock so the layout
-        // can own the full canvas, exactly like the design frames.
         NavigationStack {
             ZStack {
                 Theme.bg.ignoresSafeArea()
-                // The top safe area stays — the system clock owns that corner
-                // (it cannot be hidden); sides and bottom are full-bleed like
-                // the design frames.
+                // The top safe area stays — the system clock owns that line
+                // (watchOS 10 rule); sides and bottom are full-bleed like the
+                // design frames.
                 content
                     .ignoresSafeArea(edges: [.horizontal, .bottom])
             }
             .foregroundStyle(Theme.ink)
             .toolbar(.hidden, for: .navigationBar)
-            .persistentSystemOverlays(.hidden)
         }
         .onAppear(perform: handleLaunchRoute)
     }
@@ -53,9 +51,13 @@ struct WatchRootView: View {
                     session.setupPacer()
                 }
             )
-        case .pacerSetup:
-            PacerSetupView(session: session) {
+        case .pacerPace:
+            PacerPaceView(session: session) {
                 store.pacerTargetSecPerKm = session.pacerTarget
+                session.confirmPacerPace()
+            }
+        case .pacerDistance:
+            PacerDistanceView(session: session) {
                 start(.pacer)
             }
         case .countdown(let n):
@@ -70,36 +72,26 @@ struct WatchRootView: View {
             PausedView(session: session) { finish() }
         case .finished:
             if let run = finishedRun {
-                SummaryView(run: run) {
-                    finishedRun = nil
-                    session.reset()
+                switch run.type {
+                case .pacer:
+                    PacerSummaryView(
+                        run: run,
+                        target: session.pacerTarget,
+                        targetDistanceKm: session.pacerDistanceKm,
+                        onDone: done
+                    )
+                case .trail:
+                    TrailSummaryView(
+                        run: run,
+                        profile: session.plannedRoute?.profile
+                            ?? RoutePoints.normalized(session.altitudeProfile),
+                        onDone: done
+                    )
+                case .quick:
+                    SummaryView(run: run, onDone: done)
                 }
             }
         }
-    }
-
-    /// Demo / screenshot routing, e.g. `-screen run` | `pacer-set` | `pacer-run`
-    /// | `trail` | `elevation` | `kmalert` | `paused` | `summary` | `trail-summary`.
-    private func handleLaunchRoute() {
-        #if DEBUG
-        session.zones = store.zones
-        session.pacerTarget = store.pacerTargetSecPerKm
-        switch UserDefaults.standard.string(forKey: "screen") {
-        case "run": session.debugFastForward(.quick, seconds: 2537)
-        case "pacer-set": session.setupPacer()
-        case "pacer-run": session.debugFastForward(.pacer, seconds: 1684)
-        case "trail", "elevation": session.debugFastForward(.trail, seconds: 4500)
-        case "kmalert": session.debugFastForward(.quick, seconds: 2593, keepAlert: true)
-        case "paused": session.debugFastForward(.quick, seconds: 2537, paused: true)
-        case "summary":
-            session.debugFastForward(.quick, seconds: 2537)
-            finishedRun = session.end()
-        case "trail-summary":
-            session.debugFastForward(.trail, seconds: 6728)
-            finishedRun = session.end()
-        default: break
-        }
-        #endif
     }
 
     private func start(_ type: RunType) {
@@ -112,5 +104,46 @@ struct WatchRootView: View {
         let run = session.end()
         finishedRun = run
         store.add(run)
+    }
+
+    private func done() {
+        finishedRun = nil
+        session.reset()
+    }
+
+    /// Demo / screenshot routing (DEBUG builds only), e.g. `-screen run`.
+    private func handleLaunchRoute() {
+        #if DEBUG
+        session.zones = store.zones
+        session.pacerTarget = store.pacerTargetSecPerKm
+        switch UserDefaults.standard.string(forKey: "screen") {
+        case "run": session.debugFastForward(.quick, seconds: 2537)
+        case "pacer-set": session.setupPacer()
+        case "pacer-distance":
+            session.setupPacer()
+            session.confirmPacerPace()
+        case "pacer-run":
+            session.pacerDistanceKm = 10
+            session.debugFastForward(.pacer, seconds: 1684)
+        case "pacer-run-nodist":
+            session.pacerDistanceKm = nil
+            session.debugFastForward(.pacer, seconds: 1684)
+        case "pacer-summary":
+            session.pacerDistanceKm = 10
+            session.debugFastForward(.pacer, seconds: 3146)
+            finishedRun = session.end()
+        case "trail", "elevation", "elevation-noroute":
+            session.debugFastForward(.trail, seconds: 4500)
+        case "kmalert": session.debugFastForward(.quick, seconds: 2593, keepAlert: true)
+        case "paused": session.debugFastForward(.quick, seconds: 2537, paused: true)
+        case "summary":
+            session.debugFastForward(.quick, seconds: 2537)
+            finishedRun = session.end()
+        case "trail-summary":
+            session.debugFastForward(.trail, seconds: 6728)
+            finishedRun = session.end()
+        default: break
+        }
+        #endif
     }
 }

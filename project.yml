@@ -47,6 +47,14 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Currimus
         INFOPLIST_KEY_WKApplication: YES
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.currimus.app
+        INFOPLIST_KEY_WKBackgroundModes: workout-processing
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads heart rate and distance to show live pace and zones during your run."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Currimus saves your runs as workouts to Apple Health."
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Currimus uses GPS to record your route, distance and elevation while you run."
+    entitlements:
+      path: Watch/CurrimusWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
     dependencies:
       - target: CurrimusWatchWidgets
 

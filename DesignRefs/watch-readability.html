@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0;background:#141414;font-family:'Space Grotesk',sans-serif}a{color:#F5F4F2;text-decoration:none}a:hover{color:#FF4D00}</style>
+</helmet>
+<div style="min-width:1900px;padding:48px 56px;color:#F5F4F2">
+  <div style="display:flex;align-items:baseline;gap:24px;border-bottom:1px solid #2a2a2a;padding-bottom:20px">
+    <span style="font-size:22px;font-weight:700;letter-spacing:-0.02em">CURRIMUS</span>
+    <span style="font-size:12px;color:#6b6b6b">Apple Watch · Exploration — larger &amp; brighter metric labels for readability</span>
+    <nav style="margin-left:auto;display:flex;gap:20px;font-size:12px"><a href="Design System.dc.html">Design System →</a><a href="iPhone Screens.dc.html">iPhone Screens →</a></nav>
+  </div>
+
+  <div style="font-size:12px;color:#6b6b6b;margin-top:44px;border-bottom:1px solid #2a2a2a;padding-bottom:14px">Flow · Quick run — tap Start, zero config, straight out the door · watchOS 10 rule: the system owns the top line — time top-right; only a small toolbar item may sit top-left (like Workout’s activity icon). Full titles are not allowed up there anymore, so they live in content</div>
+  <div style="display:flex;gap:56px;margin-top:28px;align-items:flex-start">
+
+    <!-- READY -->
+    <div data-screen-label="Watch — Home" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">1 · Home — one screen, two ways to run<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · ENTRY — NOTHING SET</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px 46px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div data-comment-anchor="413381f46e-span" style="font-size:27px;font-weight:700;letter-spacing:0.06em;margin-top:16px">CURRIMUS</div>
+        <div style="margin-top:auto">
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">LAST RUN</div>
+          <div style="display:flex;gap:24px;margin-top:8px;font-variant-numeric:tabular-nums">
+            <div style="font-size:24px;font-weight:600">12.02 <span style="font-size:16px;font-weight:400;color:#A8A8A8">km</span></div>
+            <div style="font-size:24px;font-weight:600">5:24 <span style="font-size:16px;font-weight:400;color:#A8A8A8">/km</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:26px">
+          <div style="height:86px;border-radius:43px;background:#FF4D00;color:#0A0A0A;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:700">Start</div>
+          <div style="height:62px;border-radius:31px;background:#1d1d1d;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600">Pacer</div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Start → quick run. Pacer → set a target pace first (flow below). No settings on the watch — they live on the iPhone.</span>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- COUNTDOWN -->
+    <div data-screen-label="Watch — Countdown" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">2 · Countdown — after Start<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — NO TARGETS</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div style="margin:auto 0;text-align:center">
+        <div style="font-size:15px;letter-spacing:0.2em;color:#6b6b6b">GET READY</div>
+        <div style="font-size:170px;font-weight:600;letter-spacing:-0.05em;line-height:1;color:#FF4D00;font-variant-numeric:tabular-nums;margin-top:8px">3</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- RUN -->
+    <div data-screen-label="Watch — Run" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">3 · Run — the one glance<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — NO TARGETS</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px">RUN</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">42:17</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">7.84</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">5:24</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+            
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px">
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#FF4D00"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#FF4D00;font-weight:600;font-variant-numeric:tabular-nums">3</span></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Pace = rolling last kilometer. Time without milliseconds. Zone as position, not number-hunting.</span>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- KM ALERT -->
+    <div data-screen-label="Watch — KM Alert" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">4 · Kilometer alert — auto, shows 5s<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — NO TARGETS</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div style="margin:auto 0;text-align:center">
+        <div style="font-size:17px;letter-spacing:0.16em;color:#6b6b6b">KILOMETER</div>
+        <div style="font-size:130px;font-weight:600;letter-spacing:-0.05em;line-height:1;font-variant-numeric:tabular-nums;margin-top:6px">8</div>
+        <div style="font-size:40px;font-weight:600;color:#FF4D00;font-variant-numeric:tabular-nums;margin-top:20px">5:18</div>
+        <div style="font-size:17px;color:#A8A8A8;margin-top:8px;font-variant-numeric:tabular-nums">−0:06 vs avg</div>
+        </div>
+      </div>
+    </div>
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- PAUSED -->
+    <div data-screen-label="Watch — Paused" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">5 · Paused — same screen in every mode (press both buttons)<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — NO TARGETS</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div>
+          <div style="font-size:15px;letter-spacing:0.14em;color:#FF4D00;font-weight:600;margin-bottom:12px">PAUSED</div><div style="font-size:84px;font-weight:600;letter-spacing:-0.045em;line-height:1;color:#8f8f8f;font-variant-numeric:tabular-nums">42:17</div>
+          <div style="display:flex;gap:32px;margin-top:16px;font-variant-numeric:tabular-nums">
+            <div style="font-size:30px;font-weight:600;color:#8f8f8f">7.84 <span style="font-size:16px;font-weight:400;color:#A8A8A8">km</span></div>
+            <div style="font-size:30px;font-weight:600;color:#8f8f8f">5:24 <span style="font-size:16px;font-weight:400;color:#A8A8A8">/km</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:14px">
+          <div style="flex:1;height:80px;border-radius:40px;background:#1d1d1d;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600">End</div>
+          <div style="flex:1.4;height:80px;border-radius:40px;background:#FF4D00;color:#0A0A0A;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700">Resume</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- SUMMARY -->
+    <div data-screen-label="Watch — Summary" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">6 · Summary — crown scrolls down to Done → Home · saved to the iPhone log<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — NO TARGETS</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:50px 44px 46px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:16px">RUN COMPLETE</div>
+        <div style="font-size:64px;font-weight:600;letter-spacing:-0.04em;line-height:1;margin-top:10px;font-variant-numeric:tabular-nums">7.84 <span style="font-size:24px;font-weight:400;color:#6b6b6b;letter-spacing:0">km</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:26px;font-variant-numeric:tabular-nums">
+          <div><div style="font-size:26px;font-weight:600;line-height:1">42:17</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">TIME</div></div>
+          <div><div style="font-size:26px;font-weight:600;line-height:1;color:#FF4D00">5:24</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">PACE</div></div>
+          <div><div style="font-size:26px;font-weight:600;line-height:1">149</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">AVG HR</div></div>
+        </div>
+        <div style="margin-top:auto">
+          <div style="display:flex;gap:4px;height:14px;border-radius:7px;overflow:hidden">
+            <div style="width:10%;background:rgba(255,77,0,0.14)"></div>
+            <div style="width:32%;background:rgba(255,77,0,0.30)"></div>
+            <div style="width:40%;background:rgba(255,77,0,0.52)"></div>
+            <div style="width:14%;background:rgba(255,77,0,0.76)"></div>
+            <div style="width:4%;background:#FF4D00"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">TIME IN ZONES</span><span style="font-size:14px;color:#6b6b6b;font-variant-numeric:tabular-nums">mostly 3</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="font-size:12px;color:#6b6b6b;margin-top:56px;border-bottom:1px solid #2a2a2a;padding-bottom:14px">Run screen — zone states · one hue, position + heat carry the meaning</div>
+  <div style="display:flex;gap:56px;margin-top:28px;align-items:flex-start">
+
+    <!-- Z1 -->
+    <div data-screen-label="Watch — Run Zone 1" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Zone 1 · warm-up<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — LIVE ZONE 1</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px">RUN</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">6:12</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">0.94</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">6:38</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+            
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px">
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.35)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#F5F4F2;font-weight:600;font-variant-numeric:tabular-nums">1</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Z2 -->
+    <div data-screen-label="Watch — Run Zone 2" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Zone 2 · easy<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — LIVE ZONE 2</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px">RUN</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">24:40</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">3.71</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">6:05</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+            
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px">
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.55)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#F5F4F2;font-weight:600;font-variant-numeric:tabular-nums">2</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Z4 -->
+    <div data-screen-label="Watch — Run Zone 4" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Zone 4 · threshold<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — LIVE ZONE 4</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px">RUN</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">31:08</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">6.24</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">4:52</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+            
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px">
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.85)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#FF4D00;font-weight:600;font-variant-numeric:tabular-nums">4</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Z5 -->
+    <div data-screen-label="Watch — Run Zone 5" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Zone 5 · max — the whole bar burns<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · QUICK RUN — LIVE ZONE 5</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div>
+          <div style="font-size:15px;letter-spacing:0.14em;color:#FF4D00;font-weight:600;margin-bottom:12px">MAX</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">45:02</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">9.71</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">4:21</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+            
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px">
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.25)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.4)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.6)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.8)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#FF4D00;box-shadow:0 0 14px rgba(255,77,0,0.5)"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#FF4D00;font-weight:600;font-variant-numeric:tabular-nums">5</span></div>
+        </div>
+      </div>
+    </div>
+
+    
+  </div>
+
+  <div style="font-size:12px;color:#6b6b6b;margin-top:56px;border-bottom:1px solid #2a2a2a;padding-bottom:14px">Flow · Pacer run — Home → Pacer → step 1: target pace (required) → step 2: distance (optional, Off = just run) → Start → live pacing → pacer summary (target vs. actual) → Done → Home. A finish forecast only exists with a distance set</div>
+  <div style="display:flex;gap:56px;margin-top:28px;align-items:flex-start">
+
+    <!-- PACER SET -->
+    <div data-screen-label="Watch — Pacer Set Target" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Step 1 · Target pace — crown scrolls the wheel<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · PACER STEP 1 — PACE, REQUIRED</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:48px 44px 46px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div style="margin-top:auto;font-variant-numeric:tabular-nums">
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px">PACER</div><div style="font-size:24px;font-weight:600;color:#3d3d3d;line-height:1.2">5:20</div>
+          <div style="font-size:86px;font-weight:600;letter-spacing:-0.045em;line-height:1.05">5:15</div>
+          <div style="font-size:24px;font-weight:600;color:#3d3d3d;line-height:1.2">5:10</div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:14px">TARGET /KM · TURN CROWN</div>
+          <div style="font-size:17px;color:#A8A8A8;margin-top:8px">at this pace: 10 km in <span style="color:#F5F4F2">52:30</span></div>
+        </div>
+        <div style="height:80px;margin-top:24px;border-radius:40px;background:#FF4D00;color:#0A0A0A;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:700">Next</div>
+      </div>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- PACER DISTANCE -->
+    <div data-screen-label="Watch — Pacer Set Distance" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Step 2 · Distance — optional, Off = just run<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · PACER STEP 2 — DISTANCE, OPTIONAL</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:48px 44px 46px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div style="margin-top:auto;font-variant-numeric:tabular-nums">
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:10px">PACER · DISTANCE</div>
+          <div style="font-size:22px;font-weight:600;color:#3d3d3d;line-height:1.3">Off</div>
+          <div style="font-size:22px;font-weight:600;color:#3d3d3d;line-height:1.3">5 km</div>
+          <div style="font-size:74px;font-weight:600;letter-spacing:-0.04em;line-height:1.1">10 <span style="font-size:30px;font-weight:400;color:#A8A8A8;letter-spacing:0">km</span></div>
+          <div style="font-size:22px;font-weight:600;color:#3d3d3d;line-height:1.3">15 km</div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:12px">OPTIONAL · TURN CROWN</div>
+          <div style="font-size:17px;color:#A8A8A8;margin-top:6px">at 5:15 → finish <span style="color:#F5F4F2">52:30</span></div>
+        </div>
+        <div style="height:80px;margin-top:22px;border-radius:40px;background:#FF4D00;color:#0A0A0A;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:700">Start</div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Scroll up to Off and the pacer runs open-ended — gauge and cumulative delta only, no finish forecast.</span>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- PACER ON PACE -->
+    <div data-screen-label="Watch — Pacer On Pace" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">On pace — dot rests on the notch<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · PACER — PACE 5:15 · DISTANCE 10 KM</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div>
+          <div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">5:14</div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:8px">PACER · ON TARGET 5:15</div>
+          <div style="display:flex;gap:36px;margin-top:24px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:26px;font-weight:600;line-height:1">28:04</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">TIME</div></div>
+            <div><div style="font-size:26px;font-weight:600;line-height:1">5.36</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px;white-space:nowrap">/ 10 KM</div></div>
+            <div><div style="display:flex;gap:3px;align-items:center;height:26px;width:96px"><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#FF4D00"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div></div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">ZONE <span style="color:#F5F4F2;font-weight:600">3</span></div></div>
+          </div>
+        </div>
+        <div>
+          <div style="position:relative;height:24px">
+            <div style="position:absolute;left:0;right:0;top:10px;height:4px;border-radius:2px;background:#2e2e2e"></div>
+            <div style="position:absolute;left:50%;top:4px;width:2px;height:16px;background:#6b6b6b;transform:translateX(-50%)"></div>
+            <div style="position:absolute;left:50%;top:5px;width:14px;height:14px;border-radius:7px;background:#F5F4F2;transform:translateX(-50%)"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">FAST</span><span style="font-size:14px;color:#F5F4F2;font-weight:600;font-variant-numeric:tabular-nums">±0:01</span><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">SLOW</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- PACER TOO FAST -->
+    <div data-screen-label="Watch — Pacer Too Fast" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Too fast — dot drifts left, ease off<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · PACER — PACE 5:15 · DISTANCE 10 KM</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div>
+          <div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;color:#FF4D00;font-variant-numeric:tabular-nums">5:02</div>
+          <div style="font-size:15px;letter-spacing:0.12em;color:#FF4D00;margin-top:8px">0:13 FAST · TARGET 5:15</div>
+          <div style="display:flex;gap:36px;margin-top:24px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:26px;font-weight:600;line-height:1">36:12</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">TIME</div></div>
+            <div><div style="font-size:26px;font-weight:600;line-height:1">7.02</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px;white-space:nowrap">/ 10 KM</div></div>
+            <div><div style="display:flex;gap:3px;align-items:center;height:26px;width:96px"><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#FF4D00"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div></div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">ZONE <span style="color:#F5F4F2;font-weight:600">4</span></div></div>
+          </div>
+        </div>
+        <div>
+          <div style="position:relative;height:24px">
+            <div style="position:absolute;left:0;right:0;top:10px;height:4px;border-radius:2px;background:#2e2e2e"></div>
+            <div style="position:absolute;left:50%;top:10px;width:29%;height:4px;background:rgba(255,77,0,0.4);transform:translateX(-100%)"></div>
+            <div style="position:absolute;left:50%;top:4px;width:2px;height:16px;background:#6b6b6b;transform:translateX(-50%)"></div>
+            <div style="position:absolute;left:21%;top:5px;width:14px;height:14px;border-radius:7px;background:#FF4D00;transform:translateX(-50%)"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><span style="font-size:14px;letter-spacing:0.12em;color:#FF4D00;font-weight:600">FAST</span><span style="font-size:14px;color:#6b6b6b;font-variant-numeric:tabular-nums">finish ~51:55</span><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">SLOW</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- PACER BEHIND -->
+    <div data-screen-label="Watch — Pacer Behind" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Behind — dot drifts right, pick it up<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · PACER — PACE 5:15 · DISTANCE 10 KM</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div>
+          <div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">5:31</div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:8px">0:16 SLOW · TARGET 5:15</div>
+          <div style="display:flex;gap:36px;margin-top:24px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:26px;font-weight:600;line-height:1">44:48</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">TIME</div></div>
+            <div><div style="font-size:26px;font-weight:600;line-height:1">8.44</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px;white-space:nowrap">/ 10 KM</div></div>
+            <div><div style="display:flex;gap:3px;align-items:center;height:26px;width:96px"><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#FF4D00"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div></div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">ZONE <span style="color:#F5F4F2;font-weight:600">3</span></div></div>
+          </div>
+        </div>
+        <div>
+          <div style="position:relative;height:24px">
+            <div style="position:absolute;left:0;right:0;top:10px;height:4px;border-radius:2px;background:#2e2e2e"></div>
+            <div style="position:absolute;left:50%;top:10px;width:34%;height:4px;background:rgba(255,77,0,0.4)"></div>
+            <div style="position:absolute;left:50%;top:4px;width:2px;height:16px;background:#6b6b6b;transform:translateX(-50%)"></div>
+            <div style="position:absolute;left:84%;top:5px;width:14px;height:14px;border-radius:7px;background:#FF4D00;transform:translateX(-50%)"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">FAST</span><span style="font-size:14px;color:#6b6b6b;font-variant-numeric:tabular-nums">finish ~53:44</span><span style="font-size:14px;letter-spacing:0.12em;color:#FF4D00;font-weight:600">SLOW</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="Watch — Pacer No Distance" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Variant · same state, no distance set<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · PACER — PACE 5:15 · NO DISTANCE</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div>
+          <div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;color:#FF4D00;font-variant-numeric:tabular-nums">5:02</div>
+          <div style="font-size:15px;letter-spacing:0.12em;color:#FF4D00;margin-top:8px">0:13 FAST · TARGET 5:15</div>
+          <div style="display:flex;gap:36px;margin-top:24px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:26px;font-weight:600;line-height:1">33:20</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">TIME</div></div>
+            <div><div style="font-size:26px;font-weight:600;line-height:1">6.44</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="display:flex;gap:3px;align-items:center;height:26px;width:96px"><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div><div style="flex:1;height:8px;border-radius:4px;background:#FF4D00"></div><div style="flex:1;height:8px;border-radius:4px;background:#2e2e2e"></div></div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">ZONE <span style="color:#F5F4F2;font-weight:600">4</span></div></div>
+          </div>
+        </div>
+        <div>
+          <div style="position:relative;height:24px">
+            <div style="position:absolute;left:0;right:0;top:10px;height:4px;border-radius:2px;background:#2e2e2e"></div>
+            <div style="position:absolute;left:50%;top:10px;width:29%;height:4px;background:rgba(255,77,0,0.4);transform:translateX(-100%)"></div>
+            <div style="position:absolute;left:50%;top:4px;width:2px;height:16px;background:#6b6b6b;transform:translateX(-50%)"></div>
+            <div style="position:absolute;left:21%;top:5px;width:14px;height:14px;border-radius:7px;background:#FF4D00;transform:translateX(-50%)"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><span style="font-size:16px;letter-spacing:0.1em;color:#FF4D00;font-weight:600">FAST</span><span style="font-size:14px;color:#6b6b6b;font-variant-numeric:tabular-nums">overall 0:22 ahead</span><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">SLOW</span></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">No distance: plain KM counter, cumulative delta instead of a finish forecast. Everything else identical.</span>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <div data-screen-label="Watch — Pacer Summary" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Pacer summary — target vs. actual, Done → Home<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · PACER — PACE 5:15 · DISTANCE 10 KM</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:48px 44px 44px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:14px">PACER COMPLETE</div>
+        <div style="font-size:52px;font-weight:600;letter-spacing:-0.04em;line-height:1;margin-top:8px;font-variant-numeric:tabular-nums">10.0 <span style="font-size:22px;font-weight:400;color:#A8A8A8;letter-spacing:0">km</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:20px;font-variant-numeric:tabular-nums">
+          <div><div style="font-size:25px;font-weight:600;line-height:1">52:26</div><div style="font-size:15px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">TIME</div></div>
+          <div><div style="font-size:25px;font-weight:600;line-height:1;color:#FF4D00">5:14</div><div style="font-size:15px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">AVG PACE</div></div>
+          <div><div style="font-size:25px;font-weight:600;line-height:1">5:15</div><div style="font-size:15px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">TARGET</div></div>
+        </div>
+        <div style="font-size:16px;color:#F5F4F2;margin-top:16px;font-variant-numeric:tabular-nums">Finished <span style="color:#FF4D00;font-weight:600">0:04 ahead</span> of the 52:30 target.</div>
+        <div style="height:62px;margin-top:auto;border-radius:31px;background:#1d1d1d;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600">Done</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="font-size:12px;color:#6b6b6b;margin-top:56px;border-bottom:1px solid #2a2a2a;padding-bottom:14px">Exploration · Trail mode — Home gets a third way to run · ▲ marks trail everywhere · climb rate rolls over the last 10 min (time, not distance — on steep ground distance crawls, a time window stays honest)</div>
+  <div style="display:flex;gap:56px;margin-top:28px;align-items:flex-start">
+
+    <!-- TRAIL HOME -->
+    <div data-screen-label="Watch — Home with Trail" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">1 · Home — Trail joins Start &amp; Pacer<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · ENTRY — NOTHING SET</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px 46px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div style="font-size:27px;font-weight:700;letter-spacing:0.06em;margin-top:16px">CURRIMUS</div>
+        <div style="margin-top:auto">
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">LAST RUN</div>
+          <div style="display:flex;gap:24px;margin-top:8px;font-variant-numeric:tabular-nums">
+            <div style="font-size:24px;font-weight:600">12.02 <span style="font-size:16px;font-weight:400;color:#A8A8A8">km</span></div>
+            <div style="font-size:24px;font-weight:600">5:24 <span style="font-size:16px;font-weight:400;color:#A8A8A8">/km</span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:26px">
+          <div style="height:78px;border-radius:39px;background:#FF4D00;color:#0A0A0A;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700">Start</div>
+          <div style="display:flex;gap:12px">
+            <div style="flex:1;height:58px;border-radius:29px;background:#1d1d1d;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;font-weight:600"><span style="color:#FF4D00;font-size:14px">▲</span>Trail</div>
+            <div style="flex:1;height:58px;border-radius:29px;background:#1d1d1d;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600">Pacer</div>
+          </div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">One primary action stays primary. Trail and Pacer share the quiet row — the ▲ is the trail mark from here on.</span>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- TRAIL RUN -->
+    <div data-screen-label="Watch — Trail Run" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">2 · Trail run — the glance, plus climb<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · TRAIL — NO TARGETS</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:50px 44px 46px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px"><span style="color:#FF4D00">▲</span> TRAIL</div><div style="font-size:76px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">1:12:40</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 36px;margin-top:22px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:34px;font-weight:600;line-height:1">9.62</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">KM</div></div>
+            <div><div style="font-size:34px;font-weight:600;line-height:1">7:33</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">PACE /KM</div></div>
+            <div><div style="font-size:34px;font-weight:600;line-height:1">▲ 642</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">M CLIMBED</div></div>
+            <div><div style="font-size:34px;font-weight:600;line-height:1;color:#FF4D00">486</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">M/H · LAST 10 MIN</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px">
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.85)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#FF4D00;font-weight:600;font-variant-numeric:tabular-nums">4</span></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Climb rate takes the Signal — uphill it is the honest effort number; pace on a climb lies. Zone bar stays where it always is.</span>
+    </div>
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">← swipe →</div>
+
+    <!-- TRAIL ELEVATION PAGE -->
+    <div data-screen-label="Watch — Trail Elevation" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">2b · Swipe left — where am I on the mountain<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · TRAIL — ROUTE LOADED · GPX FROM IPHONE</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:50px 44px 46px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div style="font-size:17px;color:#A8A8A8;font-variant-numeric:tabular-nums"><span style="color:#FF4D00">▲</span> ELEVATION · <span style="color:#F5F4F2;font-weight:600">1.284 m</span></div>
+        <svg viewBox="0 0 308 150" style="width:100%;height:150px">
+          <path d="M0,140 L30,122 L62,126 L96,92 L128,98 L162,58 L198,66 L232,30 L266,42 L308,14" fill="none" stroke="#2e2e2e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path>
+          <path d="M0,140 L30,122 L62,126 L96,92 L128,98 L162,58" fill="none" stroke="#FF4D00" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path>
+          <circle cx="162" cy="58" r="7" fill="#F5F4F2"></circle>
+        </svg>
+        <div style="display:flex;gap:32px;font-variant-numeric:tabular-nums">
+          <div><div style="font-size:30px;font-weight:600;line-height:1">▲ 642</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">CLIMBED</div></div>
+          <div><div style="font-size:30px;font-weight:600;line-height:1;color:#FF4D00">338</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">M TO TOP</div></div>
+          <div><div style="font-size:30px;font-weight:600;line-height:1">▼ 210</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">DOWN</div></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Route loaded as GPX from the iPhone (Settings → Trail route). The dot is you; gray is what's left.</span>
+    </div>
+
+    <div data-screen-label="Watch — Trail Elevation No Route" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Variant · no route loaded — profile so far<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · TRAIL — NO ROUTE</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:50px 44px 46px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span></span>
+          <span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span>
+        </div>
+        <div style="font-size:17px;color:#A8A8A8;font-variant-numeric:tabular-nums"><span style="color:#FF4D00">▲</span> ELEVATION · <span style="color:#F5F4F2;font-weight:600">1.284 m</span></div>
+        <svg viewBox="0 0 308 150" style="width:100%;height:150px">
+          <path d="M40,140 L70,122 L102,126 L136,92 L168,98 L202,58 L238,66 L308,44" fill="none" stroke="#FF4D00" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path>
+          <circle cx="308" cy="44" r="7" fill="#F5F4F2"></circle>
+        </svg>
+        <div style="display:flex;gap:40px;font-variant-numeric:tabular-nums">
+          <div><div style="font-size:30px;font-weight:600;line-height:1">▲ 642</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">CLIMBED</div></div>
+          <div><div style="font-size:30px;font-weight:600;line-height:1">▼ 210</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">DOWN</div></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Without a route there is no "to top" — only the profile you have run so far, growing to the right.</span>
+    </div>
+
+
+    <div style="align-self:center;color:#3f3f3f;font-size:30px;margin-top:26px">→</div>
+
+    <!-- TRAIL SUMMARY -->
+    <div data-screen-label="Watch — Trail Summary" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">3 · Summary — vert gets equal billing · Done → Home below the fold<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · TRAIL — NO TARGETS</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:50px 44px 46px;display:flex;flex-direction:column;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:16px"><span style="color:#FF4D00">▲</span> TRAIL COMPLETE</div>
+        <div style="display:flex;align-items:baseline;gap:16px;margin-top:10px;font-variant-numeric:tabular-nums">
+          <div style="font-size:46px;font-weight:600;letter-spacing:-0.04em;line-height:1;white-space:nowrap">14.2 <span style="font-size:22px;font-weight:400;color:#6b6b6b;letter-spacing:0">km</span></div>
+          <div style="font-size:46px;font-weight:600;letter-spacing:-0.04em;line-height:1;color:#FF4D00;white-space:nowrap">▲ 918</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:26px;font-variant-numeric:tabular-nums">
+          <div><div style="font-size:26px;font-weight:600;line-height:1">1:52:08</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">TIME</div></div>
+          <div><div style="font-size:26px;font-weight:600;line-height:1">7:54</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">PACE</div></div>
+          <div><div style="font-size:26px;font-weight:600;line-height:1">491</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:5px">AVG M/H</div></div>
+        </div>
+        <div style="margin-top:auto">
+          <svg viewBox="0 0 308 54" style="width:100%;height:54px;display:block">
+            <path d="M0,50 L30,38 L62,42 L96,24 L128,28 L162,10 L198,16 L232,6 L266,26 L308,46" fill="none" stroke="#FF4D00" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>
+          </svg>
+          <div style="display:flex;justify-content:space-between;margin-top:8px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">PROFILE</span><span style="font-size:14px;color:#6b6b6b;font-variant-numeric:tabular-nums">high 1.622 m</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:flex;gap:56px;margin-top:44px;align-items:flex-start">
+    <!-- TRAIL COMPLICATIONS -->
+    <div data-screen-label="Watch — Trail Complications" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Trail complications · 1×</span>
+      <div style="display:flex;gap:28px;align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="width:96px;height:96px;border-radius:50%;background:#0A0A0A;border:1px solid #2f2f2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px">
+            <span style="font-size:22px;color:#FF4D00;line-height:1">▲</span>
+            <svg viewBox="0 0 44 12" style="width:44px;height:12px"><path d="M0,11 L8,6 L15,8 L24,2 L32,5 L44,1" fill="none" stroke="#2e2e2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:110px;line-height:1.4">Trail launcher — opens straight into trail mode.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="width:96px;height:96px;border-radius:50%;background:#0A0A0A;border:1px solid #2f2f2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-variant-numeric:tabular-nums">
+            <span style="font-size:10px;letter-spacing:0.12em;color:#A8A8A8">WEEK</span>
+            <span style="font-size:22px;font-weight:600;color:#F5F4F2;line-height:1">▲2.140</span>
+            <span style="font-size:11px;color:#A8A8A8">meters</span>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:110px;line-height:1.4">Week vert — no goal, just the climb.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="width:96px;height:96px;border-radius:50%;background:#0A0A0A;border:1px solid #2f2f2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-variant-numeric:tabular-nums">
+            <span style="font-size:10px;letter-spacing:0.12em;color:#A8A8A8">LAST TRAIL</span>
+            <span style="font-size:22px;font-weight:600;color:#FF4D00;line-height:1">▲918</span>
+            <span style="font-size:11px;color:#A8A8A8">14.2 km</span>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:110px;line-height:1.4">Last trail — vert &amp; distance.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-size:12px;color:#6b6b6b;margin-top:56px;border-bottom:1px solid #2a2a2a;padding-bottom:14px">App icon — Liquid Glass · the C as a running track, Signal on ink</div>
+  <div style="display:flex;gap:56px;margin-top:28px;align-items:flex-start">
+    <div data-screen-label="App Icon" style="display:flex;gap:44px;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+        <div style="position:relative;width:180px;height:180px;border-radius:44px;background:radial-gradient(140% 120% at 28% 18%,#1c1c1c 0%,#0A0A0A 55%,#000 100%);overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,0.55)">
+          <div style="position:absolute;inset:0;border-radius:44px;box-shadow:inset 0 1.5px 1px rgba(255,255,255,0.22),inset 0 -14px 28px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.06)"></div>
+          <div style="position:absolute;left:-22%;top:-58%;width:150%;height:100%;background:linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0) 78%);border-radius:50%;transform:rotate(-8deg)"></div>
+          <svg viewBox="0 0 180 180" style="position:absolute;inset:0;width:100%;height:100%">
+            <path d="M 132 55 A 52 52 0 1 0 132 125" fill="none" stroke="#FF4D00" stroke-width="20" stroke-linecap="round"></path>
+            <circle cx="132" cy="125" r="10" fill="#F5F4F2"></circle>
+          </svg>
+        </div>
+        <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:180px;line-height:1.4">iOS — the wordmark reduced to its C, drawn as an open track; the runner is the dot closing the loop.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+        <div style="position:relative;width:180px;height:180px;border-radius:50%;background:radial-gradient(140% 120% at 28% 18%,#1c1c1c 0%,#0A0A0A 55%,#000 100%);overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,0.55)">
+          <div style="position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 1.5px 1px rgba(255,255,255,0.22),inset 0 -14px 28px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.06)"></div>
+          <div style="position:absolute;left:-22%;top:-58%;width:150%;height:100%;background:linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0) 78%);border-radius:50%;transform:rotate(-8deg)"></div>
+          <svg viewBox="0 0 180 180" style="position:absolute;inset:0;width:100%;height:100%">
+            <path d="M 132 55 A 52 52 0 1 0 132 125" fill="none" stroke="#FF4D00" stroke-width="20" stroke-linecap="round"></path>
+            <circle cx="132" cy="125" r="10" fill="#F5F4F2"></circle>
+          </svg>
+        </div>
+        <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:180px;line-height:1.4">watchOS — same mark, circular.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+        <div style="position:relative;width:180px;height:180px;border-radius:44px;background:radial-gradient(140% 120% at 28% 18%,#1c1c1c 0%,#0A0A0A 55%,#000 100%);overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;inset:0;border-radius:44px;box-shadow:inset 0 1.5px 1px rgba(255,255,255,0.22),inset 0 -14px 28px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.06)"></div>
+          <div style="position:absolute;left:-22%;top:-58%;width:150%;height:100%;background:linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0) 78%);border-radius:50%;transform:rotate(-8deg)"></div>
+          <div style="position:relative;text-align:center">
+            <svg viewBox="0 0 64 64" style="width:64px;height:64px">
+              <path d="M 47 20 A 18.5 18.5 0 1 0 47 44" fill="none" stroke="#FF4D00" stroke-width="7" stroke-linecap="round"></path>
+              <circle cx="47" cy="44" r="3.5" fill="#F5F4F2"></circle>
+            </svg>
+            <div style="font-size:15px;font-weight:700;letter-spacing:0.18em;color:#F5F4F2;margin-top:10px">CURRIMUS</div>
+          </div>
+        </div>
+        <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:180px;line-height:1.4">Lockup variant — mark + full wordmark, for splash / marketing.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-size:12px;color:#6b6b6b;margin-top:56px;border-bottom:1px solid #2a2a2a;padding-bottom:14px">Complications &amp; widget — glanceable, one tap into the app</div>
+  <div style="display:flex;gap:56px;margin-top:28px;align-items:flex-start">
+
+    <!-- COMPLICATIONS -->
+    <div data-screen-label="Watch — Complications" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Circular complications · 1×</span>
+      <div style="display:flex;gap:28px;align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="width:96px;height:96px;border-radius:50%;background:#0A0A0A;border:1px solid #2f2f2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px">
+            <span style="font-size:26px;font-weight:700;color:#FF4D00;line-height:1">C</span>
+            <div style="display:flex;gap:2.5px;width:44px"><div style="flex:1;height:4px;border-radius:2px;background:#2e2e2e"></div><div style="flex:1;height:4px;border-radius:2px;background:#2e2e2e"></div><div style="flex:1;height:4px;border-radius:2px;background:#2e2e2e"></div><div style="flex:1;height:4px;border-radius:2px;background:#2e2e2e"></div><div style="flex:1;height:4px;border-radius:2px;background:#2e2e2e"></div></div>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:110px;line-height:1.4">Launcher — idle. Tap to open, straight to Start.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center" data-comment-anchor="f8a62e3a67-div">
+          <div style="width:96px;height:96px;border-radius:50%;background:#0A0A0A;border:1px solid #2f2f2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-variant-numeric:tabular-nums">
+            <span style="font-size:10px;letter-spacing:0.12em;color:#A8A8A8">WEEK</span>
+            <span style="font-size:24px;font-weight:600;color:#F5F4F2;line-height:1">32<span style="font-size:14px;color:#A8A8A8">km</span></span>
+            <div style="width:44px;height:4px;border-radius:2px;background:#2e2e2e;overflow:hidden"><div style="width:78%;height:100%;background:#FF4D00"></div></div>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:110px;line-height:1.4">Weekly km vs goal — quiet accountability.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center" data-comment-anchor="e26e55fcd8-div">
+          <div style="width:96px;height:96px;border-radius:50%;background:#0A0A0A;border:1px solid #2f2f2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-variant-numeric:tabular-nums">
+            <span style="font-size:10px;letter-spacing:0.12em;color:#A8A8A8">MONTH</span>
+            <span style="font-size:24px;font-weight:600;color:#F5F4F2;line-height:1">84<span style="font-size:14px;color:#A8A8A8">km</span></span>
+            <span style="font-size:11px;color:#A8A8A8">12 runs</span>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:110px;line-height:1.4">Month so far — no goal, just the number.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="width:96px;height:96px;border-radius:50%;background:#0A0A0A;border:1px solid #2f2f2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-variant-numeric:tabular-nums">
+            <span style="font-size:10px;letter-spacing:0.12em;color:#A8A8A8">LAST RUN</span>
+            <span style="font-size:24px;font-weight:600;color:#FF4D00;line-height:1">5:24</span>
+            <span style="font-size:11px;color:#A8A8A8">12.02 km</span>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:110px;line-height:1.4">Last run — pace &amp; distance.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="width:96px;height:96px;border-radius:50%;background:#0A0A0A;border:1px solid #2f2f2f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-variant-numeric:tabular-nums">
+            <span style="font-size:10px;letter-spacing:0.12em;color:#A8A8A8">WEEK</span>
+            <div style="display:flex;gap:2.5px;align-items:flex-end;height:22px;width:48px">
+              <div style="flex:1;height:14px;border-radius:1.5px;background:#2e2e2e"></div>
+              <div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div>
+              <div style="flex:1;height:19px;border-radius:1.5px;background:#2e2e2e"></div>
+              <div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div>
+              <div style="flex:1;height:11px;border-radius:1.5px;background:#2e2e2e"></div>
+              <div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div>
+              <div style="flex:1;height:22px;border-radius:1.5px;background:#FF4D00"></div>
+            </div>
+            <span style="font-size:11px;color:#A8A8A8">3 runs</span>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;text-align:center;max-width:110px;line-height:1.4">Week shape — the 7 days as bars.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WIDGET -->
+    <div data-screen-label="Watch — Smart Stack Widget" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Smart Stack widget · 1×</span>
+      <div style="display:flex;flex-direction:column;gap:22px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="width:342px;height:108px;border-radius:26px;background:#0A0A0A;border:1px solid #2f2f2f;padding:18px 22px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box" data-comment-anchor="ae0564d582-div">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-size:12px;letter-spacing:0.12em;color:#A8A8A8">THIS WEEK</span>
+              <span style="font-size:11px;font-weight:700;color:#FF4D00">C</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums">
+              <span style="font-size:30px;font-weight:600;letter-spacing:-0.02em;color:#F5F4F2;line-height:1">32.4</span>
+              <span style="font-size:14px;color:#A8A8A8">of 35 km</span>
+              <span style="font-size:13px;color:#6b6b6b;margin-left:auto">last 5:24 /km</span>
+            </div>
+            <div style="width:100%;height:5px;border-radius:2.5px;background:#2e2e2e;overflow:hidden"><div style="width:92%;height:100%;background:#FF4D00"></div></div>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;max-width:342px;line-height:1.4">Idle — week vs goal plus last pace. Tap opens Home.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="width:342px;height:108px;border-radius:26px;background:#0A0A0A;border:1px solid #2f2f2f;padding:18px 22px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box" data-comment-anchor="0820ddc82c-div">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <span style="font-size:12px;letter-spacing:0.12em;color:#A8A8A8">JULY</span>
+              <span style="font-size:11px;font-weight:700;color:#FF4D00">C</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;font-variant-numeric:tabular-nums">
+              <span style="font-size:30px;font-weight:600;letter-spacing:-0.02em;color:#F5F4F2;line-height:1">84.2</span>
+              <span style="font-size:14px;color:#A8A8A8">km · 12 runs</span>
+              <span style="font-size:13px;color:#6b6b6b;margin-left:auto">avg 5:26 /km</span>
+            </div>
+            <div style="display:flex;gap:2.5px;align-items:flex-end;height:16px">
+              <div style="flex:1;height:9px;border-radius:1.5px;background:#2e2e2e"></div><div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div><div style="flex:1;height:12px;border-radius:1.5px;background:#2e2e2e"></div><div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div><div style="flex:1;height:7px;border-radius:1.5px;background:#2e2e2e"></div><div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div><div style="flex:1;height:14px;border-radius:1.5px;background:#2e2e2e"></div><div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div><div style="flex:1;height:10px;border-radius:1.5px;background:#2e2e2e"></div><div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div><div style="flex:1;height:8px;border-radius:1.5px;background:#2e2e2e"></div><div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div><div style="flex:1;height:16px;border-radius:1.5px;background:#FF4D00"></div><div style="flex:1;height:3px;border-radius:1.5px;background:#1c1c1c"></div></div>
+          </div>
+          <span style="font-size:11px;color:#5a5a5a;max-width:342px;line-height:1.4">Month — no goal, just what you ran. Latest run in Signal.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

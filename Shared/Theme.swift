@@ -6,6 +6,8 @@ enum Theme {
     static let ink = Color(hex: 0xF5F4F2)
     static let signal = Color(hex: 0xFF4D00)
     static let muted = Color(hex: 0x6B6B6B)
+    /// Readability pass: metric labels are brighter than plain muted.
+    static let bright = Color(hex: 0xA8A8A8)
     static let faint = Color(hex: 0x5A5A5A)
     static let dim = Color(hex: 0x8F8F8F)
     static let track = Color(hex: 0x2E2E2E)
