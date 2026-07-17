@@ -2,9 +2,8 @@ import SwiftUI
 
 /// One screen, three ways to run. Start stays primary; Trail and Pacer share
 /// the quiet row. The system clock owns the top line (watchOS 10 rule) —
-/// the wordmark lives in content.
+/// the wordmark lives in content. Big, edge-to-edge tap targets.
 struct WatchHomeView: View {
-    var lastRun: Run?
     var onStart: () -> Void
     var onTrail: () -> Void
     var onPacer: () -> Void
@@ -12,54 +11,45 @@ struct WatchHomeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("CURRIMUS")
-                .font(.sg(13.5, weight: .bold))
-                .kerning(13.5 * 0.06)
-                .padding(.top, 8)
+                .font(.sg(20, weight: .bold))
+                .kerning(20 * 0.04)
+                .padding(.top, 4)
 
             Spacer(minLength: 0)
 
-            if let run = lastRun {
-                Text("LAST RUN").kicker(8, color: Theme.bright, tracking: 0.1)
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    StatInline(value: Format.km(run.distanceKm), unit: "km")
-                    StatInline(value: Format.pace(run.paceSecPerKm), unit: "/km")
-                }
-                .padding(.top, 4)
-            }
-
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 Button(action: onStart) {
                     Text("Start")
-                        .font(.sg(12, weight: .bold))
+                        .font(.sg(19, weight: .bold))
                         .foregroundStyle(Theme.bg)
-                        .frame(maxWidth: .infinity, minHeight: 39, maxHeight: 39)
+                        .frame(maxWidth: .infinity, minHeight: 62, maxHeight: 62)
                         .background(Theme.signal, in: Capsule())
                 }
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Button(action: onTrail) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 6) {
                             TriangleMark()
                                 .fill(Theme.signal)
-                                .frame(width: 7, height: 6)
-                            Text("Trail").font(.sg(9, weight: .semibold))
+                                .frame(width: 10, height: 9)
+                            Text("Trail").font(.sg(15, weight: .semibold))
                         }
-                        .frame(maxWidth: .infinity, minHeight: 29, maxHeight: 29)
+                        .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
                         .background(Theme.button, in: Capsule())
-                        .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.5))
+                        .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
                     }
                     Button(action: onPacer) {
                         Text("Pacer")
-                            .font(.sg(9, weight: .semibold))
-                            .frame(maxWidth: .infinity, minHeight: 29, maxHeight: 29)
+                            .font(.sg(15, weight: .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
                             .background(Theme.button, in: Capsule())
-                            .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.5))
+                            .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
                     }
                 }
             }
             .buttonStyle(.plain)
-            .padding(.top, 13)
+            .padding(.top, 14)
         }
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 23, trailing: 22))
+        .padding(EdgeInsets(top: 2, leading: 12, bottom: 12, trailing: 12))
     }
 }
 

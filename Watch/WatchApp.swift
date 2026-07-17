@@ -43,7 +43,6 @@ struct WatchRootView: View {
         switch session.phase {
         case .idle:
             WatchHomeView(
-                lastRun: store.lastRun,
                 onStart: { start(.quick) },
                 onTrail: { start(.trail) },
                 onPacer: {
