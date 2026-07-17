@@ -9,7 +9,6 @@ struct SummaryView: View {
         SummaryScroller(onDone: onDone) {
             VStack(alignment: .leading, spacing: 0) {
                 Text("RUN COMPLETE").kicker(8, color: Theme.bright, tracking: 0.1)
-                    .padding(.top, 8)
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(Format.km(run.distanceKm))
                         .font(.stat(32))
@@ -55,7 +54,6 @@ struct TrailSummaryView: View {
                     TriangleMark().fill(Theme.signal).frame(width: 8, height: 7)
                     Text("TRAIL COMPLETE").kicker(8, color: Theme.bright, tracking: 0.1)
                 }
-                .padding(.top, 8)
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -107,20 +105,20 @@ struct SummaryScroller<Content: View>: View {
             ScrollView {
                 VStack(spacing: 12) {
                     content
-                        .frame(height: proxy.size.height - 25)
-                        .padding(EdgeInsets(top: 2, leading: 22, bottom: 0, trailing: 22))
+                        .frame(height: proxy.size.height - 22)
+                        .padding(EdgeInsets(top: 10, leading: 20, bottom: 0, trailing: 20))
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     Button(action: onDone) {
                         Text("Done")
-                            .font(.sg(9.5, weight: .semibold))
-                            .frame(maxWidth: .infinity, minHeight: 31, maxHeight: 31)
+                            .font(.sg(12, weight: .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40)
                             .background(Theme.button, in: Capsule())
-                            .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.5))
+                            .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 22)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
                 }
             }
         }

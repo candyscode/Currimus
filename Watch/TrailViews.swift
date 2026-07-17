@@ -32,8 +32,6 @@ struct TrailRunPager: View {
 
     private var trailGlance: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 5) {
                     TriangleMark().fill(Theme.signal).frame(width: 8, height: 7)
@@ -45,7 +43,7 @@ struct TrailRunPager: View {
                     .kerning(-1.7)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Grid(alignment: .topLeading, horizontalSpacing: 18, verticalSpacing: 10) {
+                Grid(alignment: .topLeading, horizontalSpacing: 18, verticalSpacing: 12) {
                     GridRow {
                         BigStat(value: Format.km(session.distanceKm), label: "KM", size: 17)
                         BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", size: 17)
@@ -63,10 +61,10 @@ struct TrailRunPager: View {
                         )
                     }
                 }
-                .padding(.top, 11)
+                .padding(.top, 12)
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
 
             ZoneBar(zone: session.currentZone)
             HStack {
@@ -78,10 +76,10 @@ struct TrailRunPager: View {
             }
             .padding(.top, 4.5)
         }
-        // TabView pages don't stretch on their own — without this the
-        // spacers collapse and the glance sticks to the top.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 23, trailing: 22))
+        // TabView pages size to content — pin to full height so the layout
+        // stays top-anchored instead of collapsing.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
     }
 }
 
@@ -99,14 +97,13 @@ struct TrailElevationView: View {
                         .foregroundStyle(Theme.ink).fontWeight(.semibold))
                     .font(.stat(8.5, weight: .regular))
             }
-            .padding(.top, 8)
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 10)
 
             chart
-                .frame(height: 75)
+                .frame(height: 78)
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 10)
 
             if let route = session.plannedRoute {
                 HStack(alignment: .top, spacing: 16) {
@@ -138,8 +135,8 @@ struct TrailElevationView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 23, trailing: 22))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
     }
 
     @ViewBuilder

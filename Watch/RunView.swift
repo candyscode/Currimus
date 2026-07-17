@@ -27,8 +27,6 @@ struct RunView: View {
     private var quickRun: some View {
         let zone = session.currentZone
         return VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: 0) {
                 if zone >= 5 {
                     Text("MAX").kicker(7.5, color: Theme.signal, tracking: 0.14)
@@ -47,10 +45,10 @@ struct RunView: View {
                     BigStat(value: Format.km(session.distanceKm), label: "KM", size: 22)
                     BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", valueColor: Theme.signal, size: 22)
                 }
-                .padding(.top, 10)
+                .padding(.top, 12)
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
 
             ZoneBar(zone: zone)
             HStack {
@@ -62,7 +60,7 @@ struct RunView: View {
             }
             .padding(.top, 4.5)
         }
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 26, trailing: 22))
+        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
     }
 }
 
@@ -119,8 +117,6 @@ struct PausedView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: 0) {
                 Text("PAUSED").kicker(7.5, color: Theme.signal, tracking: 0.14)
                     .fontWeight(.semibold)
@@ -136,31 +132,31 @@ struct PausedView: View {
                 .padding(.top, 8)
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 12)
 
             // Design ratio: End 1 : Resume 1.4.
             GeometryReader { proxy in
-                let endWidth = (proxy.size.width - 7) / 2.4
-                HStack(spacing: 7) {
+                let endWidth = (proxy.size.width - 8) / 2.4
+                HStack(spacing: 8) {
                     Button(action: onEnd) {
                         Text("End")
-                            .font(.sg(11, weight: .semibold))
-                            .frame(width: endWidth, height: 40)
+                            .font(.sg(13, weight: .semibold))
+                            .frame(width: endWidth, height: 46)
                             .background(Theme.button, in: Capsule())
-                            .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.5))
+                            .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
                     }
                     Button(action: { session.resume() }) {
                         Text("Resume")
-                            .font(.sg(11, weight: .bold))
+                            .font(.sg(13, weight: .bold))
                             .foregroundStyle(Theme.bg)
-                            .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40)
+                            .frame(maxWidth: .infinity, minHeight: 46, maxHeight: 46)
                             .background(Theme.signal, in: Capsule())
                     }
                 }
                 .buttonStyle(.plain)
             }
-            .frame(height: 40)
+            .frame(height: 46)
         }
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 23, trailing: 22))
+        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
     }
 }

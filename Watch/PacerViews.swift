@@ -10,8 +10,6 @@ struct PacerPaceView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: 0) {
                 Text("PACER").kicker(8, color: Theme.bright, tracking: 0.1)
                     .padding(.bottom, 6)
@@ -36,20 +34,21 @@ struct PacerPaceView: View {
                     .padding(.top, 4)
             }
 
+            Spacer(minLength: 14)
+
             Button(action: {
                 session.pacerTarget = target
                 onNext()
             }) {
                 Text("Next")
-                    .font(.sg(12.5, weight: .bold))
+                    .font(.sg(14, weight: .bold))
                     .foregroundStyle(Theme.bg)
-                    .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40)
+                    .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48)
                     .background(Theme.signal, in: Capsule())
             }
             .buttonStyle(.plain)
-            .padding(.top, 12)
         }
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 23, trailing: 22))
+        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
         .focusable()
         .digitalCrownRotation(
             $crownValue, from: 210, through: 480, by: 5,
@@ -79,8 +78,6 @@ struct PacerDistanceView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: 0) {
                 Text("PACER · DISTANCE").kicker(8, color: Theme.bright, tracking: 0.1)
                     .padding(.bottom, 5)
@@ -122,20 +119,21 @@ struct PacerDistanceView: View {
                 .padding(.top, 3)
             }
 
+            Spacer(minLength: 14)
+
             Button(action: {
                 session.pacerDistanceKm = selection
                 onStart()
             }) {
                 Text("Start")
-                    .font(.sg(12.5, weight: .bold))
+                    .font(.sg(14, weight: .bold))
                     .foregroundStyle(Theme.bg)
-                    .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40)
+                    .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48)
                     .background(Theme.signal, in: Capsule())
             }
             .buttonStyle(.plain)
-            .padding(.top, 11)
         }
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 23, trailing: 22))
+        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
         .focusable()
         .digitalCrownRotation(
             $crownValue, from: 0, through: Double(options.count - 1), by: 1,
@@ -173,8 +171,6 @@ struct PacerRunView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-
             VStack(alignment: .leading, spacing: 0) {
                 Text(Format.pace(session.rollingPace))
                     .font(.stat(52))
@@ -202,10 +198,10 @@ struct PacerRunView: View {
                             .padding(.top, 2)
                     }
                 }
-                .padding(.top, 12)
+                .padding(.top, 14)
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 10)
 
             PacerGauge(delta: session.paceDelta, offTarget: state != .onPace)
             HStack {
@@ -225,7 +221,7 @@ struct PacerRunView: View {
             }
             .padding(.top, 3)
         }
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 26, trailing: 22))
+        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
     }
 
     @ViewBuilder
@@ -325,21 +321,20 @@ struct PacerSummaryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("PACER COMPLETE").kicker(8, color: Theme.bright, tracking: 0.1)
-                .padding(.top, 7)
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(Format.km(run.distanceKm, decimals: 1))
                     .font(.stat(26))
                     .kerning(-1)
                 Text("km").font(.sg(11)).foregroundStyle(Theme.bright)
             }
-            .padding(.top, 4)
+            .padding(.top, 5)
 
             HStack(alignment: .top, spacing: 14) {
                 BigStat(value: Format.clock(run.duration), label: "TIME", size: 12.5, labelSize: 7.5)
                 BigStat(value: Format.pace(run.paceSecPerKm), label: "AVG PACE", valueColor: Theme.signal, size: 12.5, labelSize: 7.5)
                 BigStat(value: Format.pace(target), label: "TARGET", size: 12.5, labelSize: 7.5)
             }
-            .padding(.top, 10)
+            .padding(.top, 12)
 
             if let sentence = deltaSentence {
                 (Text(sentence.lead)
@@ -348,20 +343,20 @@ struct PacerSummaryView: View {
                     .font(.stat(8, weight: .regular))
                     .foregroundStyle(Theme.ink)
                     .lineSpacing(2)
-                    .padding(.top, 8)
+                    .padding(.top, 10)
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 14)
 
             Button(action: onDone) {
                 Text("Done")
-                    .font(.sg(9.5, weight: .semibold))
-                    .frame(maxWidth: .infinity, minHeight: 31, maxHeight: 31)
+                    .font(.sg(12, weight: .semibold))
+                    .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40)
                     .background(Theme.button, in: Capsule())
-                    .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.5))
+                    .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
             }
             .buttonStyle(.plain)
         }
-        .padding(EdgeInsets(top: 2, leading: 22, bottom: 22, trailing: 22))
+        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
     }
 }
