@@ -1,0 +1,64 @@
+name: Currimus
+options:
+  deploymentTarget:
+    iOS: "18.0"
+    watchOS: "11.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    GENERATE_INFOPLIST_FILE: YES
+    CODE_SIGN_STYLE: Automatic
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: "1.0"
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+targets:
+  Currimus:
+    type: application
+    platform: iOS
+    sources:
+      - iOS
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app
+        INFOPLIST_KEY_CFBundleDisplayName: Currimus
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - target: CurrimusWatch
+
+  CurrimusWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - Watch
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.watchkitapp
+        INFOPLIST_KEY_CFBundleDisplayName: Currimus
+        INFOPLIST_KEY_WKApplication: YES
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.currimus.app
+    dependencies:
+      - target: CurrimusWatchWidgets
+
+  CurrimusWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - WatchWidgets
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.watchkitapp.widgets
+        INFOPLIST_KEY_CFBundleDisplayName: Currimus
+    info:
+      path: WatchWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Currimus
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

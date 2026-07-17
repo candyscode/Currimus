@@ -1,0 +1,645 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		07C5CEEF37DA02B813DDA920 /* CurrimusWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1242EDB609907C5835F455E1 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		18D1C40B1D4614C0E2361BEE /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
+		2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD88986EEA97DE1411F9263F /* Assets.xcassets */; };
+		36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
+		47CE54F292D14E7AD6062FA0 /* CurrimusWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4A93497D731DA4D66AE0ED2B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D336F171455FDB718A18387 /* HomeView.swift */; };
+		4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591C33FACB6B9A5D87A858BB /* RunSession.swift */; };
+		69210F511F8BCE4784B38B3C /* WatchHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3F1A48729A6BD0B5FC67DE /* WatchHomeView.swift */; };
+		6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F243526819E3203BC8EC68 /* PacerViews.swift */; };
+		6CEAFA77482B7929938A2DE1 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
+		7689C91808C6D09BB947694D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
+		76EC5DB3393322A4BE112ABE /* RunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1A0FA13132AED3D257C31B /* RunView.swift */; };
+		7F84D2D9C84563F992B44A82 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
+		8911108B369D36350F47DAE3 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
+		8B6414D964170CF94DE59755 /* CurrimusWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 367A4044965F5409D34C5401 /* CurrimusWidgets.swift */; };
+		8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */; };
+		921B31AB79D2FBF173A9B1C7 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
+		95057FCF29C634615715C893 /* ProgressTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2093769E1832392AF743C8EC /* ProgressTabView.swift */; };
+		9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
+		A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6CFB5CC07067218F2414163 /* Assets.xcassets */; };
+		A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315BB07B29A7E2F717AFC457 /* SettingsView.swift */; };
+		A50593043F2F4E43C5CF7D98 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2A0A8C374CC2DF912776427 /* LogView.swift */; };
+		A931CDE83BEE82558E4CE220 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
+		AB3F9B670C35A7DF7524C002 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
+		BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752748C2C4376164266AC885 /* CurrimusApp.swift */; };
+		D687CD7AA9868B8B982FE26E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
+		DB7737B26FB59423A7ADD549 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55F4CF421595E439C843775 /* WatchApp.swift */; };
+		DC5F3F32B0274951D97B1959 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
+		F7A7C35C3DF0D466D580D012 /* TrailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 093CE780E88BBF9DB0F19E1D /* TrailViews.swift */; };
+		FCB58A150AA3CAC5971F86BB /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B6CDF2A60DB7B8C7B810C1A /* SummaryView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		42A482A0A333CDA690B0EC1F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 85A309E6DD9ADF05A2431D53 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DC4EB7F9010256AAE8FB5ED9;
+			remoteInfo = CurrimusWatch;
+		};
+		557200D83CABA5F4BC7BCD89 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 85A309E6DD9ADF05A2431D53 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CA2C3F29B285D1403A3E2C2F;
+			remoteInfo = CurrimusWatchWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		98D07A93A169ED472025263A /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				07C5CEEF37DA02B813DDA920 /* CurrimusWatchWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DC6362DD336133777038B1C4 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				47CE54F292D14E7AD6062FA0 /* CurrimusWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		093CE780E88BBF9DB0F19E1D /* TrailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailViews.swift; sourceTree = "<group>"; };
+		13D61C620B2F41C1B8C0B5B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2093769E1832392AF743C8EC /* ProgressTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressTabView.swift; sourceTree = "<group>"; };
+		315BB07B29A7E2F717AFC457 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		367A4044965F5409D34C5401 /* CurrimusWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusWidgets.swift; sourceTree = "<group>"; };
+		3E3F1A48729A6BD0B5FC67DE /* WatchHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHomeView.swift; sourceTree = "<group>"; };
+		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
+		65B6A62A4E92A05F4D05C253 /* RunStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStore.swift; sourceTree = "<group>"; };
+		70F243526819E3203BC8EC68 /* PacerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacerViews.swift; sourceTree = "<group>"; };
+		742835D6D8B7C6204427A3C0 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
+		752748C2C4376164266AC885 /* CurrimusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusApp.swift; sourceTree = "<group>"; };
+		9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		9B6CDF2A60DB7B8C7B810C1A /* SummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryView.swift; sourceTree = "<group>"; };
+		9D336F171455FDB718A18387 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		9F1A0FA13132AED3D257C31B /* RunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunView.swift; sourceTree = "<group>"; };
+		A55F4CF421595E439C843775 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
+		A6CFB5CC07067218F2414163 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CurrimusWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunDetailView.swift; sourceTree = "<group>"; };
+		CF3515C4DD609F7375C055AA /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurrimusWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D2A0A8C374CC2DF912776427 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
+		DD88986EEA97DE1411F9263F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E47BCF44600BC83F472F7AE0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0955E5EB3EAD559243A19707 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				CF3515C4DD609F7375C055AA /* Models.swift */,
+				65B6A62A4E92A05F4D05C253 /* RunStore.swift */,
+				9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */,
+				742835D6D8B7C6204427A3C0 /* SharedComponents.swift */,
+				E47BCF44600BC83F472F7AE0 /* Theme.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		4204BD4FA7344B17146FAF3A = {
+			isa = PBXGroup;
+			children = (
+				5C62DF926D8D3642EBDDEFC5 /* iOS */,
+				0955E5EB3EAD559243A19707 /* Shared */,
+				64931F4C1BECC8078974DD90 /* Watch */,
+				4520411446D3456FD8A99652 /* WatchWidgets */,
+				F82FB9F92023F70ED54D274A /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4520411446D3456FD8A99652 /* WatchWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				367A4044965F5409D34C5401 /* CurrimusWidgets.swift */,
+				13D61C620B2F41C1B8C0B5B2 /* Info.plist */,
+			);
+			path = WatchWidgets;
+			sourceTree = "<group>";
+		};
+		5C62DF926D8D3642EBDDEFC5 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				A6CFB5CC07067218F2414163 /* Assets.xcassets */,
+				752748C2C4376164266AC885 /* CurrimusApp.swift */,
+				9D336F171455FDB718A18387 /* HomeView.swift */,
+				D2A0A8C374CC2DF912776427 /* LogView.swift */,
+				2093769E1832392AF743C8EC /* ProgressTabView.swift */,
+				CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */,
+				315BB07B29A7E2F717AFC457 /* SettingsView.swift */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		64931F4C1BECC8078974DD90 /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				DD88986EEA97DE1411F9263F /* Assets.xcassets */,
+				70F243526819E3203BC8EC68 /* PacerViews.swift */,
+				591C33FACB6B9A5D87A858BB /* RunSession.swift */,
+				9F1A0FA13132AED3D257C31B /* RunView.swift */,
+				9B6CDF2A60DB7B8C7B810C1A /* SummaryView.swift */,
+				093CE780E88BBF9DB0F19E1D /* TrailViews.swift */,
+				A55F4CF421595E439C843775 /* WatchApp.swift */,
+				3E3F1A48729A6BD0B5FC67DE /* WatchHomeView.swift */,
+			);
+			path = Watch;
+			sourceTree = "<group>";
+		};
+		F82FB9F92023F70ED54D274A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4A2F7A36A31D6342D15638DA /* Currimus.app */,
+				D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */,
+				BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CA2C3F29B285D1403A3E2C2F /* CurrimusWatchWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D9FB804E6FF2935E57FE6DDE /* Build configuration list for PBXNativeTarget "CurrimusWatchWidgets" */;
+			buildPhases = (
+				D59DACB25A846B610CC7F199 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CurrimusWatchWidgets;
+			packageProductDependencies = (
+			);
+			productName = CurrimusWatchWidgets;
+			productReference = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		DC4EB7F9010256AAE8FB5ED9 /* CurrimusWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3162EFDD8C588172797E0891 /* Build configuration list for PBXNativeTarget "CurrimusWatch" */;
+			buildPhases = (
+				A1AB3C2C7FC4BEAD6346A220 /* Sources */,
+				43287DCB2C920087AE173AD8 /* Resources */,
+				98D07A93A169ED472025263A /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CB5B03D0F6B12B5B9C9AEFAB /* PBXTargetDependency */,
+			);
+			name = CurrimusWatch;
+			packageProductDependencies = (
+			);
+			productName = CurrimusWatch;
+			productReference = D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F7FBDF38598250E3CB3341E4 /* Currimus */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0AB2BD96EA596CA9289F6549 /* Build configuration list for PBXNativeTarget "Currimus" */;
+			buildPhases = (
+				F6064E11590F41709F025C0B /* Sources */,
+				58076073C051795B79DFBB82 /* Resources */,
+				DC6362DD336133777038B1C4 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E30E49A57181C5F01B21F73E /* PBXTargetDependency */,
+			);
+			name = Currimus;
+			packageProductDependencies = (
+			);
+			productName = Currimus;
+			productReference = 4A2F7A36A31D6342D15638DA /* Currimus.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		85A309E6DD9ADF05A2431D53 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					CA2C3F29B285D1403A3E2C2F = {
+						ProvisioningStyle = Automatic;
+					};
+					DC4EB7F9010256AAE8FB5ED9 = {
+						ProvisioningStyle = Automatic;
+					};
+					F7FBDF38598250E3CB3341E4 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 0B7D527365D20B45BDBFDA23 /* Build configuration list for PBXProject "Currimus" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 4204BD4FA7344B17146FAF3A;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = F82FB9F92023F70ED54D274A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F7FBDF38598250E3CB3341E4 /* Currimus */,
+				DC4EB7F9010256AAE8FB5ED9 /* CurrimusWatch */,
+				CA2C3F29B285D1403A3E2C2F /* CurrimusWatchWidgets */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		43287DCB2C920087AE173AD8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		58076073C051795B79DFBB82 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1AB3C2C7FC4BEAD6346A220 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				921B31AB79D2FBF173A9B1C7 /* Models.swift in Sources */,
+				6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */,
+				59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */,
+				1242EDB609907C5835F455E1 /* RunStore.swift in Sources */,
+				76EC5DB3393322A4BE112ABE /* RunView.swift in Sources */,
+				6CEAFA77482B7929938A2DE1 /* SampleData.swift in Sources */,
+				DC5F3F32B0274951D97B1959 /* SharedComponents.swift in Sources */,
+				FCB58A150AA3CAC5971F86BB /* SummaryView.swift in Sources */,
+				AB3F9B670C35A7DF7524C002 /* Theme.swift in Sources */,
+				F7A7C35C3DF0D466D580D012 /* TrailViews.swift in Sources */,
+				DB7737B26FB59423A7ADD549 /* WatchApp.swift in Sources */,
+				69210F511F8BCE4784B38B3C /* WatchHomeView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D59DACB25A846B610CC7F199 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8B6414D964170CF94DE59755 /* CurrimusWidgets.swift in Sources */,
+				D687CD7AA9868B8B982FE26E /* Models.swift in Sources */,
+				4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */,
+				36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */,
+				7F84D2D9C84563F992B44A82 /* SharedComponents.swift in Sources */,
+				8911108B369D36350F47DAE3 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F6064E11590F41709F025C0B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */,
+				4A93497D731DA4D66AE0ED2B /* HomeView.swift in Sources */,
+				A50593043F2F4E43C5CF7D98 /* LogView.swift in Sources */,
+				7689C91808C6D09BB947694D /* Models.swift in Sources */,
+				95057FCF29C634615715C893 /* ProgressTabView.swift in Sources */,
+				8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */,
+				BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */,
+				9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */,
+				A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */,
+				A931CDE83BEE82558E4CE220 /* SharedComponents.swift in Sources */,
+				18D1C40B1D4614C0E2361BEE /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CB5B03D0F6B12B5B9C9AEFAB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CA2C3F29B285D1403A3E2C2F /* CurrimusWatchWidgets */;
+			targetProxy = 557200D83CABA5F4BC7BCD89 /* PBXContainerItemProxy */;
+		};
+		E30E49A57181C5F01B21F73E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DC4EB7F9010256AAE8FB5ED9 /* CurrimusWatch */;
+			targetProxy = 42A482A0A333CDA690B0EC1F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0822F72006BA40DAB2084557 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		23F3F4A8D13F8DB5CF8DC3DE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B87FFFFE9A7FACC660E19BEC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.currimus.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		C197D9797C2BDBF313F0F447 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = WatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app.watchkitapp.widgets;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		C9C5D918A88C0BDB026FB100 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.currimus.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Release;
+		};
+		E632EC5D3CDDDA87EDB4F2E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = WatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app.watchkitapp.widgets;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+			};
+			name = Debug;
+		};
+		EB4761C40A688CAFDD5ED7AC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		F4A3DCF25E2247E4C7B7FBDF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0AB2BD96EA596CA9289F6549 /* Build configuration list for PBXNativeTarget "Currimus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23F3F4A8D13F8DB5CF8DC3DE /* Debug */,
+				EB4761C40A688CAFDD5ED7AC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		0B7D527365D20B45BDBFDA23 /* Build configuration list for PBXProject "Currimus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0822F72006BA40DAB2084557 /* Debug */,
+				F4A3DCF25E2247E4C7B7FBDF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3162EFDD8C588172797E0891 /* Build configuration list for PBXNativeTarget "CurrimusWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B87FFFFE9A7FACC660E19BEC /* Debug */,
+				C9C5D918A88C0BDB026FB100 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D9FB804E6FF2935E57FE6DDE /* Build configuration list for PBXNativeTarget "CurrimusWatchWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E632EC5D3CDDDA87EDB4F2E9 /* Debug */,
+				C197D9797C2BDBF313F0F447 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 85A309E6DD9ADF05A2431D53 /* Project object */;
+}
