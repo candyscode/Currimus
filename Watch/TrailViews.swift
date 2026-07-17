@@ -28,16 +28,19 @@ struct TrailRunPager: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: session.kilometerAlert)
+        // One caption for the pager, driven by the visible page.
+        .topBarCaption {
+            if page == 0 {
+                TopBarCaption(text: "TRAIL", mark: true)
+            } else {
+                TopBarCaption(text: "ELEVATION · \(Int(session.altitudeMeters)) m", mark: true)
+            }
+        }
     }
 
     private var trailGlance: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 5) {
-                    TriangleMark().fill(Theme.signal).frame(width: 8, height: 7)
-                    Text("TRAIL").kicker(8, color: Theme.bright, tracking: 0.1)
-                }
-                .padding(.bottom, 6)
                 Text(Format.clock(session.elapsed))
                     .font(.stat(38))
                     .kerning(-1.7)
@@ -79,7 +82,7 @@ struct TrailRunPager: View {
         // TabView pages size to content — pin to full height so the layout
         // stays top-anchored instead of collapsing.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
     }
 }
 
@@ -90,20 +93,10 @@ struct TrailElevationView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 5) {
-                TriangleMark().fill(Theme.signal).frame(width: 8, height: 7)
-                (Text("ELEVATION · ").foregroundStyle(Theme.bright)
-                    + Text("\(Int(session.altitudeMeters)) m")
-                        .foregroundStyle(Theme.ink).fontWeight(.semibold))
-                    .font(.stat(8.5, weight: .regular))
-            }
-
-            Spacer(minLength: 10)
-
             chart
-                .frame(height: 78)
+                .frame(height: 96)
 
-            Spacer(minLength: 10)
+            Spacer(minLength: 14)
 
             if let route = session.plannedRoute {
                 HStack(alignment: .top, spacing: 16) {
@@ -136,7 +129,7 @@ struct TrailElevationView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 8, leading: 20, bottom: 16, trailing: 20))
     }
 
     @ViewBuilder

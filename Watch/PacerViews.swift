@@ -11,8 +11,6 @@ struct PacerPaceView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("PACER").kicker(8, color: Theme.bright, tracking: 0.1)
-                    .padding(.bottom, 6)
                 Text(Format.pace(target + 5))
                     .font(.stat(12))
                     .foregroundStyle(Theme.ghost)
@@ -48,7 +46,8 @@ struct PacerPaceView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
+        .topBarCaption { TopBarCaption(text: "PACER") }
         .focusable()
         .digitalCrownRotation(
             $crownValue, from: 210, through: 480, by: 5,
@@ -79,9 +78,6 @@ struct PacerDistanceView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("PACER · DISTANCE").kicker(8, color: Theme.bright, tracking: 0.1)
-                    .padding(.bottom, 5)
-
                 ghostRow(index - 2)
                 ghostRow(index - 1)
                 Group {
@@ -133,7 +129,8 @@ struct PacerDistanceView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
+        .topBarCaption { TopBarCaption(text: "PACER · DISTANCE") }
         .focusable()
         .digitalCrownRotation(
             $crownValue, from: 0, through: Double(options.count - 1), by: 1,
@@ -320,14 +317,12 @@ struct PacerSummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("PACER COMPLETE").kicker(8, color: Theme.bright, tracking: 0.1)
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(Format.km(run.distanceKm, decimals: 1))
                     .font(.stat(26))
                     .kerning(-1)
                 Text("km").font(.sg(11)).foregroundStyle(Theme.bright)
             }
-            .padding(.top, 5)
 
             HStack(alignment: .top, spacing: 14) {
                 BigStat(value: Format.clock(run.duration), label: "TIME", size: 12.5, labelSize: 7.5)
@@ -357,6 +352,7 @@ struct PacerSummaryView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
+        .topBarCaption { TopBarCaption(text: "PACER COMPLETE") }
     }
 }

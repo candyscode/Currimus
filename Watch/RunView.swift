@@ -28,14 +28,6 @@ struct RunView: View {
         let zone = session.currentZone
         return VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                if zone >= 5 {
-                    Text("MAX").kicker(7.5, color: Theme.signal, tracking: 0.14)
-                        .fontWeight(.semibold)
-                        .padding(.bottom, 6)
-                } else {
-                    Text("RUN").kicker(8, color: Theme.bright, tracking: 0.1)
-                        .padding(.bottom, 6)
-                }
                 Text(Format.clock(session.elapsed))
                     .font(.stat(52))
                     .kerning(-2.3)
@@ -60,7 +52,14 @@ struct RunView: View {
             }
             .padding(.top, 4.5)
         }
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
+        .topBarCaption {
+            if zone >= 5 {
+                TopBarCaption(text: "MAX", color: Theme.signal)
+            } else {
+                TopBarCaption(text: "RUN")
+            }
+        }
     }
 }
 
@@ -118,9 +117,6 @@ struct PausedView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("PAUSED").kicker(7.5, color: Theme.signal, tracking: 0.14)
-                    .fontWeight(.semibold)
-                    .padding(.bottom, 6)
                 Text(Format.clock(session.elapsed))
                     .font(.stat(42))
                     .kerning(-1.9)
@@ -157,6 +153,7 @@ struct PausedView: View {
             }
             .frame(height: 46)
         }
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
+        .topBarCaption { TopBarCaption(text: "PAUSED", color: Theme.signal) }
     }
 }

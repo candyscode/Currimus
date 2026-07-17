@@ -1,0 +1,33 @@
+import SwiftUI
+
+/// A small caption pinned to the top-left, on the system clock's baseline —
+/// the sanctioned watchOS slot beside the time (the same slot the Workout app
+/// uses for its activity glyph). Deterministic across all watch sizes.
+struct TopBarCaption: View {
+    var text: String
+    var color: Color = Theme.bright
+    /// Leading trail triangle mark.
+    var mark: Bool = false
+    var size: CGFloat = 12
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if mark {
+                TriangleMark()
+                    .fill(Theme.signal)
+                    .frame(width: size * 0.6, height: size * 0.52)
+            }
+            Text(text)
+                .font(.sg(size, weight: .medium))
+                .kerning(size * 0.08)
+                .foregroundStyle(color)
+        }
+    }
+}
+
+extension View {
+    /// Places a caption beside the system clock (top-left).
+    func topBarCaption<Caption: View>(@ViewBuilder _ caption: () -> Caption) -> some View {
+        toolbar { ToolbarItem(placement: .topBarLeading) { caption() } }
+    }
+}

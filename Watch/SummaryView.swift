@@ -6,16 +6,14 @@ struct SummaryView: View {
     var onDone: () -> Void
 
     var body: some View {
-        SummaryScroller(onDone: onDone) {
+        SummaryScroller(onDone: onDone, caption: TopBarCaption(text: "RUN COMPLETE")) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("RUN COMPLETE").kicker(8, color: Theme.bright, tracking: 0.1)
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(Format.km(run.distanceKm))
                         .font(.stat(32))
                         .kerning(-1.3)
                     Text("km").font(.sg(12)).foregroundStyle(Theme.muted)
                 }
-                .padding(.top, 5)
 
                 HStack(alignment: .top, spacing: 14) {
                     BigStat(value: Format.clock(run.duration), label: "TIME", size: 13)
@@ -48,13 +46,8 @@ struct TrailSummaryView: View {
     var onDone: () -> Void
 
     var body: some View {
-        SummaryScroller(onDone: onDone) {
+        SummaryScroller(onDone: onDone, caption: TopBarCaption(text: "TRAIL COMPLETE", mark: true)) {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 5) {
-                    TriangleMark().fill(Theme.signal).frame(width: 8, height: 7)
-                    Text("TRAIL COMPLETE").kicker(8, color: Theme.bright, tracking: 0.1)
-                }
-
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(Format.km(run.distanceKm, decimals: 1))
@@ -95,9 +88,10 @@ struct TrailSummaryView: View {
 }
 
 /// One full-height summary page with the Done button below the fold —
-/// the crown (or a swipe) scrolls down to it.
+/// the crown (or a swipe) scrolls down to it. The caption rides the top bar.
 struct SummaryScroller<Content: View>: View {
     var onDone: () -> Void
+    var caption: TopBarCaption
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -106,7 +100,7 @@ struct SummaryScroller<Content: View>: View {
                 VStack(spacing: 12) {
                     content
                         .frame(height: proxy.size.height - 22)
-                        .padding(EdgeInsets(top: 10, leading: 20, bottom: 0, trailing: 20))
+                        .padding(EdgeInsets(top: 6, leading: 20, bottom: 0, trailing: 20))
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     Button(action: onDone) {
@@ -122,5 +116,6 @@ struct SummaryScroller<Content: View>: View {
                 }
             }
         }
+        .topBarCaption { caption }
     }
 }

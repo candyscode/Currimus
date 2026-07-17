@@ -28,12 +28,12 @@ struct WatchRootView: View {
                 Theme.bg.ignoresSafeArea()
                 // The top safe area stays — the system clock owns that line
                 // (watchOS 10 rule); sides and bottom are full-bleed like the
-                // design frames.
+                // design frames. Screen captions ride the top bar beside the
+                // clock via .topBarCaption.
                 content
                     .ignoresSafeArea(edges: [.horizontal, .bottom])
             }
             .foregroundStyle(Theme.ink)
-            .toolbar(.hidden, for: .navigationBar)
         }
         .onAppear(perform: handleLaunchRoute)
     }
