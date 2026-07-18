@@ -28,12 +28,15 @@ struct TrailRunPager: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: session.kilometerAlert)
-        // One caption for the pager, driven by the visible page.
+        // One caption for the pager, driven by the visible page. Hidden while
+        // the kilometer alert owns the canvas.
         .topBarCaption {
-            if page == 0 {
-                TopBarCaption(text: "TRAIL", mark: true)
-            } else {
-                TopBarCaption(text: "ELEVATION · \(Int(session.altitudeMeters)) m", mark: true)
+            if session.kilometerAlert == nil {
+                if page == 0 {
+                    TopBarCaption(text: "TRAIL", mark: true)
+                } else {
+                    TopBarCaption(text: "ELEVATION · \(Int(session.altitudeMeters)) m", mark: true)
+                }
             }
         }
     }
@@ -46,10 +49,15 @@ struct TrailRunPager: View {
                     .kerning(-1.7)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                Grid(alignment: .topLeading, horizontalSpacing: 18, verticalSpacing: 12) {
+                    .contentTransition(.numericText())
+                    .animation(.linear(duration: 0.25), value: session.elapsed)
+                // The design's 1fr 1fr grid — both columns share the width.
+                Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 12) {
                     GridRow {
                         BigStat(value: Format.km(session.distanceKm), label: "KM", size: 17)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", size: 17)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     GridRow {
                         VStack(alignment: .leading, spacing: 2.5) {
@@ -57,11 +65,13 @@ struct TrailRunPager: View {
                             Text("M CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
                                 .lineLimit(1).fixedSize()
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(
                             value: "\(Int(session.climbRatePerHour))",
                             label: "M/H · LAST 10 MIN",
                             valueColor: Theme.signal, size: 17
                         )
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 .padding(.top, 12)

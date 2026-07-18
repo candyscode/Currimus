@@ -1,5 +1,18 @@
 import SwiftUI
 
+/// Evenly distributed stat columns — the design's `1fr 1fr 1fr` grid.
+/// Each column claims an equal share, leading-aligned.
+struct StatRow<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Group { content }
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}
+
 /// Inline hard-edged triangle + number, e.g. "▲ 642".
 struct ClimbStat: View {
     var value: String

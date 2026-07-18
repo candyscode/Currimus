@@ -39,14 +39,14 @@ struct PacerPaceView: View {
                 onNext()
             }) {
                 Text("Next")
-                    .font(.sg(14, weight: .bold))
+                    .font(.sg(15, weight: .bold))
                     .foregroundStyle(Theme.bg)
-                    .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48)
+                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
                     .background(Theme.signal, in: Capsule())
             }
             .buttonStyle(.plain)
         }
-        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PACER") }
         .focusable()
         .digitalCrownRotation(
@@ -122,14 +122,14 @@ struct PacerDistanceView: View {
                 onStart()
             }) {
                 Text("Start")
-                    .font(.sg(14, weight: .bold))
+                    .font(.sg(15, weight: .bold))
                     .foregroundStyle(Theme.bg)
-                    .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48)
+                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
                     .background(Theme.signal, in: Capsule())
             }
             .buttonStyle(.plain)
         }
-        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
+        .padding(EdgeInsets(top: 12, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PACER · DISTANCE") }
         .focusable()
         .digitalCrownRotation(
@@ -176,7 +176,7 @@ struct PacerRunView: View {
                 statusLine
                     .padding(.top, 4)
 
-                HStack(alignment: .top, spacing: 18) {
+                StatRow {
                     BigStat(value: Format.clock(session.elapsed), label: "TIME", size: 13)
                     BigStat(
                         value: Format.km(session.distanceKm),
@@ -269,30 +269,30 @@ struct PacerGauge: View {
             let width = proxy.size.width
             // ±30 s maps to full deflection.
             let fraction = max(-1, min(1, delta / 30))
-            let x = width / 2 + fraction * (width / 2 - 7)
+            let x = width / 2 + fraction * (width / 2 - 9)
 
             ZStack(alignment: .topLeading) {
                 Capsule().fill(Theme.track)
-                    .frame(width: width, height: 2)
-                    .offset(y: 5)
+                    .frame(width: width, height: 3)
+                    .offset(y: 6)
                 if offTarget {
                     Rectangle()
                         .fill(Theme.signal.opacity(0.4))
-                        .frame(width: abs(x - width / 2), height: 2)
-                        .offset(x: min(x, width / 2), y: 5)
+                        .frame(width: abs(x - width / 2), height: 3)
+                        .offset(x: min(x, width / 2), y: 6)
                 }
                 Rectangle()
                     .fill(Theme.muted)
-                    .frame(width: 1, height: 8)
-                    .offset(x: width / 2 - 0.5, y: 2)
+                    .frame(width: 1.5, height: 11)
+                    .offset(x: width / 2 - 0.75, y: 2)
                 Circle()
                     .fill(offTarget ? Theme.signal : Theme.ink)
-                    .frame(width: 7, height: 7)
-                    .offset(x: x - 3.5, y: 2.5)
+                    .frame(width: 9, height: 9)
+                    .offset(x: x - 4.5, y: 3)
             }
             .animation(.easeInOut(duration: 0.6), value: fraction)
         }
-        .frame(height: 12)
+        .frame(height: 15)
     }
 }
 
@@ -316,43 +316,34 @@ struct PacerSummaryView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text(Format.km(run.distanceKm, decimals: 1))
-                    .font(.stat(26))
-                    .kerning(-1)
-                Text("km").font(.sg(11)).foregroundStyle(Theme.bright)
-            }
+        SummaryScroller(onDone: onDone, caption: TopBarCaption(text: "PACER COMPLETE")) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    Text(Format.km(run.distanceKm, decimals: 1))
+                        .font(.stat(30))
+                        .kerning(-1.2)
+                    Text("km").font(.sg(12)).foregroundStyle(Theme.bright)
+                }
 
-            HStack(alignment: .top, spacing: 14) {
-                BigStat(value: Format.clock(run.duration), label: "TIME", size: 12.5, labelSize: 7.5)
-                BigStat(value: Format.pace(run.paceSecPerKm), label: "AVG PACE", valueColor: Theme.signal, size: 12.5, labelSize: 7.5)
-                BigStat(value: Format.pace(target), label: "TARGET", size: 12.5, labelSize: 7.5)
-            }
-            .padding(.top, 12)
+                StatRow {
+                    BigStat(value: Format.clock(run.duration), label: "TIME", size: 13)
+                    BigStat(value: Format.pace(run.paceSecPerKm), label: "AVG PACE", valueColor: Theme.signal, size: 13)
+                    BigStat(value: Format.pace(target), label: "TARGET", size: 13)
+                }
+                .padding(.top, 13)
 
-            if let sentence = deltaSentence {
-                (Text(sentence.lead)
-                    + Text(sentence.delta).foregroundStyle(Theme.signal).fontWeight(.semibold)
-                    + Text(sentence.trail))
-                    .font(.stat(8, weight: .regular))
-                    .foregroundStyle(Theme.ink)
-                    .lineSpacing(2)
-                    .padding(.top, 10)
-            }
+                if let sentence = deltaSentence {
+                    (Text(sentence.lead)
+                        + Text(sentence.delta).foregroundStyle(Theme.signal).fontWeight(.semibold)
+                        + Text(sentence.trail))
+                        .font(.stat(8.5, weight: .regular))
+                        .foregroundStyle(Theme.ink)
+                        .lineSpacing(2)
+                        .padding(.top, 12)
+                }
 
-            Spacer(minLength: 14)
-
-            Button(action: onDone) {
-                Text("Done")
-                    .font(.sg(12, weight: .semibold))
-                    .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40)
-                    .background(Theme.button, in: Capsule())
-                    .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
         }
-        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
-        .topBarCaption { TopBarCaption(text: "PACER COMPLETE") }
     }
 }

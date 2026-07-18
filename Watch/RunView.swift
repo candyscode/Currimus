@@ -33,6 +33,8 @@ struct RunView: View {
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
+                    .animation(.linear(duration: 0.25), value: session.elapsed)
                 HStack(alignment: .top, spacing: 20) {
                     BigStat(value: Format.km(session.distanceKm), label: "KM", size: 22)
                     BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", valueColor: Theme.signal, size: 22)
@@ -54,10 +56,13 @@ struct RunView: View {
         }
         .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption {
-            if zone >= 5 {
-                TopBarCaption(text: "MAX", color: Theme.signal)
-            } else {
-                TopBarCaption(text: "RUN")
+            // The kilometer alert owns the whole canvas — no caption beside it.
+            if session.kilometerAlert == nil {
+                if zone >= 5 {
+                    TopBarCaption(text: "MAX", color: Theme.signal)
+                } else {
+                    TopBarCaption(text: "RUN")
+                }
             }
         }
     }
@@ -136,22 +141,22 @@ struct PausedView: View {
                 HStack(spacing: 8) {
                     Button(action: onEnd) {
                         Text("End")
-                            .font(.sg(13, weight: .semibold))
-                            .frame(width: endWidth, height: 46)
+                            .font(.sg(15, weight: .semibold))
+                            .frame(width: endWidth, height: 50)
                             .background(Theme.button, in: Capsule())
                             .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
                     }
                     Button(action: { session.resume() }) {
                         Text("Resume")
-                            .font(.sg(13, weight: .bold))
+                            .font(.sg(15, weight: .bold))
                             .foregroundStyle(Theme.bg)
-                            .frame(maxWidth: .infinity, minHeight: 46, maxHeight: 46)
+                            .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
                             .background(Theme.signal, in: Capsule())
                     }
                 }
                 .buttonStyle(.plain)
             }
-            .frame(height: 46)
+            .frame(height: 50)
         }
         .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PAUSED", color: Theme.signal) }

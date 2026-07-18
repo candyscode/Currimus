@@ -15,7 +15,7 @@ struct SummaryView: View {
                     Text("km").font(.sg(12)).foregroundStyle(Theme.muted)
                 }
 
-                HStack(alignment: .top, spacing: 14) {
+                StatRow {
                     BigStat(value: Format.clock(run.duration), label: "TIME", size: 13)
                     BigStat(value: Format.pace(run.paceSecPerKm), label: "PACE", valueColor: Theme.signal, size: 13)
                     BigStat(value: run.avgHR > 0 ? "\(run.avgHR)" : "–", label: "AVG HR", size: 13)
@@ -59,7 +59,7 @@ struct TrailSummaryView: View {
                 }
                 .padding(.top, 5)
 
-                HStack(alignment: .top, spacing: 14) {
+                StatRow {
                     BigStat(value: Format.clock(run.duration), label: "TIME", size: 13)
                     BigStat(value: Format.pace(run.paceSecPerKm), label: "PACE", size: 13)
                     BigStat(
@@ -105,8 +105,8 @@ struct SummaryScroller<Content: View>: View {
 
                     Button(action: onDone) {
                         Text("Done")
-                            .font(.sg(12, weight: .semibold))
-                            .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40)
+                            .font(.sg(13, weight: .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44)
                             .background(Theme.button, in: Capsule())
                             .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
                     }
