@@ -123,6 +123,13 @@ final class RunSession: NSObject, ObservableObject {
         requestAuthorizationThenPrepare()
     }
 
+    /// Tap-to-skip: jump straight from the countdown into the run.
+    func skipCountdown() {
+        guard case .countdown = phase else { return }
+        phase = .running
+        haptic(.start)
+    }
+
     func pause() {
         guard phase == .running else { return }
         phase = .paused

@@ -341,8 +341,6 @@ struct PacerSummaryView: View {
                         .lineSpacing(2)
                         .padding(.top, 12)
                 }
-
-                Spacer(minLength: 0)
             }
         }
     }

@@ -60,7 +60,7 @@ struct WatchRootView: View {
                 start(.pacer)
             }
         case .countdown(let n):
-            CountdownView(count: n)
+            CountdownView(count: n) { session.skipCountdown() }
         case .running:
             if session.type == .trail {
                 TrailRunPager(session: session)

@@ -22,9 +22,8 @@ struct SummaryView: View {
                 }
                 .padding(.top, 13)
 
-                Spacer(minLength: 0)
-
                 ZoneHeatStrip(zoneSeconds: run.zoneSeconds, height: 7)
+                    .padding(.top, 18)
                 HStack {
                     Text("TIME IN ZONES").kicker(8, color: Theme.bright, tracking: 0.1)
                     Spacer()
@@ -69,11 +68,10 @@ struct TrailSummaryView: View {
                 }
                 .padding(.top, 13)
 
-                Spacer(minLength: 0)
-
                 LineChart(points: profile)
                     .stroke(Theme.signal, style: .init(lineWidth: 1.25, lineCap: .round, lineJoin: .round))
                     .frame(height: 27)
+                    .padding(.top, 18)
                 HStack {
                     Text("PROFILE").kicker(8, color: Theme.bright, tracking: 0.1)
                     Spacer()
@@ -87,34 +85,30 @@ struct TrailSummaryView: View {
     }
 }
 
-/// One full-height summary page with the Done button below the fold —
-/// the crown (or a swipe) scrolls down to it. The caption rides the top bar.
+/// Summary page — content flows naturally, Done follows right after
+/// (crown scrolls when it doesn't fit). The caption rides the top bar.
 struct SummaryScroller<Content: View>: View {
     var onDone: () -> Void
     var caption: TopBarCaption
     @ViewBuilder var content: Content
 
     var body: some View {
-        GeometryReader { proxy in
-            ScrollView {
-                VStack(spacing: 12) {
-                    content
-                        .frame(height: proxy.size.height - 22)
-                        .padding(EdgeInsets(top: 6, leading: 20, bottom: 0, trailing: 20))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                content
 
-                    Button(action: onDone) {
-                        Text("Done")
-                            .font(.sg(13, weight: .semibold))
-                            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44)
-                            .background(Theme.button, in: Capsule())
-                            .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
+                Button(action: onDone) {
+                    Text("Done")
+                        .font(.sg(13, weight: .semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44)
+                        .background(Theme.button, in: Capsule())
+                        .overlay(Capsule().stroke(Theme.buttonBorder, lineWidth: 0.75))
                 }
+                .buttonStyle(.plain)
+                .padding(.top, 18)
             }
+            .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .topBarCaption { caption }
     }

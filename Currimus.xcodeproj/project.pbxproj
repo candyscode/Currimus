@@ -117,7 +117,7 @@
 		367A4044965F5409D34C5401 /* CurrimusWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusWidgets.swift; sourceTree = "<group>"; };
 		3E3F1A48729A6BD0B5FC67DE /* WatchHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHomeView.swift; sourceTree = "<group>"; };
 		485542A4B0D645CFCC648C51 /* TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBar.swift; sourceTree = "<group>"; };
-		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
 		65B6A62A4E92A05F4D05C253 /* RunStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStore.swift; sourceTree = "<group>"; };
 		7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontLoader.swift; sourceTree = "<group>"; };
@@ -530,6 +530,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -549,6 +550,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Watch/CurrimusWatch.entitlements;
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads heart rate and distance to show live pace and zones during your run.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
@@ -566,6 +568,7 @@
 		C197D9797C2BDBF313F0F447 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = WatchWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -585,6 +588,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Watch/CurrimusWatch.entitlements;
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads heart rate and distance to show live pace and zones during your run.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
@@ -602,6 +606,7 @@
 		E632EC5D3CDDDA87EDB4F2E9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = WatchWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -621,6 +626,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;

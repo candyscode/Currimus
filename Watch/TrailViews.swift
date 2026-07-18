@@ -7,20 +7,32 @@ struct TrailRunPager: View {
         .contains(UserDefaults.standard.string(forKey: "screen") ?? "") ? 1 : 0
 
     var body: some View {
-        // TabView pages size to fit their content, which would collapse the
-        // spacers early in a run — pin every page to the full screen height.
+        // Hand-rolled pager instead of TabView: TabView reserves ~20pt at the
+        // bottom even with the index hidden, which pushed the zone bar out of
+        // line with the plain run screen. A plain HStack + drag keeps both
+        // modes layout-identical.
         GeometryReader { proxy in
-            TabView(selection: $page) {
+            HStack(spacing: 0) {
                 trailGlance
                     .frame(width: proxy.size.width, height: proxy.size.height)
-                    .tag(0)
                 TrailElevationView(session: session)
                     .frame(width: proxy.size.width, height: proxy.size.height)
-                    .tag(1)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
+            .offset(x: page == 0 ? 0 : -proxy.size.width)
+            .animation(.snappy(duration: 0.3), value: page)
         }
+        .clipped()
         .contentShape(Rectangle())
+        .highPriorityGesture(
+            DragGesture(minimumDistance: 15)
+                .onEnded { value in
+                    if value.translation.width < -25 {
+                        page = 1
+                    } else if value.translation.width > 25 {
+                        page = 0
+                    }
+                }
+        )
         .onTapGesture { session.pause() }
         .overlay {
             if let alert = session.kilometerAlert {
@@ -43,41 +55,42 @@ struct TrailRunPager: View {
 
     private var trailGlance: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(Format.clock(session.elapsed))
-                    .font(.stat(38))
-                    .kerning(-1.7)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .contentTransition(.numericText())
-                    .animation(.linear(duration: 0.25), value: session.elapsed)
-                // The design's 1fr 1fr grid — both columns share the width.
-                Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 12) {
-                    GridRow {
-                        BigStat(value: Format.km(session.distanceKm), label: "KM", size: 17)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", size: 17)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    GridRow {
-                        VStack(alignment: .leading, spacing: 2.5) {
-                            ClimbStat(value: "\(Int(session.climbMeters))", size: 17)
-                            Text("M CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
-                                .lineLimit(1).fixedSize()
-                        }
+            Text(Format.clock(session.elapsed))
+                .font(.stat(38))
+                .kerning(-1.7)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .contentTransition(.numericText())
+                .animation(.linear(duration: 0.25), value: session.elapsed)
+
+            Spacer(minLength: 10)
+
+            // The design's 1fr 1fr grid — both columns share the width;
+            // the block floats centered between timer and zone bar.
+            Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 12) {
+                GridRow {
+                    BigStat(value: Format.km(session.distanceKm), label: "KM", size: 17)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        BigStat(
-                            value: "\(Int(session.climbRatePerHour))",
-                            label: "M/H · LAST 10 MIN",
-                            valueColor: Theme.signal, size: 17
-                        )
+                    BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", size: 17)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    }
                 }
-                .padding(.top, 12)
+                GridRow {
+                    VStack(alignment: .leading, spacing: 2.5) {
+                        ClimbStat(value: "\(Int(session.climbMeters))", size: 17)
+                        Text("M CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
+                            .lineLimit(1).fixedSize()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    BigStat(
+                        value: "\(Int(session.climbRatePerHour))",
+                        label: "M/H · LAST 10 MIN",
+                        valueColor: Theme.signal, size: 17
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 10)
 
             ZoneBar(zone: session.currentZone)
             HStack {

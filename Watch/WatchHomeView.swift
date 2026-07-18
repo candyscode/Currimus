@@ -71,6 +71,8 @@ struct StatInline: View {
 
 struct CountdownView: View {
     var count: Int
+    /// Tap anywhere to skip straight into the run.
+    var onSkip: () -> Void = {}
 
     var body: some View {
         VStack(spacing: 4) {
@@ -83,5 +85,7 @@ struct CountdownView: View {
                 .animation(.snappy, value: count)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onSkip)
     }
 }
