@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		045548523ED1B5719BF4BF25 /* RunScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81AF2D50A1295819CF2F665 /* RunScaffold.swift */; };
 		046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		07C5CEEF37DA02B813DDA920 /* CurrimusWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0AF2B49944699FB95A35180D /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
@@ -166,7 +167,8 @@
 		9F1A0FA13132AED3D257C31B /* RunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunView.swift; sourceTree = "<group>"; };
 		A55F4CF421595E439C843775 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
 		A6CFB5CC07067218F2414163 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A7798A4301C39FF833B1EBEF /* CurrimusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CurrimusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A7798A4301C39FF833B1EBEF /* CurrimusTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CurrimusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B81AF2D50A1295819CF2F665 /* RunScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunScaffold.swift; sourceTree = "<group>"; };
 		BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CurrimusWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB4A80647FF8D963E8F48FFA /* CurrimusWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatch.entitlements; sourceTree = "<group>"; };
 		C4AE7EB972483756B1B4BD09 /* RunExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunExport.swift; sourceTree = "<group>"; };
@@ -259,6 +261,7 @@
 				DD88986EEA97DE1411F9263F /* Assets.xcassets */,
 				BB4A80647FF8D963E8F48FFA /* CurrimusWatch.entitlements */,
 				70F243526819E3203BC8EC68 /* PacerViews.swift */,
+				B81AF2D50A1295819CF2F665 /* RunScaffold.swift */,
 				591C33FACB6B9A5D87A858BB /* RunSession.swift */,
 				9F1A0FA13132AED3D257C31B /* RunView.swift */,
 				9B6CDF2A60DB7B8C7B810C1A /* SummaryView.swift */,
@@ -467,6 +470,7 @@
 				6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */,
 				46B6E33C7D7A8381DA916D62 /* RunAnalytics.swift in Sources */,
 				1036F046D58875E97CB5C429 /* RunExport.swift in Sources */,
+				045548523ED1B5719BF4BF25 /* RunScaffold.swift in Sources */,
 				59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */,
 				1242EDB609907C5835F455E1 /* RunStore.swift in Sources */,
 				29202736108BECE52768BC98 /* RunSync.swift in Sources */,
@@ -655,7 +659,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -831,7 +834,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

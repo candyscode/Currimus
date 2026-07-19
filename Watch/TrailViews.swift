@@ -54,58 +54,45 @@ struct TrailRunPager: View {
     }
 
     private var trailGlance: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(Format.clock(session.elapsed))
-                .font(.stat(38))
-                .kerning(-1.7)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .contentTransition(.numericText())
-                .animation(.linear(duration: 0.25), value: session.elapsed)
+        RunScaffold {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(Format.clock(session.elapsed))
+                    .font(.stat(38))
+                    .kerning(-1.7)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .contentTransition(.numericText())
+                    .animation(.linear(duration: 0.25), value: session.elapsed)
 
-            Spacer(minLength: 10)
-
-            // The design's 1fr 1fr grid — both columns share the width;
-            // the block floats centered between timer and zone bar.
-            Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 12) {
-                GridRow {
-                    BigStat(value: Format.km(session.distanceKm), label: "KM", size: 17)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", size: 17)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                GridRow {
-                    VStack(alignment: .leading, spacing: 2.5) {
-                        ClimbStat(value: "\(Int(session.climbMeters))", size: 17)
-                        Text("M CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
-                            .lineLimit(1).fixedSize()
+                // The design's 1fr 1fr grid — grouped right under the timer so
+                // the free space pools above the zone bar.
+                Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 12) {
+                    GridRow {
+                        BigStat(value: Format.km(session.distanceKm), label: "KM", size: 17)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", size: 17)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    BigStat(
-                        value: "\(Int(session.climbRatePerHour))",
-                        label: "M/H · LAST 10 MIN",
-                        valueColor: Theme.signal, size: 17
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    GridRow {
+                        VStack(alignment: .leading, spacing: 2.5) {
+                            ClimbStat(value: "\(Int(session.climbMeters))", size: 17)
+                            Text("M CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
+                                .lineLimit(1).fixedSize()
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        BigStat(
+                            value: "\(Int(session.climbRatePerHour))",
+                            label: "M/H · LAST 10 MIN",
+                            valueColor: Theme.signal, size: 17
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
+                .padding(.top, 12)
             }
-
-            Spacer(minLength: 10)
-
-            ZoneBar(zone: session.currentZone)
-            HStack {
-                Text("ZONE").kicker(8, color: Theme.bright, tracking: 0.1)
-                Spacer()
-                Text(session.currentZone > 0 ? "\(session.currentZone)" : "–")
-                    .font(.stat(7.5))
-                    .foregroundStyle(session.currentZone >= 3 ? Theme.signal : Theme.ink)
-            }
-            .padding(.top, 4.5)
+        } footer: {
+            ZoneFooter(zone: session.currentZone)
         }
-        // TabView pages size to content — pin to full height so the layout
-        // stays top-anchored instead of collapsing.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
     }
 }
 

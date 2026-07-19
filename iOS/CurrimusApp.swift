@@ -23,6 +23,7 @@ struct RootView: View {
     @EnvironmentObject private var store: RunStore
     @State private var tab: AppTab = RootView.initialTab
     @State private var forceEmpty = UserDefaults.standard.bool(forKey: "empty")
+    @State private var icons = TabIconSet()
 
     var body: some View {
         Group {
@@ -30,16 +31,23 @@ struct RootView: View {
                 FirstLaunchView()
             } else {
                 // Native iOS 26 TabView → real Liquid Glass tab bar with the
-                // press-hold-and-drag-between-tabs interaction.
+                // press-hold-and-drag-between-tabs interaction, using the
+                // exact design icons as template images.
                 TabView(selection: $tab) {
-                    Tab("Home", systemImage: "house.fill", value: AppTab.home) {
+                    Tab(value: AppTab.home) {
                         TabRoot(initial: Self.debugHomePath(store)) { HomeView() }
+                    } label: {
+                        Label { Text("Home") } icon: { icons.home }
                     }
-                    Tab("Log", systemImage: "list.bullet", value: AppTab.log) {
+                    Tab(value: AppTab.log) {
                         TabRoot { LogView() }
+                    } label: {
+                        Label { Text("Log") } icon: { icons.log }
                     }
-                    Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) {
+                    Tab(value: AppTab.progress) {
                         TabRoot { ProgressScreen() }
+                    } label: {
+                        Label { Text("Progress") } icon: { icons.progress }
                     }
                 }
                 .tint(Theme.signal)

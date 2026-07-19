@@ -22,11 +22,28 @@ struct RunView: View {
         .animation(.easeInOut(duration: 0.25), value: session.kilometerAlert)
         .contentShape(Rectangle())
         .onTapGesture { session.pause() }
+        // Caption owned by the container so both Run and Pacer show it — a
+        // consistent nav bar keeps their heroes at the same height. Hidden
+        // while the kilometer alert owns the whole canvas.
+        .topBarCaption {
+            if session.kilometerAlert == nil {
+                switch session.type {
+                case .pacer:
+                    TopBarCaption(text: "PACER")
+                default:
+                    if session.currentZone >= 5 {
+                        TopBarCaption(text: "MAX", color: Theme.signal)
+                    } else {
+                        TopBarCaption(text: "RUN")
+                    }
+                }
+            }
+        }
     }
 
     private var quickRun: some View {
         let zone = session.currentZone
-        return VStack(alignment: .leading, spacing: 0) {
+        return RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
                 Text(Format.clock(session.elapsed))
                     .font(.stat(52))
@@ -41,29 +58,8 @@ struct RunView: View {
                 }
                 .padding(.top, 12)
             }
-
-            Spacer(minLength: 8)
-
-            ZoneBar(zone: zone)
-            HStack {
-                Text("ZONE").kicker(8, color: Theme.bright, tracking: 0.1)
-                Spacer()
-                Text(zone > 0 ? "\(zone)" : "–")
-                    .font(.stat(7.5))
-                    .foregroundStyle(zone >= 3 ? Theme.signal : Theme.ink)
-            }
-            .padding(.top, 4.5)
-        }
-        .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
-        .topBarCaption {
-            // The kilometer alert owns the whole canvas — no caption beside it.
-            if session.kilometerAlert == nil {
-                if zone >= 5 {
-                    TopBarCaption(text: "MAX", color: Theme.signal)
-                } else {
-                    TopBarCaption(text: "RUN")
-                }
-            }
+        } footer: {
+            ZoneFooter(zone: zone)
         }
     }
 }

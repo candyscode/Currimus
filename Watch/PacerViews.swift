@@ -167,11 +167,13 @@ struct PacerRunView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
                 Text(Format.pace(session.rollingPace))
                     .font(.stat(52))
                     .kerning(-2.3)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)   // match Run/Trail hero metrics exactly
                     .foregroundStyle(state == .fast ? Theme.signal : Theme.ink)
                 statusLine
                     .padding(.top, 4)
@@ -197,28 +199,27 @@ struct PacerRunView: View {
                 }
                 .padding(.top, 14)
             }
-
-            Spacer(minLength: 10)
-
-            PacerGauge(delta: session.paceDelta, offTarget: state != .onPace)
-            HStack {
-                Text("FAST")
-                    .kicker(state == .fast ? 7 : 8,
-                            color: state == .fast ? Theme.signal : Theme.bright,
-                            tracking: state == .fast ? 0.12 : 0.1)
-                    .fontWeight(state == .fast ? .semibold : .regular)
-                Spacer()
-                footerCenter
-                Spacer()
-                Text("SLOW")
-                    .kicker(state == .slow ? 7 : 8,
-                            color: state == .slow ? Theme.signal : Theme.bright,
-                            tracking: state == .slow ? 0.12 : 0.1)
-                    .fontWeight(state == .slow ? .semibold : .regular)
+        } footer: {
+            VStack(alignment: .leading, spacing: 0) {
+                PacerGauge(delta: session.paceDelta, offTarget: state != .onPace)
+                HStack {
+                    Text("FAST")
+                        .kicker(state == .fast ? 7 : 8,
+                                color: state == .fast ? Theme.signal : Theme.bright,
+                                tracking: state == .fast ? 0.12 : 0.1)
+                        .fontWeight(state == .fast ? .semibold : .regular)
+                    Spacer()
+                    footerCenter
+                    Spacer()
+                    Text("SLOW")
+                        .kicker(state == .slow ? 7 : 8,
+                                color: state == .slow ? Theme.signal : Theme.bright,
+                                tracking: state == .slow ? 0.12 : 0.1)
+                        .fontWeight(state == .slow ? .semibold : .regular)
+                }
+                .padding(.top, 3)
             }
-            .padding(.top, 3)
         }
-        .padding(EdgeInsets(top: 10, leading: 20, bottom: 16, trailing: 20))
     }
 
     @ViewBuilder

@@ -14,6 +14,66 @@ enum Route: Hashable {
 
 enum AppTab: Hashable { case home, log, progress }
 
+// MARK: - Exact design tab-bar glyphs → template images for the native bar
+
+/// The design's stroked SVG icons (24-unit viewbox), rendered to template
+/// images so the native Liquid Glass tab bar tints them per selection state.
+@MainActor struct TabIconSet {
+    let home: Image
+    let log: Image
+    let progress: Image
+
+    init() {
+        home = Self.render(HomeGlyph())
+        log = Self.render(LogGlyph())
+        progress = Self.render(ProgressGlyph())
+    }
+
+    private static func render(_ shape: some Shape) -> Image {
+        let renderer = ImageRenderer(content:
+            shape.stroke(Color.black, style: .init(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                .frame(width: 27, height: 27)
+        )
+        renderer.scale = 3
+        let ui = renderer.uiImage ?? UIImage()
+        return Image(uiImage: ui.withRenderingMode(.alwaysTemplate))
+    }
+}
+
+private func pt(_ x: Double, _ y: Double, _ r: CGRect) -> CGPoint {
+    CGPoint(x: r.minX + x / 24 * r.width, y: r.minY + y / 24 * r.height)
+}
+
+struct HomeGlyph: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: pt(3.5, 10.5, r)); p.addLine(to: pt(12, 3.5, r)); p.addLine(to: pt(20.5, 10.5, r))
+        p.move(to: pt(5.5, 9.5, r)); p.addLine(to: pt(5.5, 20.5, r))
+        p.addLine(to: pt(18.5, 20.5, r)); p.addLine(to: pt(18.5, 9.5, r))
+        return p
+    }
+}
+
+struct LogGlyph: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: pt(4, 6.5, r)); p.addLine(to: pt(20, 6.5, r))
+        p.move(to: pt(4, 12, r)); p.addLine(to: pt(20, 12, r))
+        p.move(to: pt(4, 17.5, r)); p.addLine(to: pt(13, 17.5, r))
+        return p
+    }
+}
+
+struct ProgressGlyph: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: pt(3.5, 17.5, r)); p.addLine(to: pt(9, 11.5, r))
+        p.addLine(to: pt(13, 15.5, r)); p.addLine(to: pt(20.5, 7.5, r))
+        p.move(to: pt(15.5, 7.5, r)); p.addLine(to: pt(20.5, 7.5, r)); p.addLine(to: pt(20.5, 12.5, r))
+        return p
+    }
+}
+
 /// Imperative push for buttons that aren't NavigationLinks (settings, cards).
 struct PushRouteKey: EnvironmentKey { static let defaultValue: (Route) -> Void = { _ in } }
 extension EnvironmentValues {
