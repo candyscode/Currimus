@@ -56,11 +56,13 @@ struct TrailRunPager: View {
     private var trailGlance: some View {
         RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
+                // Same 52 pt hero box as Run/Pacer (shrinks to fit long trail
+                // times), so the value sits at an identical height on all three.
                 Text(Format.clock(session.elapsed))
-                    .font(.stat(38))
-                    .kerning(-1.7)
+                    .font(.stat(52))
+                    .kerning(-2.3)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.6)
                     .contentTransition(.numericText())
                     .animation(.linear(duration: 0.25), value: session.elapsed)
 
