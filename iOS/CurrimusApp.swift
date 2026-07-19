@@ -2,12 +2,11 @@ import SwiftUI
 
 @main
 struct CurrimusApp: App {
-    @StateObject private var store = RunStore(
-        seeded: !UserDefaults.standard.bool(forKey: "empty")
-    )
+    @StateObject private var store = RunStore()
 
     init() {
         FontLoader.registerAll()
+        RunSync.shared.activate()
     }
 
     var body: some Scene {
@@ -15,137 +14,98 @@ struct CurrimusApp: App {
             RootView()
                 .environmentObject(store)
                 .preferredColorScheme(.dark)
+                .tint(Theme.signal)
         }
     }
 }
 
-enum Tab: String, CaseIterable {
-    case home = "Home"
-    case log = "Log"
-    case progress = "Progress"
-}
-
-/// The iPhone only reads — running happens on the watch.
 struct RootView: View {
     @EnvironmentObject private var store: RunStore
     @State private var tab: Tab = .home
-    @State private var homePath = NavigationPath()
-    @State private var logPath = NavigationPath()
-    @State private var progressPath = NavigationPath()
+    @State private var path: [Route] = []
+    @State private var forceEmpty = UserDefaults.standard.bool(forKey: "empty")
 
     var body: some View {
-        ZStack {
-            Theme.bg.ignoresSafeArea()
-            if store.runs.isEmpty {
+        Group {
+            if store.runs.isEmpty || forceEmpty {
                 FirstLaunchView()
             } else {
-                VStack(spacing: 0) {
-                    Group {
-                        switch tab {
-                        case .home: NavigationStack(path: $homePath) { HomeView() }
-                        case .log: NavigationStack(path: $logPath) { LogView() }
-                        case .progress: NavigationStack(path: $progressPath) { ProgressTabView() }
-                        }
-                    }
-                    .frame(maxHeight: .infinity)
-
-                    tabBar
-                }
+                tabbed
             }
         }
         .foregroundStyle(Theme.ink)
         .onAppear(perform: handleLaunchRoute)
     }
 
-    /// Demo / screenshot routing: `-tab log`, `-push detail|settings|records|pacer`.
+    /// DEBUG screenshot / demo routing (release builds ignore all of this).
     private func handleLaunchRoute() {
-        if let name = UserDefaults.standard.string(forKey: "tab"),
-           let target = Tab(rawValue: name.capitalized) {
-            tab = target
+        #if DEBUG
+        let d = UserDefaults.standard
+        switch d.string(forKey: "tab") {
+        case "log": tab = .log
+        case "progress": tab = .progress
+        default: break
         }
-        switch UserDefaults.standard.string(forKey: "push") {
-        case "detail":
-            if let run = store.lastRun {
-                tab = .log
-                logPath.append(run)
+        switch d.string(forKey: "home") {
+        case "norace": store.race = nil
+        case "raceday":
+            if var race = store.race {
+                race.date = Calendar.current.startOfDay(for: .now); store.race = race
             }
-        case "settings":
-            tab = .home
-            homePath.append("settings")
-        case "pacer":
-            tab = .home
-            homePath.append("settings")
-            homePath.append("pacer")
-        case "records":
-            tab = .progress
-            progressPath.append("records")
-        default:
-            break
+        default: break
         }
+        guard path.isEmpty else { return }
+        switch d.string(forKey: "push") {
+        case "race": path = [.race]
+        case "raceSetup": path = [.raceSetup]
+        case "records": path = [.records]
+        case "settings": path = [.settings]
+        case "pacerDefaults": path = [.pacerDefaults]
+        case "hrZones": path = [.hrZones]
+        case "detailRoad": if let r = store.runs.first(where: { !$0.isTrail }) { path = [.runDetail(r)] }
+        case "detailTrail": if let r = store.runs.first(where: { $0.isTrail }) { path = [.runDetail(r)] }
+        default: break
+        }
+        #endif
     }
 
-    private var tabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(Tab.allCases, id: \.self) { item in
-                Button {
-                    tab = item
-                } label: {
-                    Text(item.rawValue)
-                        .font(.sg(13, weight: tab == item ? .semibold : .regular))
-                        .foregroundStyle(tab == item ? Theme.ink : Theme.muted)
-                        .frame(maxWidth: .infinity)
+    private var tabbed: some View {
+        NavigationStack(path: $path) {
+            root
+                .navigationDestination(for: Route.self) { route in
+                    destination(route)
+                        .environment(\.pushRoute) { path.append($0) }
                 }
-                .buttonStyle(.plain)
+        }
+        .environment(\.pushRoute) { path.append($0) }
+        .overlay(alignment: .bottom) {
+            if path.isEmpty {
+                GlassTabBar(tab: $tab)
+                    .padding(.bottom, 4)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .padding(.top, 16)
-        .padding(.bottom, 6)
-        .background(alignment: .top) {
-            Theme.hairline.frame(height: 1)
-        }
-        .background(Theme.bg)
     }
-}
 
-/// First launch — runs start on your watch.
-struct FirstLaunchView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("CURRIMUS")
-                .font(.sg(19, weight: .bold))
-                .kerning(1.2)
-
-            Spacer()
-
-            VStack(alignment: .leading, spacing: 18) {
-                (Text("Time.\nDistance.\nZone.\n")
-                    + Text("Pace.").foregroundStyle(Theme.signal))
-                    .font(.sg(40, weight: .semibold))
-                    .lineSpacing(4)
-                    .kerning(-0.8)
-                Text("The four things that matter, on your wrist. Everything else stays out of the way.")
-                    .font(.sg(15))
-                    .foregroundStyle(Theme.muted)
-                    .lineSpacing(4)
-                    .frame(maxWidth: 300, alignment: .leading)
-            }
-
-            Spacer()
-
-            VStack(spacing: 6) {
-                Text("Runs start on your watch")
-                    .font(.sg(14, weight: .semibold))
-                Text("Open Currimus on your Apple Watch — your first run will appear here.")
-                    .font(.sg(12))
-                    .foregroundStyle(Theme.muted)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
-            .padding(.horizontal, 22)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.buttonBorder, lineWidth: 1))
+    @ViewBuilder
+    private var root: some View {
+        switch tab {
+        case .home: HomeView()
+        case .log: LogView()
+        case .progress: ProgressScreen()
         }
-        .padding(28)
+    }
+
+    @ViewBuilder
+    private func destination(_ route: Route) -> some View {
+        switch route {
+        case .race: RaceView()
+        case .raceSetup: RaceSetupView()
+        case .runDetail(let run): RunDetailView(run: run)
+        case .records: RecordsView()
+        case .settings: SettingsScreen()
+        case .pacerDefaults: PacerDefaultsView()
+        case .hrZones: HRZonesView()
+        }
     }
 }

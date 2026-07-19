@@ -46,7 +46,9 @@ struct WatchRootView: View {
                 onStart: { start(.quick) },
                 onTrail: { start(.trail) },
                 onPacer: {
+                    // Preload the iPhone's pacer defaults (pace + distance).
                     session.pacerTarget = store.pacerTargetSecPerKm
+                    session.pacerDistanceKm = store.pacerDefaultDistanceKm
                     session.setupPacer()
                 }
             )
@@ -96,6 +98,7 @@ struct WatchRootView: View {
     private func start(_ type: RunType) {
         session.zones = store.zones
         session.kilometerAlertEnabled = store.kilometerAlert
+        session.countdownEnabled = store.countdownEnabled
         session.begin(type)
     }
 

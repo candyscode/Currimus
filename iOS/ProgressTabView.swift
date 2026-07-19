@@ -1,215 +1,165 @@
 import SwiftUI
 
-struct ProgressTabView: View {
+struct ProgressScreen: View {
     @EnvironmentObject private var store: RunStore
-
-    private let trend = SampleData.paceTrend
+    @Environment(\.pushRoute) private var push
+    @State private var view: RunStore.LogFilter = .road   // .road or .trail
 
     var body: some View {
-        ScrollView {
+        TabScreen(topInset: 8) { EmptyView() } content: {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Progress")
-                    .font(.sg(26, weight: .semibold))
-                    .kerning(-0.5)
+                Text("Progress").font(.sg(38, weight: .semibold)).kerning(-0.8).padding(.top, 6)
 
-                Text("AVG PACE · LAST 12 WEEKS").kicker(12).padding(.top, 26)
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(Format.pace(trend.last ?? 0))
-                        .font(.stat(36))
-                        .kerning(-1)
-                    Text("/km").font(.sg(13)).foregroundStyle(Theme.muted)
-                    Spacer()
-                    Text("−\(Format.pace((trend.first ?? 0) - (trend.last ?? 0))) since April")
-                        .font(.stat(13))
-                        .foregroundStyle(Theme.signal)
-                }
-                .padding(.top, 8)
+                SegmentChips(options: [(.road, "Road"), (.trail, "Trail")], selection: $view)
+                    .frame(maxWidth: 180, alignment: .leading)
+                    .padding(.top, 18)
 
-                PaceTrendChart(paces: trend)
-                    .padding(.top, 16)
-                HStack {
-                    ForEach(["Apr", "May", "Jun", "Jul"], id: \.self) { month in
-                        Text(month).font(.sg(11)).foregroundStyle(Theme.muted)
-                        if month != "Jul" { Spacer() }
-                    }
-                }
-                .padding(.top, 4)
-
-                Divider().overlay(Theme.hairline).padding(.vertical, 26)
-
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Heart rate at 5:30 pace").font(.sg(14))
-                        Text("Same effort, less work")
-                            .font(.sg(11.5))
-                            .foregroundStyle(Theme.muted)
-                    }
-                    Spacer()
-                    (Text("143 ").foregroundStyle(Theme.ink)
-                        + Text("−5").font(.stat(13)).foregroundStyle(Theme.signal))
-                        .font(.stat(22))
-                }
-
-                Divider().overlay(Theme.hairline).padding(.vertical, 22)
-
-                Text("MONTHLY KM").kicker(12).padding(.bottom, 14)
-                MonthlyBars(totals: store.monthlyTotals(count: 6))
-
-                Divider().overlay(Theme.hairline).padding(.top, 24)
-
-                NavigationLink(value: "records") {
-                    HStack {
-                        Text("Records").font(.sg(14))
-                        Spacer()
-                        Text("\(store.records.first?.value ?? "") 5k ›")
-                            .font(.stat(14, weight: .regular))
-                            .foregroundStyle(Theme.muted)
-                    }
-                    .padding(.top, 16)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(28)
-        }
-        .background(Theme.bg)
-        .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(for: String.self) { destination in
-            if destination == "records" { RecordsView() }
-        }
-    }
-}
-
-struct PaceTrendChart: View {
-    /// Sec/km, oldest first. Slower is drawn lower.
-    var paces: [TimeInterval]
-
-    var body: some View {
-        let top = (paces.max() ?? 1) + 8
-        let bottom = (paces.min() ?? 0) - 8
-        let points = paces.enumerated().map { index, pace in
-            CGPoint(
-                x: Double(index) / Double(max(paces.count - 1, 1)),
-                y: (pace - bottom) / (top - bottom)
-            )
-        }
-        return ZStack(alignment: .topLeading) {
-            VStack {
-                ForEach(0..<3, id: \.self) { line in
-                    Theme.hairline.frame(height: 1)
-                    if line < 2 { Spacer() }
-                }
-            }
-            LineChart(points: points)
-                .stroke(Theme.signal, style: .init(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-            GeometryReader { proxy in
-                if let last = points.last {
-                    Circle().fill(Theme.signal).frame(width: 9, height: 9)
-                        .position(
-                            x: last.x * proxy.size.width,
-                            y: (1 - last.y) * proxy.size.height
-                        )
-                }
-                Text(Format.pace(top)).font(.stat(9, weight: .regular)).foregroundStyle(Theme.faint)
-                    .position(x: 14, y: 6)
-                Text(Format.pace(bottom)).font(.stat(9, weight: .regular)).foregroundStyle(Theme.faint)
-                    .position(x: 14, y: proxy.size.height - 6)
-            }
-        }
-        .frame(height: 100)
-    }
-}
-
-struct MonthlyBars: View {
-    var totals: [(month: Date, km: Double)]
-
-    var body: some View {
-        let maxKm = max(totals.map(\.km).max() ?? 1, 1)
-        HStack(alignment: .bottom, spacing: 10) {
-            ForEach(Array(totals.enumerated()), id: \.offset) { index, item in
-                let isCurrent = index == totals.count - 1
-                VStack(spacing: 7) {
-                    Text("\(Int(item.km))")
-                        .font(.stat(11, weight: isCurrent ? .semibold : .regular))
-                        .foregroundStyle(isCurrent ? Theme.signal : Theme.muted)
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(isCurrent ? Theme.signal : Theme.track)
-                        .frame(height: max(item.km / maxKm * 66, 4))
-                    Text(item.month.formatted(.dateTime.month(.abbreviated)))
-                        .font(.sg(11, weight: isCurrent ? .semibold : .regular))
-                        .foregroundStyle(isCurrent ? Theme.ink : Theme.muted)
-                }
-                .frame(maxWidth: .infinity)
+                if view == .road { roadContent } else { trailContent }
             }
         }
     }
-}
 
-struct RecordsView: View {
-    @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var store: RunStore
+    // MARK: - Road
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                BackLink(title: "Progress") { dismiss() }
-
-                Text("Records")
-                    .font(.sg(26, weight: .semibold))
-                    .kerning(-0.5)
-                    .padding(.top, 16)
-
-                if let newest = store.records.first(where: \.isNew) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack(alignment: .firstTextBaseline) {
-                            Text("NEW · \(newest.label.uppercased())").kicker(12, color: Theme.signal)
-                            Spacer()
-                            Text(newest.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
-                                .font(.sg(12))
-                                .foregroundStyle(Theme.muted)
-                        }
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Text(newest.value).font(.stat(40)).kerning(-1)
-                            Text(newest.delta ?? "")
-                                .font(.stat(13, weight: .regular))
-                                .foregroundStyle(Theme.muted)
-                        }
-                    }
-                    .padding(.vertical, 20)
-                    .padding(.horizontal, 22)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.cardBorder, lineWidth: 1))
-                    .padding(.top, 22)
-                }
-
-                VStack(spacing: 0) {
-                    ForEach(Array(store.records.filter { !$0.isNew }.enumerated()), id: \.element.id) { index, record in
-                        if index > 0 { Theme.hairline.frame(height: 1) }
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(record.label).font(.sg(14))
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(record.value).font(.stat(17))
-                                Text(record.date.formatted(.dateTime.day().month(.abbreviated)))
-                                    .font(.sg(11))
-                                    .foregroundStyle(Theme.muted)
-                            }
-                        }
-                        .padding(.vertical, 16)
-                    }
-                }
+    private var roadContent: some View {
+        let series = RunAnalytics.weeklyAvgPace(runs: store.runs, weeks: 12, roadOnly: true)
+        let present = series.compactMap { $0 }
+        let road12 = last12WeekRoad
+        let avg = road12.km > 0 ? road12.time / road12.km : 0
+        let delta = (present.first ?? 0) - (present.last ?? 0)
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("AVG PACE · LAST 12 WEEKS").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 24)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(Format.pace(avg)).font(.stat(64)).kerning(-2.6)
+                Text("/km").font(.sg(16)).foregroundStyle(Theme.bright)
+                Spacer()
+                Text("\(Format.paceDelta(-abs(delta))) since \(sinceMonth)")
+                    .font(.stat(14)).foregroundStyle(Theme.signal)
+            }
+            .padding(.top, 8)
+            TrendChart(values: series, topLabel: Format.pace((present.max() ?? 0) + 8),
+                       bottomLabel: Format.pace((present.min() ?? 0) - 8), invert: true)
                 .padding(.top, 18)
+            monthAxis.padding(.top, 4)
 
-                Text("Records come from your runs automatically. No badges, no confetti.")
-                    .font(.sg(12))
-                    .foregroundStyle(Theme.muted)
-                    .lineSpacing(3)
-                    .padding(.top, 14)
-            }
-            .padding(28)
+            divider
+            driftRow
+
+            divider
+            Text("MONTHLY KM").kicker(13, color: Theme.bright, tracking: 0.12).padding(.bottom, 14)
+            MonthBars(items: store.monthlyTotals(count: 6).map { (shortMonth($0.month), $0.km) }) { "\(Int($0))" }
+
+            recordsCard(title: "Records", value: "\(store.records.first { $0.label == "5 km" }?.value ?? "—") 5K")
         }
-        .background(Theme.bg)
-        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var driftRow: some View {
+        let drift = RunAnalytics.hrAtPace(runs: store.runs, referencePaceSec: 330)
+        return HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Heart rate at 5:30 pace").font(.sg(16))
+                Text("Same effort, less work").font(.sg(13)).foregroundStyle(Theme.muted)
+            }
+            Spacer()
+            if let drift {
+                (Text("\(drift.avg) ") + Text(drift.delta <= 0 ? "\(drift.delta)" : "+\(drift.delta)")
+                    .font(.stat(14)).foregroundStyle(Theme.signal))
+                    .font(.stat(26))
+            } else {
+                Text("—").font(.stat(26)).foregroundStyle(Theme.muted)
+            }
+        }
+    }
+
+    // MARK: - Trail
+
+    private var trailContent: some View {
+        let climbSeries = RunAnalytics.weeklyClimbRate(runs: store.runs, weeks: 12)
+        let present = climbSeries.compactMap { $0 }
+        let avgRate = present.isEmpty ? 0 : present.reduce(0, +) / Double(present.count)
+        let rateDelta = (present.last ?? 0) - (present.first ?? 0)
+        return VStack(alignment: .leading, spacing: 0) {
+            Text("CLIMB RATE · LAST 12 WEEKS").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 24)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("\(Int(avgRate))").font(.stat(64)).kerning(-2.6)
+                Text("m/h").font(.sg(16)).foregroundStyle(Theme.bright)
+                Spacer()
+                Text("\(rateDelta >= 0 ? "+" : "−")\(Int(abs(rateDelta))) since \(sinceMonth)")
+                    .font(.stat(14)).foregroundStyle(Theme.signal)
+            }
+            .padding(.top, 8)
+            TrendChart(values: climbSeries, topLabel: "\(Int((present.max() ?? 0)))",
+                       bottomLabel: "\(Int((present.min() ?? 0)))", invert: false)
+                .padding(.top, 18)
+            monthAxis.padding(.top, 4)
+
+            divider
+            gapRow
+
+            divider
+            Text("MONTHLY CLIMB · M").kicker(13, color: Theme.bright, tracking: 0.12).padding(.bottom, 14)
+            MonthBars(items: store.monthlyClimb(count: 6).map { (shortMonth($0.month), $0.climb) }) { climb in
+                climb >= 1000 ? String(format: "%.1fk", climb / 1000) : "\(Int(climb))"
+            }
+
+            recordsCard(title: "Most climb", value: "\(Int(store.mostClimbRun?.climbMeters ?? 0)) m")
+        }
+    }
+
+    private var gapRow: some View {
+        let trail = store.filteredRuns(.trail)
+        let rawPace = trail.reduce(0) { $0 + $1.paceSecPerKm } / Double(max(trail.count, 1))
+        let gap = trail.reduce(0.0) { $0 + RunAnalytics.gradeAdjustedPace($1) } / Double(max(trail.count, 1))
+        return HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Grade-adjusted pace").font(.sg(16))
+                Text("Climbing costs you less").font(.sg(13)).foregroundStyle(Theme.muted)
+            }
+            Spacer()
+            (Text(Format.pace(gap) + " ") + Text(Format.paceDelta(gap - rawPace))
+                .font(.stat(14)).foregroundStyle(Theme.signal))
+                .font(.stat(26))
+        }
+    }
+
+    // MARK: - Shared
+
+    private func recordsCard(title: String, value: String) -> some View {
+        Button { push(.records) } label: {
+            GlassCard(cornerRadius: 20, padding: EdgeInsets(top: 18, leading: 22, bottom: 18, trailing: 22)) {
+                HStack {
+                    Text(title).font(.sg(16, weight: .semibold))
+                    Spacer()
+                    Text(value).font(.stat(15, weight: .regular)).foregroundStyle(Theme.bright)
+                    Chevron()
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 26)
+    }
+
+    private var divider: some View { Divider().overlay(Theme.hairline).padding(.vertical, 24) }
+
+    private var monthAxis: some View {
+        HStack {
+            ForEach(["Apr", "May", "Jun", "Jul"], id: \.self) { m in
+                Text(m).font(.sg(12)).foregroundStyle(Theme.muted)
+                if m != "Jul" { Spacer() }
+            }
+        }
+    }
+
+    private var sinceMonth: String {
+        let d = Calendar.current.date(byAdding: .month, value: -3, to: .now) ?? .now
+        return d.formatted(.dateTime.month(.abbreviated))
+    }
+
+    private func shortMonth(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated)) }
+
+    private var last12WeekRoad: (km: Double, time: TimeInterval) {
+        let cutoff = Calendar.current.date(byAdding: .weekOfYear, value: -12, to: .now) ?? .now
+        let runs = store.runs.filter { !$0.isTrail && $0.date >= cutoff }
+        return (runs.reduce(0) { $0 + $1.distanceKm }, runs.reduce(0) { $0 + $1.duration })
     }
 }

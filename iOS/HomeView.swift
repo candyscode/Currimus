@@ -2,122 +2,172 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var store: RunStore
-
-    private var weekDelta: String {
-        guard store.lastWeekKmToDate > 0 else { return "" }
-        let pct = Int(((store.weekKm - store.lastWeekKmToDate) / store.lastWeekKmToDate * 100).rounded())
-        return "\(pct >= 0 ? "+" : "")\(pct)% vs last week"
-    }
+    @Environment(\.pushRoute) private var push
 
     var body: some View {
-        ScrollView {
+        TabScreen(topInset: 62) {
+            HStack {
+                Text("CURRIMUS").font(.sg(16, weight: .bold)).kerning(1.3)
+                Spacer()
+                GlassIconButton(systemImagePath: .settings) { push(.settings) }
+            }
+        } content: {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("THIS WEEK").kicker(12)
-                    Spacer()
-                    NavigationLink(value: "settings") {
-                        Text("Settings")
-                            .font(.sg(13))
-                            .foregroundStyle(Theme.muted)
-                    }
+                if let race = store.race, !race.isPast {
+                    if race.isToday { raceDayHeadline(race) } else { raceHeadline(race) }
+                    Divider().overlay(Theme.hairline).padding(.vertical, 24)
+                    weekBlock(headline: false)
+                } else {
+                    weekBlock(headline: true)
+                    if store.race == nil { setupRaceRow }
                 }
 
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(Format.km(store.weekKm, decimals: 1))
-                        .font(.stat(52))
-                        .kerning(-1.5)
-                    Text("km")
-                        .font(.sg(17))
-                        .foregroundStyle(Theme.muted)
-                    Spacer()
-                    Text(weekDelta)
-                        .font(.stat(13))
+                if let last = store.lastRun {
+                    RunSummaryCard(run: last).padding(.top, 26)
+                }
+
+                recent
+            }
+        }
+    }
+
+    // MARK: - Race headline (countdown)
+
+    private func raceHeadline(_ race: Race) -> some View {
+        Button { push(.race) } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("RACE DAY · \(race.name.uppercased())").kicker(13, color: Theme.bright, tracking: 0.12)
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                    Text("\(race.daysUntil())")
+                        .font(.stat(118)).kerning(-5.9)
+                    Text("DAYS").font(.sg(21, weight: .semibold)).kerning(2)
                         .foregroundStyle(Theme.signal)
+                    Spacer()
+                    Chevron(size: 22).alignmentGuide(.firstTextBaseline) { $0[.bottom] }
                 }
-                .padding(.top, 6)
+                .padding(.top, 2)
+                raceStats(race).padding(.top, 16)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
 
-                WeekBars(kmPerDay: store.weekByDay)
-                    .padding(.top, 24)
+    private func raceDayHeadline(_ race: Race) -> some View {
+        Button { push(.race) } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("RACE DAY · \(race.name.uppercased())").kicker(13, color: Theme.bright, tracking: 0.12)
+                (Text("Today").foregroundStyle(Theme.ink) + Text(".").foregroundStyle(Theme.signal))
+                    .font(.stat(96)).kerning(-4.8)
+                    .padding(.top, 6)
+                raceStats(race, planLabel: true).padding(.top, 24)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
 
-                if let run = store.lastRun {
-                    LastRunCard(run: run)
-                        .padding(.top, 28)
+    private func raceStats(_ race: Race, planLabel: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: 28) {
+            StatBlock(value: Format.clock(race.goalTime), label: "GOAL")
+            StatBlock(value: Format.pace(race.requiredPace), label: planLabel ? "PLAN /KM" : "NEEDS /KM", accent: true)
+            if let prediction = store.prediction {
+                StatBlock(value: Format.clock(prediction.time), label: "PREDICTED")
+            }
+        }
+    }
+
+    // MARK: - Week block
+
+    @ViewBuilder
+    private func weekBlock(headline: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("THIS WEEK").kicker(13, color: Theme.bright, tracking: 0.12)
+            Spacer()
+            Text("goal \(Int(store.weeklyGoalKm)) km").font(.stat(13, weight: .regular)).foregroundStyle(Theme.muted)
+        }
+        HStack(alignment: .firstTextBaseline, spacing: headline ? 12 : 10) {
+            Text(Format.km(store.weekKm, decimals: 1))
+                .font(.stat(headline ? 96 : 52)).kerning(headline ? -4.8 : -2)
+            Text("km").font(.sg(headline ? 20 : 17)).foregroundStyle(Theme.bright)
+            Spacer()
+            Text("\(Int((store.weekGoalFraction * 100).rounded()))%")
+                .font(.stat(headline ? 16 : 14)).foregroundStyle(Theme.signal)
+        }
+        .padding(.top, headline ? 4 : 6)
+        WeekBars(kmPerDay: store.weekByDay).padding(.top, headline ? 24 : 20)
+    }
+
+    private var setupRaceRow: some View {
+        Button { push(.raceSetup) } label: {
+            GlassCard(cornerRadius: 20, padding: EdgeInsets(top: 16, leading: 22, bottom: 16, trailing: 22)) {
+                HStack {
+                    Text("Training toward a race? Set it up")
+                        .font(.sg(15)).foregroundStyle(Theme.bright)
+                    Spacer()
+                    Chevron()
                 }
             }
-            .padding(28)
+            .padding(.top, 18)
         }
-        .background(Theme.bg)
-        .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(for: String.self) { destination in
-            switch destination {
-            case "settings": SettingsView()
-            case "pacer": PacerTargetView()
-            case "records": RecordsView()
-            default: EmptyView()
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Recent
+
+    private var recent: some View {
+        let rows = Array(store.runs.dropFirst().prefix(2))
+        return VStack(alignment: .leading, spacing: 0) {
+            if !rows.isEmpty {
+                Text("RECENT").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 26)
+                ForEach(rows) { run in
+                    Button { push(.runDetail(run)) } label: { RecentRow(run: run) }
+                        .buttonStyle(.plain)
+                }
             }
         }
-        .navigationDestination(for: Run.self) { RunDetailView(run: $0) }
     }
 }
 
-struct WeekBars: View {
-    var kmPerDay: [Double]
-    private let labels = ["M", "T", "W", "T", "F", "S", "S"]
+// MARK: - Shared pieces
 
-    private var latestActive: Int? {
-        kmPerDay.lastIndex(where: { $0 > 0 })
-    }
+struct StatBlock: View {
+    var value: String
+    var label: String
+    var accent: Bool = false
+    var size: CGFloat = 21
 
     var body: some View {
-        let maxKm = max(kmPerDay.max() ?? 1, 1)
-        HStack(alignment: .bottom, spacing: 8) {
-            ForEach(0..<7, id: \.self) { day in
-                let ran = kmPerDay[day] > 0
-                let isLatest = day == latestActive
-                VStack(spacing: 8) {
-                    Spacer(minLength: 0)
-                    RoundedRectangle(cornerRadius: 5)
-                        .fill(isLatest ? Theme.signal : (ran ? Theme.track : Theme.trackIdle))
-                        .frame(height: ran ? max(kmPerDay[day] / maxKm * 64, 8) : 5)
-                    Text(labels[day])
-                        .font(.sg(11, weight: isLatest ? .semibold : .regular))
-                        .foregroundStyle(isLatest ? Theme.ink : Theme.muted)
-                }
-                .frame(maxWidth: .infinity)
-            }
+        VStack(alignment: .leading, spacing: 5) {
+            Text(value).font(.stat(size)).foregroundStyle(accent ? Theme.signal : Theme.ink).lineLimit(1)
+            Text(label).kicker(13, color: Theme.bright, tracking: 0.12)
         }
-        .frame(height: 92)
     }
 }
 
-struct LastRunCard: View {
-    @EnvironmentObject private var store: RunStore
+struct RunSummaryCard: View {
+    @Environment(\.pushRoute) private var push
     var run: Run
 
     var body: some View {
-        NavigationLink(value: run) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(run.name)
-                        .font(.sg(14, weight: .semibold))
-                    Spacer()
-                    Text(run.date, format: .relative(presentation: .named))
-                        .font(.sg(12))
-                        .foregroundStyle(Theme.muted)
+        Button { push(.runDetail(run)) } label: {
+            GlassCard {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(run.name).font(.sg(15, weight: .semibold))
+                        Spacer()
+                        Text(run.date, format: .relative(presentation: .named))
+                            .font(.sg(13)).foregroundStyle(Theme.muted)
+                    }
+                    HStack(spacing: 26) {
+                        CardStat(value: Format.km(run.distanceKm), label: "KM")
+                        CardStat(value: Format.pace(run.paceSecPerKm), label: "/KM")
+                        CardStat(value: "Z\(run.dominantZone)", label: "MOSTLY", accent: true)
+                    }
+                    .padding(.top, 14)
+                    ZoneHeatStrip(zoneSeconds: run.zoneSeconds, height: 6).padding(.top, 16)
                 }
-                HStack(spacing: 26) {
-                    CardStat(value: Format.km(run.distanceKm), label: "km")
-                    CardStat(value: Format.pace(run.paceSecPerKm), label: "/km")
-                    CardStat(value: "\(run.avgHR)", label: "avg hr")
-                }
-                .padding(.top, 16)
-                ZoneHeatStrip(zoneSeconds: run.zoneSeconds, height: 6)
-                    .padding(.top, 16)
             }
-            .padding(.vertical, 20)
-            .padding(.horizontal, 22)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.cardBorder, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -126,13 +176,36 @@ struct LastRunCard: View {
 struct CardStat: View {
     var value: String
     var label: String
+    var accent: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(value).font(.stat(22))
-            Text(label)
-                .font(.sg(11))
-                .foregroundStyle(Theme.muted)
+            Text(value).font(.stat(24)).foregroundStyle(accent ? Theme.signal : Theme.ink)
+            Text(label).kicker(12, color: Theme.bright, tracking: 0.1)
         }
+    }
+}
+
+/// A compact recent/log row: date · name/detail · pace, full-width tap target.
+struct RecentRow: View {
+    var run: Run
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Text(run.date.formatted(.dateTime.weekday(.abbreviated)).uppercased()
+                 + "\n" + run.date.formatted(.dateTime.day(.twoDigits).month(.twoDigits)))
+                .font(.sg(12)).foregroundStyle(Theme.muted).lineSpacing(3)
+                .frame(width: 56, alignment: .leading)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("\(Format.km(run.distanceKm)) km").font(.stat(17))
+                Text(run.classification.label).font(.sg(13)).foregroundStyle(Theme.bright)
+            }
+            Spacer()
+            Text(Format.pace(run.paceSecPerKm)).font(.stat(17))
+                .foregroundStyle(run.paceSecPerKm < 310 ? Theme.signal : Theme.ink)
+        }
+        .padding(.vertical, 16)
+        .overlay(alignment: .bottom) { Theme.hairline.frame(height: 1) }
+        .contentShape(Rectangle())
     }
 }

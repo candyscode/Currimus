@@ -195,33 +195,3 @@ struct TrailElevationView: View {
     }
 }
 
-/// Helpers for elevation profiles.
-enum RoutePoints {
-    /// Altitude series → normalized chart points (x spread 0…1, y padded).
-    static func normalized(_ altitudes: [Double]) -> [CGPoint] {
-        guard altitudes.count > 1,
-              let low = altitudes.min(), let high = altitudes.max() else { return [] }
-        let span = max(high - low, 10)
-        return altitudes.enumerated().map { index, altitude in
-            CGPoint(
-                x: Double(index) / Double(altitudes.count - 1),
-                y: 0.08 + 0.84 * (altitude - low) / span
-            )
-        }
-    }
-
-    static func upTo(_ route: [CGPoint], fraction: Double) -> [CGPoint] {
-        var result: [CGPoint] = []
-        for point in route where point.x <= fraction { result.append(point) }
-        if let last = result.last, last.x < fraction,
-           let next = route.first(where: { $0.x > fraction }) {
-            let t = (fraction - last.x) / (next.x - last.x)
-            result.append(.init(x: fraction, y: last.y + (next.y - last.y) * t))
-        }
-        return result
-    }
-
-    static func elevation(_ route: [CGPoint], at fraction: Double) -> Double {
-        Double(upTo(route, fraction: fraction).last?.y ?? 0)
-    }
-}

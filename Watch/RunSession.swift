@@ -83,7 +83,10 @@ final class RunSession: NSObject, ObservableObject {
     private var climbWindow: [(t: TimeInterval, c: Double)] = []
     private var lastAltitude: Double?
     private var lastProfileSample: TimeInterval = 0
+    private var coordinates: [Coordinate] = []
     private var isSimulated = false
+    /// When false, `begin` skips the 3-2-1 countdown (iPhone setting).
+    var countdownEnabled = true
 
     // MARK: - Derived
 
@@ -115,7 +118,7 @@ final class RunSession: NSObject, ObservableObject {
     func begin(_ type: RunType) {
         self.type = type
         resetMetrics()
-        phase = .countdown(3)
+        phase = countdownEnabled ? .countdown(3) : .running
         haptic(.start)
         startTimer()
 
@@ -150,6 +153,8 @@ final class RunSession: NSObject, ObservableObject {
         phase = .finished
         haptic(.success)
 
+        // Elevation is recorded for every run (the iPhone shows road climb and
+        // uses it for grade-adjusted pace); the GPS track powers the map + GPX.
         let run = Run(
             date: .now.addingTimeInterval(-elapsed),
             type: type,
@@ -159,9 +164,11 @@ final class RunSession: NSObject, ObservableObject {
             avgHR: averageHR,
             splits: splits,
             zoneSeconds: zoneSeconds,
-            climbMeters: type == .trail ? climbMeters.rounded() : nil,
-            descentMeters: type == .trail ? descentMeters.rounded() : nil,
-            highPointMeters: type == .trail ? altitudeProfile.max().map { $0.rounded() } : nil
+            climbMeters: climbMeters.rounded(),
+            descentMeters: descentMeters.rounded(),
+            highPointMeters: altitudeProfile.max().map { $0.rounded() },
+            altitudeSamples: altitudeProfile.isEmpty ? nil : altitudeProfile,
+            route: coordinates.isEmpty ? nil : coordinates
         )
 
         finishWorkout()
@@ -190,7 +197,7 @@ final class RunSession: NSObject, ObservableObject {
         heartRate = 0; rollingPace = 0; lastKmMark = 0; kmStartElapsed = 0
         kilometerAlert = nil; hrSampleSum = 0; hrSampleCount = 0
         paceWindow = []; climbWindow = []; lastAltitude = nil
-        altitudeProfile = []; lastProfileSample = 0
+        altitudeProfile = []; lastProfileSample = 0; coordinates = []
         if type != .pacer { pacerDistanceKm = nil }
     }
 
@@ -381,6 +388,16 @@ final class RunSession: NSObject, ObservableObject {
 
         if location.horizontalAccuracy >= 0, location.horizontalAccuracy < 50 {
             routeBuilder?.insertRouteData([location]) { _, _ in }
+            // Keep a downsampled local copy for the map + GPX export (~every 5 s).
+            if coordinates.isEmpty || elapsed - (coordinates.last?.t ?? -10) >= 5 {
+                coordinates.append(Coordinate(
+                    lat: location.coordinate.latitude,
+                    lon: location.coordinate.longitude,
+                    elevation: location.altitude,
+                    t: elapsed
+                ))
+                if coordinates.count > 2000 { coordinates.removeFirst() }
+            }
         }
     }
 

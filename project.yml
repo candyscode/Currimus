@@ -1,7 +1,7 @@
 name: Currimus
 options:
   deploymentTarget:
-    iOS: "18.0"
+    iOS: "26.0"
     watchOS: "11.0"
   createIntermediateGroups: true
 settings:
@@ -29,6 +29,8 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads your running workouts from Apple Health."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Currimus saves your runs as workouts to Apple Health."
         TARGETED_DEVICE_FAMILY: "1"
     dependencies:
       - target: CurrimusWatch
@@ -76,3 +78,14 @@ targets:
         CFBundleDisplayName: Currimus
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  CurrimusTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.tests
+        GENERATE_INFOPLIST_FILE: YES
