@@ -21,7 +21,9 @@ struct TrailRunPager: View {
             .offset(x: page == 0 ? 0 : -proxy.size.width)
             .animation(.snappy(duration: 0.3), value: page)
         }
-        .clipped()
+        // Clip only horizontally (hide the neighbouring page); leave vertical
+        // overflow so the hero pulled up under the caption isn't cut off.
+        .mask { Rectangle().padding(.vertical, -120) }
         .contentShape(Rectangle())
         .highPriorityGesture(
             DragGesture(minimumDistance: 15)
