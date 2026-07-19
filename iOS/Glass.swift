@@ -27,6 +27,8 @@ struct GlassCard<Content: View>: View {
 }
 
 /// A circular 44pt Liquid Glass button (back / settings).
+/// Uses non-interactive glass so the Button's tap wins on the first touch —
+/// `.interactive()` glass otherwise swallows the first tap for its own morph.
 struct GlassIconButton: View {
     var systemImagePath: GlassGlyph
     var action: () -> Void
@@ -35,7 +37,8 @@ struct GlassIconButton: View {
         Button(action: action) {
             systemImagePath.shape
                 .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: Circle())
+                .contentShape(Circle())
+                .glassEffect(.regular, in: Circle())
                 .foregroundStyle(Theme.ink)
         }
         .buttonStyle(.plain)

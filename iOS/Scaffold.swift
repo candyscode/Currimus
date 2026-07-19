@@ -12,7 +12,7 @@ enum Route: Hashable {
     case hrZones
 }
 
-enum Tab: Hashable { case home, log, progress }
+enum AppTab: Hashable { case home, log, progress }
 
 /// Imperative push for buttons that aren't NavigationLinks (settings, cards).
 struct PushRouteKey: EnvironmentKey { static let defaultValue: (Route) -> Void = { _ in } }
@@ -23,88 +23,40 @@ extension EnvironmentValues {
     }
 }
 
-// MARK: - Glass floating tab bar (the Liquid Glass navigation)
+// MARK: - Interactive swipe-back
 
-struct GlassTabBar: View {
-    @Binding var tab: Tab
+/// Re-enables the edge swipe-to-go-back gesture on pushed screens whose
+/// navigation bar is hidden (hiding the bar otherwise disables it).
+struct SwipeBackEnabler: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController { Probe(coordinator: context.coordinator) }
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
-    var body: some View {
-        GlassEffectContainer {
-            HStack(spacing: 0) {
-                item(.home, "Home", HomeGlyph())
-                item(.log, "Log", LogGlyph())
-                item(.progress, "Progress", ProgressGlyph())
-            }
-            .padding(6)
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        weak var nav: UINavigationController?
+        func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+            (nav?.viewControllers.count ?? 0) > 1
         }
-        .glassEffect(.regular, in: Capsule())
-        .frame(height: 80)
-        .padding(.horizontal, 22)
-        .shadow(color: .black.opacity(0.55), radius: 22, y: 18)
     }
 
-    @ViewBuilder
-    private func item(_ value: Tab, _ label: String, _ glyph: some Shape) -> some View {
-        let active = tab == value
-        Button {
-            withAnimation(.snappy(duration: 0.25)) { tab = value }
-        } label: {
-            VStack(spacing: 3) {
-                glyph.stroke(active ? Theme.signal : Theme.bright,
-                             style: .init(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                    .frame(width: 24, height: 24)
-                Text(label)
-                    .font(.sg(11, weight: .semibold))
-                    .foregroundStyle(active ? Theme.signal : Theme.bright)
+    private final class Probe: UIViewController {
+        let coordinator: Coordinator
+        init(coordinator: Coordinator) { self.coordinator = coordinator; super.init(nibName: nil, bundle: nil) }
+        required init?(coder: NSCoder) { fatalError() }
+        override func didMove(toParent parent: UIViewController?) {
+            super.didMove(toParent: parent)
+            if let nav = navigationController {
+                coordinator.nav = nav
+                nav.interactivePopGestureRecognizer?.isEnabled = true
+                nav.interactivePopGestureRecognizer?.delegate = coordinator
             }
-            .frame(maxWidth: .infinity)
-            .frame(maxHeight: .infinity)
-            .background {
-                if active {
-                    Capsule().fill(Color.white.opacity(0.08))
-                }
-            }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
     }
 }
 
-// MARK: - Tab-bar glyphs (stroked, matching the design SVGs)
-
-struct HomeGlyph: Shape {
-    func path(in r: CGRect) -> Path {
-        let w = r.width, h = r.height
-        var p = Path()
-        p.move(to: .init(x: w * 0.15, y: h * 0.44)); p.addLine(to: .init(x: w * 0.5, y: h * 0.15))
-        p.addLine(to: .init(x: w * 0.85, y: h * 0.44))
-        p.move(to: .init(x: w * 0.23, y: h * 0.40)); p.addLine(to: .init(x: w * 0.23, y: h * 0.85))
-        p.addLine(to: .init(x: w * 0.77, y: h * 0.85)); p.addLine(to: .init(x: w * 0.77, y: h * 0.40))
-        return p
-    }
-}
-
-struct LogGlyph: Shape {
-    func path(in r: CGRect) -> Path {
-        let w = r.width, h = r.height
-        var p = Path()
-        for (i, y) in [0.27, 0.5, 0.73].enumerated() {
-            p.move(to: .init(x: w * 0.17, y: h * y))
-            p.addLine(to: .init(x: w * (i == 2 ? 0.55 : 0.83), y: h * y))
-        }
-        return p
-    }
-}
-
-struct ProgressGlyph: Shape {
-    func path(in r: CGRect) -> Path {
-        let w = r.width, h = r.height
-        var p = Path()
-        p.move(to: .init(x: w * 0.15, y: h * 0.73)); p.addLine(to: .init(x: w * 0.38, y: h * 0.48))
-        p.addLine(to: .init(x: w * 0.54, y: h * 0.64)); p.addLine(to: .init(x: w * 0.85, y: h * 0.31))
-        p.move(to: .init(x: w * 0.65, y: h * 0.31)); p.addLine(to: .init(x: w * 0.85, y: h * 0.31))
-        p.addLine(to: .init(x: w * 0.85, y: h * 0.52))
-        return p
+extension View {
+    func swipeBackEnabled() -> some View {
+        background(SwipeBackEnabler().frame(width: 0, height: 0).accessibilityHidden(true))
     }
 }
 
@@ -124,7 +76,7 @@ struct TabScreen<Content: View, Header: View>: View {
                 content
                     .padding(.horizontal, 26)
                     .padding(.top, topInset)
-                    .padding(.bottom, 118)   // clear the floating tab bar
+                    .padding(.bottom, 24)   // the system tab bar adds its own inset
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .scrollIndicators(.hidden)
@@ -160,6 +112,7 @@ struct PushedScreen<Content: View>: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .swipeBackEnabled()
     }
 }
 

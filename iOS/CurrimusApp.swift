@@ -21,8 +21,7 @@ struct CurrimusApp: App {
 
 struct RootView: View {
     @EnvironmentObject private var store: RunStore
-    @State private var tab: Tab = .home
-    @State private var path: [Route] = []
+    @State private var tab: AppTab = RootView.initialTab
     @State private var forceEmpty = UserDefaults.standard.bool(forKey: "empty")
 
     var body: some View {
@@ -30,23 +29,61 @@ struct RootView: View {
             if store.runs.isEmpty || forceEmpty {
                 FirstLaunchView()
             } else {
-                tabbed
+                // Native iOS 26 TabView → real Liquid Glass tab bar with the
+                // press-hold-and-drag-between-tabs interaction.
+                TabView(selection: $tab) {
+                    Tab("Home", systemImage: "house.fill", value: AppTab.home) {
+                        TabRoot(initial: Self.debugHomePath(store)) { HomeView() }
+                    }
+                    Tab("Log", systemImage: "list.bullet", value: AppTab.log) {
+                        TabRoot { LogView() }
+                    }
+                    Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) {
+                        TabRoot { ProgressScreen() }
+                    }
+                }
+                .tint(Theme.signal)
             }
         }
         .foregroundStyle(Theme.ink)
-        .onAppear(perform: handleLaunchRoute)
+        .onAppear(perform: applyDemoStateOverrides)
     }
 
-    /// DEBUG screenshot / demo routing (release builds ignore all of this).
-    private func handleLaunchRoute() {
+    // MARK: - DEBUG screenshot / demo routing (release ignores it)
+
+    private static var initialTab: AppTab {
         #if DEBUG
-        let d = UserDefaults.standard
-        switch d.string(forKey: "tab") {
-        case "log": tab = .log
-        case "progress": tab = .progress
-        default: break
+        switch UserDefaults.standard.string(forKey: "tab") {
+        case "log": return .log
+        case "progress": return .progress
+        default: return .home
         }
-        switch d.string(forKey: "home") {
+        #else
+        return .home
+        #endif
+    }
+
+    private static func debugHomePath(_ store: RunStore) -> [Route] {
+        #if DEBUG
+        switch UserDefaults.standard.string(forKey: "push") {
+        case "race": return [.race]
+        case "raceSetup": return [.raceSetup]
+        case "records": return [.records]
+        case "settings": return [.settings]
+        case "pacerDefaults": return [.pacerDefaults]
+        case "hrZones": return [.hrZones]
+        case "detailRoad": return store.runs.first { !$0.isTrail }.map { [.runDetail($0)] } ?? []
+        case "detailTrail": return store.runs.first { $0.isTrail }.map { [.runDetail($0)] } ?? []
+        default: return []
+        }
+        #else
+        return []
+        #endif
+    }
+
+    private func applyDemoStateOverrides() {
+        #if DEBUG
+        switch UserDefaults.standard.string(forKey: "home") {
         case "norace": store.race = nil
         case "raceday":
             if var race = store.race {
@@ -54,58 +91,43 @@ struct RootView: View {
             }
         default: break
         }
-        guard path.isEmpty else { return }
-        switch d.string(forKey: "push") {
-        case "race": path = [.race]
-        case "raceSetup": path = [.raceSetup]
-        case "records": path = [.records]
-        case "settings": path = [.settings]
-        case "pacerDefaults": path = [.pacerDefaults]
-        case "hrZones": path = [.hrZones]
-        case "detailRoad": if let r = store.runs.first(where: { !$0.isTrail }) { path = [.runDetail(r)] }
-        case "detailTrail": if let r = store.runs.first(where: { $0.isTrail }) { path = [.runDetail(r)] }
-        default: break
-        }
         #endif
     }
+}
 
-    private var tabbed: some View {
+/// One tab's navigation stack — owns its path, injects `pushRoute`, and hides
+/// the tab bar (with swipe-back restored) on pushed screens.
+struct TabRoot<Root: View>: View {
+    @State private var path: [Route]
+    private let root: Root
+
+    init(initial: [Route] = [], @ViewBuilder root: () -> Root) {
+        _path = State(initialValue: initial)
+        self.root = root()
+    }
+
+    var body: some View {
         NavigationStack(path: $path) {
             root
                 .navigationDestination(for: Route.self) { route in
-                    destination(route)
+                    routeDestination(route)
                         .environment(\.pushRoute) { path.append($0) }
+                        .toolbar(.hidden, for: .tabBar)
                 }
         }
         .environment(\.pushRoute) { path.append($0) }
-        .overlay(alignment: .bottom) {
-            if path.isEmpty {
-                GlassTabBar(tab: $tab)
-                    .padding(.bottom, 4)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
     }
+}
 
-    @ViewBuilder
-    private var root: some View {
-        switch tab {
-        case .home: HomeView()
-        case .log: LogView()
-        case .progress: ProgressScreen()
-        }
-    }
-
-    @ViewBuilder
-    private func destination(_ route: Route) -> some View {
-        switch route {
-        case .race: RaceView()
-        case .raceSetup: RaceSetupView()
-        case .runDetail(let run): RunDetailView(run: run)
-        case .records: RecordsView()
-        case .settings: SettingsScreen()
-        case .pacerDefaults: PacerDefaultsView()
-        case .hrZones: HRZonesView()
-        }
+@ViewBuilder
+func routeDestination(_ route: Route) -> some View {
+    switch route {
+    case .race: RaceView()
+    case .raceSetup: RaceSetupView()
+    case .runDetail(let run): RunDetailView(run: run)
+    case .records: RecordsView()
+    case .settings: SettingsScreen()
+    case .pacerDefaults: PacerDefaultsView()
+    case .hrZones: HRZonesView()
     }
 }
