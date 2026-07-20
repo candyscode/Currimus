@@ -52,11 +52,26 @@ struct RunView: View {
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                HStack(alignment: .top, spacing: 20) {
-                    BigStat(value: Format.km(session.distanceKm), label: "KM", size: 22)
-                    BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", valueColor: Theme.signal, size: 22)
+
+                // Run only shows two values, and the Ultra leaves ~120 pt of
+                // air under them — so they grow to 28 pt and float centered
+                // between the time and the zone bar, a middle "dashboard row"
+                // rather than an appendix of the hero. The bottom pad offsets
+                // the line-box slop above (15 pt descender + cap headroom),
+                // landing the *ink* a hair above center — measured on Ultra.
+                Spacer(minLength: 0)
+                // Same two-column grid as Trail (equal columns, 18 pt gap),
+                // so PACE /KM sits at the same x on every run screen.
+                HStack(alignment: .top, spacing: 18) {
+                    BigStat(value: Format.km(session.distanceKm), label: "KM",
+                            size: 28, labelSize: 10, labelGap: 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
+                            valueColor: Theme.signal, size: 28, labelSize: 10, labelGap: 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.top, LineBox.gap(10, cropping: 52, 22))   // design 20 px
+                .padding(.bottom, 14)
+                Spacer(minLength: 0)
             }
         } footer: {
             ZoneFooter(zone: zone, position: session.zones.position(forHR: session.heartRate))
