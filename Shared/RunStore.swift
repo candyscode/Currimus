@@ -26,6 +26,8 @@ final class RunStore: ObservableObject {
     @Published var kilometerAlert = true { didSet { persistSettings(); pushSettings() } }
     @Published var countdownEnabled = true { didSet { persistSettings(); pushSettings() } }
     @Published var usesKilometers = true { didSet { persistSettings() } }
+    /// GPS fidelity the watch records with — the run's dominant battery cost.
+    @Published var gpsAccuracy: GPSAccuracy = .high { didSet { persistSettings(); pushSettings() } }
 
     private static let runsKey = "runs.v2"
     private static let importedKey = "imported.v1"
@@ -78,13 +80,35 @@ final class RunStore: ObservableObject {
 
     /// Pulls in runs other apps recorded. Safe to call on every foreground —
     /// the list is replaced wholesale, so nothing accumulates.
+    /// `requestingAccess` decides whether this may raise the Health permission
+    /// sheet. The phone asks — it is the device that owns settings and where
+    /// the sheet is expected. The watch never asks here: it would cover a live
+    /// run screen at launch. Its own prompt comes when a run starts, and this
+    /// query simply returns nothing until then.
     @MainActor
-    func refreshImportedRuns() async {
+    func refreshImportedRuns(requestingAccess: Bool = false) async {
         guard !UserDefaults.standard.bool(forKey: "demo") else { return }
-        await HealthImport.requestAuthorization(healthStore)
+        if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
         let fetched = await HealthImport.fetchRuns(healthStore)
         let merged = HealthImport.merging(fetched, with: runs)
         if merged != importedRuns { importedRuns = merged }
+        await refreshHeartRateZones()
+    }
+
+    /// Re-derives the zones from Health. Never touches zones the user has
+    /// tuned by hand — a measured number is better than a formula, but not
+    /// better than a decision.
+    @MainActor
+    func refreshHeartRateZones(force: Bool = false, requestingAccess: Bool = false) async {
+        guard force || zones.overrides == nil else { return }
+        if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
+        guard let result = await HeartRateProfile.derive(healthStore) else { return }
+        var updated = zones
+        updated.maxHR = result.maxHR
+        updated.restingHR = result.restingHR
+        updated.derivation = result.derivation
+        if force { updated.overrides = nil }
+        if updated != zones { zones = updated }
     }
     #endif
 
@@ -150,6 +174,7 @@ final class RunStore: ObservableObject {
         }
         Self.defaults.set(weeklyGoalKm, forKey: "weeklyGoal")
         Self.defaults.set(usesKilometers, forKey: "usesKilometers")
+        Self.defaults.set(gpsAccuracy.rawValue, forKey: "gpsAccuracy")
     }
 
     private func loadSettings() {
@@ -167,6 +192,10 @@ final class RunStore: ObservableObject {
         if Self.defaults.object(forKey: "usesKilometers") != nil {
             usesKilometers = Self.defaults.bool(forKey: "usesKilometers")
         }
+        if let raw = Self.defaults.string(forKey: "gpsAccuracy"),
+           let accuracy = GPSAccuracy(rawValue: raw) {
+            gpsAccuracy = accuracy
+        }
     }
 
     // MARK: - Settings sync
@@ -178,7 +207,9 @@ final class RunStore: ObservableObject {
             kilometerAlert: kilometerAlert,
             countdownEnabled: countdownEnabled,
             maxHR: zones.maxHR,
-            zoneBounds: zones.overrides
+            zoneBounds: zones.overrides,
+            restingHR: zones.restingHR,
+            gpsAccuracy: gpsAccuracy
         )
     }
 
@@ -197,7 +228,9 @@ final class RunStore: ObservableObject {
         pacerDefaultDistanceKm = settings.pacerDefaultDistanceKm
         kilometerAlert = settings.kilometerAlert
         countdownEnabled = settings.countdownEnabled
-        zones = HRZones(maxHR: settings.maxHR, overrides: settings.zoneBounds)
+        zones = HRZones(maxHR: settings.maxHR, overrides: settings.zoneBounds,
+                        restingHR: settings.restingHR)
+        if let accuracy = settings.gpsAccuracy { gpsAccuracy = accuracy }
         isLoading = false
         persistSettings()
         #endif

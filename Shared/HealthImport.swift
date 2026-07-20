@@ -12,12 +12,15 @@ enum HealthImport {
     /// Our own writers — the watch app saves workouts, the phone may later.
     private static let ownBundlePrefix = "com.currimus.app"
 
-    /// Types we need to read to build an imported run.
+    /// Types we need to read to build an imported run and to personalise the
+    /// heart-rate zones.
     static var readTypes: Set<HKObjectType> {
         [
             HKObjectType.workoutType(),
             HKQuantityType(.heartRate),
+            HKQuantityType(.restingHeartRate),
             HKQuantityType(.distanceWalkingRunning),
+            HKCharacteristicType(.dateOfBirth),
         ]
     }
 

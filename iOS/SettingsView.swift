@@ -54,6 +54,10 @@ struct SettingsScreen: View {
 
                 section("PREFERENCES")
                 group {
+                    Button { push(.gpsAccuracy) } label: {
+                        ChevronRow(title: "GPS accuracy") { Text(store.gpsAccuracy.label) }
+                    }.buttonStyle(.plain)
+                    hairline
                     ChevronRow(title: "Units", showsChevron: false) { Text("Kilometers") }
                     hairline
                     ChevronRow(title: "Apple Health", showsChevron: false) {
@@ -227,6 +231,37 @@ struct HRZonesView: View {
                 }
                 .padding(.top, 14)
 
+                if let derivation = store.zones.derivation {
+                    Text(derivation.maxExplanation)
+                        .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+                        .padding(.top, 10)
+                }
+
+                if let resting = store.zones.restingHR {
+                    HStack {
+                        Text("Resting heart rate").font(.sg(16))
+                        Spacer()
+                        Text("\(resting) bpm").font(.stat(16, weight: .regular)).foregroundStyle(Theme.bright)
+                    }
+                    .frame(minHeight: 52)
+                    .padding(.top, 8)
+                    .overlay(alignment: .bottom) { Theme.hairline.frame(height: 1) }
+                }
+
+                Button {
+                    Task { await store.refreshHeartRateZones(force: true, requestingAccess: true) }
+                } label: {
+                    Text(store.zones.derivation == nil
+                         ? "Calculate from Apple Health"
+                         : "Recalculate from Apple Health")
+                        .font(.sg(15, weight: .semibold))
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .background(Theme.chipFill, in: Capsule())
+                        .overlay(Capsule().stroke(Theme.chipStroke, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 18)
+
                 Text("ZONES").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 34)
                 VStack(spacing: 0) {
                     ForEach(1...5, id: \.self) { zone in
@@ -236,10 +271,23 @@ struct HRZonesView: View {
                 }
                 .padding(.top, 6)
 
-                Text("Boundaries follow max HR automatically. Tap any zone to override — the watch shows zone position, never BPM.")
+                Text(zoneExplanation)
                     .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 18)
             }
         }
+    }
+
+    /// Says plainly where the boundaries came from — a personalised number the
+    /// user cannot account for is worse than a generic one.
+    private var zoneExplanation: String {
+        let tail = " Tap any zone to override — the watch shows zone position, never BPM."
+        if store.zones.overrides != nil {
+            return "You set these boundaries by hand. Recalculating from Apple Health replaces them."
+        }
+        guard let derivation = store.zones.derivation else {
+            return "Boundaries follow max HR automatically, at 60 / 70 / 80 / 90 % of it." + tail
+        }
+        return derivation.zoneExplanation(usesReserve: store.zones.usesReserve) + tail
     }
 
     private func zoneRow(_ zone: Int) -> some View {
@@ -274,6 +322,11 @@ struct HRZonesView: View {
         var z = store.zones
         z.maxHR = min(max(value, 140), 220)
         z.overrides = nil   // recompute from the new max
+        // The number is the user's now — stop attributing it to Health.
+        z.derivation = z.derivation.map {
+            HRDerivation(maxSource: .manual, maxDate: nil, age: $0.age,
+                         restingHR: $0.restingHR, restingSampleDays: $0.restingSampleDays)
+        }
         store.zones = z
     }
 
@@ -283,5 +336,63 @@ struct HRZonesView: View {
         bounds[zone - 1] = min(max(bounds[zone - 1] + delta, 60), z.maxHR - 1)
         z.overrides = bounds
         store.zones = z
+    }
+}
+
+// MARK: - GPS accuracy
+
+/// The one setting that trades recording precision for battery life, so it
+/// says plainly what each step costs rather than hiding behind a label.
+struct GPSAccuracyView: View {
+    @EnvironmentObject private var store: RunStore
+
+    var body: some View {
+        PushedScreen(title: "GPS accuracy") {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("GPS is the largest single battery draw of a recorded run — "
+                     + "far more than the screen. Lowering it buys hours; it costs "
+                     + "detail on tight, winding routes.")
+                    .font(.sg(14)).foregroundStyle(Theme.bright).lineSpacing(3)
+
+                VStack(spacing: 0) {
+                    ForEach(GPSAccuracy.allCases) { option in
+                        Button { store.gpsAccuracy = option } label: { row(option) }
+                            .buttonStyle(.plain)
+                        if option != GPSAccuracy.allCases.last { Theme.hairline.frame(height: 1) }
+                    }
+                }
+                .padding(.top, 22)
+
+                Text("Elevation and climb come from GPS too, so trail runs are worth "
+                     + "keeping on High.")
+                    .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 18)
+            }
+        }
+    }
+
+    private func row(_ option: GPSAccuracy) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 8) {
+                    Text(option.label).font(.sg(16, weight: .semibold))
+                    if option == .high {
+                        Text("DEFAULT").font(.sg(10, weight: .bold)).kerning(1)
+                            .foregroundStyle(Theme.muted)
+                            .padding(.horizontal, 7).padding(.vertical, 3)
+                            .background(Theme.chipFill, in: Capsule())
+                    }
+                }
+                Text(option.detail)
+                    .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 12)
+            Image(systemName: store.gpsAccuracy == option ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 22))
+                .foregroundStyle(store.gpsAccuracy == option ? Theme.signal : Theme.chipStroke)
+                .padding(.top, 2)
+        }
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
     }
 }

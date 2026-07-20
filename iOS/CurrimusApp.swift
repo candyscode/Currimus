@@ -18,7 +18,7 @@ struct CurrimusApp: App {
                 .tint(Theme.signal)
                 // Pick up runs other apps recorded on every foreground, so the
                 // totals never lag behind what the user actually ran.
-                .task { await store.refreshImportedRuns() }
+                .task { await store.refreshImportedRuns(requestingAccess: true) }
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
                     Task { await store.refreshImportedRuns() }
@@ -88,6 +88,7 @@ struct RootView: View {
         case "settings": return [.settings]
         case "pacerDefaults": return [.pacerDefaults]
         case "hrZones": return [.hrZones]
+        case "gpsAccuracy": return [.gpsAccuracy]
         case "detailRoad": return store.runs.first { !$0.isTrail }.map { [.runDetail($0)] } ?? []
         case "detailTrail": return store.runs.first { $0.isTrail }.map { [.runDetail($0)] } ?? []
         default: return []
@@ -99,6 +100,18 @@ struct RootView: View {
 
     private func applyDemoStateOverrides() {
         #if DEBUG
+        // Health has no data in the simulator, so the derived zone state can
+        // only be seen by injecting one.
+        if UserDefaults.standard.string(forKey: "zones") == "derived" {
+            store.zones = HRZones(
+                maxHR: 187, overrides: nil, restingHR: 48,
+                derivation: HRDerivation(
+                    maxSource: .measured,
+                    maxDate: Calendar.current.date(byAdding: .day, value: -12, to: .now),
+                    age: 38, restingHR: 48, restingSampleDays: 60
+                )
+            )
+        }
         switch UserDefaults.standard.string(forKey: "home") {
         case "norace": store.race = nil
         case "raceday":
@@ -145,5 +158,6 @@ func routeDestination(_ route: Route) -> some View {
     case .settings: SettingsScreen()
     case .pacerDefaults: PacerDefaultsView()
     case .hrZones: HRZonesView()
+    case .gpsAccuracy: GPSAccuracyView()
     }
 }

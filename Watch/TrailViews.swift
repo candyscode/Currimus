@@ -55,13 +55,14 @@ struct TrailRunPager: View {
         RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
                 // Same 52 pt hero box as Run/Pacer (shrinks to fit long trail
-                // times), so the value sits at an identical height on all
-                // three. No digit-morph — it blurred the ticking seconds.
+                // times), so the value sits at an identical height on all three.
                 Text(Format.clock(session.elapsed))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
+                    .animation(.linear(duration: 0.25), value: session.elapsed)
 
                 // The design's 1fr 1fr grid (gap 20 px 36 px, 22 px below the
                 // hero) — grouped under the timer so the free space pools

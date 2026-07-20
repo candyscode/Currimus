@@ -52,6 +52,7 @@ final class RunSession: NSObject, ObservableObject {
     @Published var pacerDistanceKm: Double?
     var zones = HRZones()
     var kilometerAlertEnabled = true
+    var gpsAccuracy: GPSAccuracy = .high
 
     // MARK: - Internals
 
@@ -241,7 +242,13 @@ final class RunSession: NSObject, ObservableObject {
         }
 
         locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        // GPS dominates the run's power draw, so the user's choice lands here.
+        locationManager.desiredAccuracy = gpsAccuracy == .high
+            ? kCLLocationAccuracyBest
+            : gpsAccuracy.desiredAccuracy
+        locationManager.distanceFilter = gpsAccuracy.distanceFilter > 0
+            ? gpsAccuracy.distanceFilter
+            : kCLDistanceFilterNone
         locationManager.activityType = .fitness
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()

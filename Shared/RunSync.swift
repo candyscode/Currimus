@@ -10,6 +10,10 @@ struct WatchSettings: Codable, Equatable {
     var maxHR = 190
     /// Optional manual overrides for the four zone upper-bounds (Z1…Z4).
     var zoneBounds: [Int]?
+    /// Optional, like every field added later — an older watch build must still
+    /// decode a payload from a newer phone.
+    var restingHR: Int?
+    var gpsAccuracy: GPSAccuracy?
 }
 
 /// Watch ↔ iPhone transfer.

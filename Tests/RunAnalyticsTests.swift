@@ -149,4 +149,95 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertEqual(race.daysUntil(), 10)
         XCTAssertEqual(race.requiredPace, 14340 / 42.195, accuracy: 0.01)
     }
+    // MARK: Heart-rate zones
+
+    func testZonesFallBackToPercentOfMaxWithoutRestingHR() {
+        let zones = HRZones(maxHR: 190)
+        // The design's ladder at max 190.
+        XCTAssertEqual(zones.bounds, [115, 133, 152, 171])
+        XCTAssertFalse(zones.usesReserve)
+    }
+
+    func testZonesUseHeartRateReserveWhenRestingIsKnown() {
+        let zones = HRZones(maxHR: 190, restingHR: 50)
+        // Karvonen: 50 + 140 x [0.6, 0.7, 0.8, 0.9]
+        XCTAssertEqual(zones.bounds, [134, 148, 162, 176])
+        XCTAssertTrue(zones.usesReserve)
+        // Reserve zones sit higher than the plain share of max — that is the
+        // whole point, and it must not silently invert.
+        XCTAssertGreaterThan(zones.bounds[0], HRZones(maxHR: 190).bounds[0])
+    }
+
+    func testTwoRunnersSharingMaxButNotRestingGetDifferentZones() {
+        let fit = HRZones(maxHR: 190, restingHR: 42)
+        let unfit = HRZones(maxHR: 190, restingHR: 68)
+        XCTAssertNotEqual(fit.bounds, unfit.bounds)
+        XCTAssertLessThan(fit.bounds[0], unfit.bounds[0])
+    }
+
+    func testManualOverridesBeatEveryDerivation() {
+        var zones = HRZones(maxHR: 190, restingHR: 50)
+        zones.overrides = [120, 140, 160, 175]
+        XCTAssertEqual(zones.bounds, [120, 140, 160, 175])
+        XCTAssertFalse(zones.usesReserve)
+    }
+
+    func testImplausibleRestingHRIsIgnoredRatherThanTrusted() {
+        // A resting pulse at or above max would produce nonsense boundaries.
+        XCTAssertEqual(HRZones(maxHR: 190, restingHR: 200).bounds, HRZones(maxHR: 190).bounds)
+        XCTAssertEqual(HRZones(maxHR: 190, restingHR: 10).bounds, HRZones(maxHR: 190).bounds)
+    }
+
+    func testZoneLookupStaysConsistentWithReserveBounds() {
+        let zones = HRZones(maxHR: 190, restingHR: 50)
+        XCTAssertEqual(zones.zone(for: 100), 1)
+        XCTAssertEqual(zones.zone(for: 134), 1)   // upper edge of Z1
+        XCTAssertEqual(zones.zone(for: 135), 2)
+        XCTAssertEqual(zones.zone(for: 180), 5)
+    }
+
+    func testTanakaBeatsTheNaiveAgeFormula() {
+        // 208 - 0.7 x 40 = 180, where 220 - age would claim 180 too, but at 25
+        // the two diverge and Tanaka is the calibrated one.
+        XCTAssertEqual(HeartRateProfile.tanaka(age: 40), 180)
+        XCTAssertEqual(HeartRateProfile.tanaka(age: 25), 191)
+        XCTAssertNil(HeartRateProfile.tanaka(age: 4))
+    }
+
+    func testDerivationExplainsItselfInPlainLanguage() {
+        let derivation = HRDerivation(maxSource: .measured, maxDate: .now, age: 38,
+                                      restingHR: 52, restingSampleDays: 60)
+        XCTAssertTrue(derivation.maxExplanation.contains("Highest heart rate"))
+        let text = derivation.zoneExplanation(usesReserve: true)
+        XCTAssertTrue(text.contains("52 bpm"))
+        XCTAssertTrue(text.contains("60-day"))
+    }
+
+    func testWatchSettingsCarryRestingHRAndGPSAccuracy() throws {
+        let s = WatchSettings(pacerTargetSecPerKm: 315, pacerDefaultDistanceKm: 10,
+                              kilometerAlert: true, countdownEnabled: false,
+                              maxHR: 188, zoneBounds: nil,
+                              restingHR: 48, gpsAccuracy: .balanced)
+        let back = try JSONDecoder().decode(WatchSettings.self, from: JSONEncoder().encode(s))
+        XCTAssertEqual(back.restingHR, 48)
+        XCTAssertEqual(back.gpsAccuracy, .balanced)
+    }
+
+    func testOlderWatchPayloadWithoutTheNewFieldsStillDecodes() throws {
+        let legacy = """
+        {"pacerTargetSecPerKm":315,"kilometerAlert":true,"countdownEnabled":true,"maxHR":190}
+        """.data(using: .utf8)!
+        let back = try JSONDecoder().decode(WatchSettings.self, from: legacy)
+        XCTAssertEqual(back.maxHR, 190)
+        XCTAssertNil(back.restingHR)
+        XCTAssertNil(back.gpsAccuracy)
+    }
+
+    func testGPSAccuracyTradesPrecisionForBatteryMonotonically() {
+        // Each step down must ask for coarser fixes and fewer of them.
+        XCTAssertLessThan(GPSAccuracy.balanced.desiredAccuracy, GPSAccuracy.saving.desiredAccuracy)
+        XCTAssertLessThan(GPSAccuracy.high.distanceFilter, GPSAccuracy.balanced.distanceFilter)
+        XCTAssertLessThan(GPSAccuracy.balanced.distanceFilter, GPSAccuracy.saving.distanceFilter)
+        XCTAssertEqual(GPSAccuracy.high.distanceFilter, 0)
+    }
 }

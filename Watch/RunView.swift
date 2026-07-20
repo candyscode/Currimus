@@ -45,13 +45,13 @@ struct RunView: View {
         let zone = session.currentZone
         return RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
-                // No digit-morph transition: at 52 pt the crossfade blurred
-                // the seconds for a quarter of every second. Hard ticks read.
                 Text(Format.clock(session.elapsed))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
+                    .contentTransition(.numericText())
+                    .animation(.linear(duration: 0.25), value: session.elapsed)
 
                 // Run only shows two values, and the Ultra leaves ~120 pt of
                 // air under them — so they grow to 28 pt and float centered

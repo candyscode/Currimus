@@ -13,8 +13,9 @@ struct CurrimusWatchApp: App {
         WindowGroup {
             WatchRootView()
                 .environmentObject(store)
-                // Keeps the shared store — and with it the complications —
-                // in step with runs other apps recorded.
+                // Keeps the shared store — and with it the complications — in
+                // step with runs other apps recorded. Silent: the Health sheet
+                // belongs at the start of a run, not over one already running.
                 .task { await store.refreshImportedRuns() }
         }
     }
@@ -103,6 +104,7 @@ struct WatchRootView: View {
         session.zones = store.zones
         session.kilometerAlertEnabled = store.kilometerAlert
         session.countdownEnabled = store.countdownEnabled
+        session.gpsAccuracy = store.gpsAccuracy
         session.begin(type)
     }
 

@@ -4,6 +4,51 @@ enum RunType: String, Codable {
     case quick, pacer, trail
 }
 
+/// How hard the watch drives GPS while recording. The receiver is by far the
+/// biggest battery draw of a run, so this is the one setting that meaningfully
+/// trades precision for hours.
+enum GPSAccuracy: String, Codable, CaseIterable, Identifiable {
+    case high, balanced, saving
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .high: return "High"
+        case .balanced: return "Balanced"
+        case .saving: return "Battery saver"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .high:
+            return "Best possible fix, updated continuously. Most accurate distance, pace and elevation — and the shortest battery life. Use it on trails."
+        case .balanced:
+            return "Fixes to about 10 m, at most one every 5 m run. Distance and pace stay close; sharp switchbacks lose a little detail."
+        case .saving:
+            return "Fixes to about 100 m, at most one every 20 m run. Noticeably longer battery life, but expect distance to drift on winding routes."
+        }
+    }
+
+    /// Metres of horizontal accuracy to ask CoreLocation for.
+    var desiredAccuracy: Double {
+        switch self {
+        case .high: return -1        // kCLLocationAccuracyBest
+        case .balanced: return 10
+        case .saving: return 100
+        }
+    }
+
+    /// Minimum metres between delivered fixes; 0 = every fix.
+    var distanceFilter: Double {
+        switch self {
+        case .high: return 0
+        case .balanced: return 5
+        case .saving: return 20
+        }
+    }
+}
+
 /// A single GPS fix, stored per run for the map, GPX export and grade math.
 struct Coordinate: Codable, Equatable, Hashable {
     var lat: Double
@@ -164,13 +209,32 @@ struct HRZones: Codable, Equatable {
     var maxHR: Int = 190
     /// Manual overrides for the four upper-bounds (Z1…Z4); nil = auto from maxHR.
     var overrides: [Int]?
+    /// Resting heart rate from Apple Health. Present → zones use heart-rate
+    /// reserve (Karvonen), which is markedly more personal than % of max.
+    /// Optional, like every field added later: synthesized `Decodable` ignores
+    /// defaults, so a non-optional here would fail to decode saved settings.
+    var restingHR: Int?
+    /// Plain-language account of where these numbers came from, shown in
+    /// Settings. nil → nothing has been derived from Health yet.
+    var derivation: HRDerivation?
+
+    /// The five HRR percentages the reserve model splits on — the classic
+    /// 50/60/70/80/90 ladder, so Z1 ends at 60 % of reserve and so on.
+    private static let reserveFractions = [0.60, 0.70, 0.80, 0.90]
 
     /// Upper bound of each zone 1…4 (zone 5 is open-ended).
     var bounds: [Int] {
         if let overrides, overrides.count == 4 { return overrides }
+        if let restingHR, restingHR > 30, restingHR < maxHR {
+            // Karvonen: resting + fraction × (max − resting).
+            let reserve = Double(maxHR - restingHR)
+            return Self.reserveFractions.map { Int((Double(restingHR) + reserve * $0).rounded()) }
+        }
         // 60 / 70 / 80 / 90 % of max, matching the design's 115 / 133 / 152 / 171 at max 190.
         return [0.605, 0.70, 0.80, 0.90].map { Int((Double(maxHR) * $0).rounded()) }
     }
+
+    var usesReserve: Bool { overrides == nil && restingHR != nil }
 
     static let zoneNames = ["Recovery", "Easy", "Steady", "Threshold", "Max"]
 
@@ -209,6 +273,47 @@ struct HRZones: Codable, Equatable {
         let (lo, hi) = range(forZone: zone(for: hr))
         guard hi > lo else { return 0.5 }
         return min(max(Double(hr - lo) / Double(hi - lo), 0), 1)
+    }
+}
+
+/// Where the zone numbers came from, so Settings can explain itself rather
+/// than presenting a personalised number as if it fell from the sky.
+struct HRDerivation: Codable, Equatable {
+    enum MaxSource: String, Codable {
+        case measured   // highest reliably observed heart rate
+        case age        // Tanaka age formula
+        case manual
+    }
+    var maxSource: MaxSource
+    /// Day the peak heart rate was recorded (`measured` only).
+    var maxDate: Date?
+    var age: Int?
+    var restingHR: Int?
+    /// Days of resting-HR data the average is built on.
+    var restingSampleDays: Int?
+
+    var maxExplanation: String {
+        switch maxSource {
+        case .measured:
+            let day = maxDate?.formatted(.dateTime.day().month(.abbreviated)) ?? "a recent run"
+            return "Highest heart rate Apple Health has seen you reach, on \(day). Measured beats a formula every time."
+        case .age:
+            guard let age else { return "Estimated from your age." }
+            return "Estimated from your age (\(age)) with the Tanaka formula, 208 − 0.7 × age. "
+                 + "No hard effort in Health yet to measure it from."
+        case .manual:
+            return "Set by you."
+        }
+    }
+
+    func zoneExplanation(usesReserve: Bool) -> String {
+        guard usesReserve, let restingHR else {
+            return "Zones are 60 / 70 / 80 / 90 % of your max heart rate."
+        }
+        let days = restingSampleDays.map { " (\($0)-day average)" } ?? ""
+        return "Zones use your heart-rate reserve — the span between your resting "
+             + "\(restingHR) bpm\(days) and your max. Each boundary sits at 60 / 70 / 80 / 90 % "
+             + "of that span, which fits you far better than a plain share of max."
     }
 }
 
