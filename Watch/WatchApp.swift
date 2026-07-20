@@ -39,6 +39,9 @@ struct WatchRootView: View {
             }
             .foregroundStyle(Theme.ink)
         }
+        // The run scaffold and the summary scroller pick this up, so a
+        // degraded recording shows on every screen without each one wiring it.
+        .environment(\.recordingIssue, session.issues.first)
         .onAppear(perform: handleLaunchRoute)
     }
 
@@ -173,6 +176,17 @@ struct WatchRootView: View {
                 splits: [], zoneSeconds: [0, 0, 0, 0, 0]
             )
             session.debugShowSummary()
+        // Degraded-recording banners, live and on the summary.
+        case "issue-health":
+            session.debugFastForward(.quick, seconds: 2537)
+            session.debugRaiseIssue(.healthDenied)
+        case "issue-location":
+            session.debugFastForward(.trail, seconds: 4500)
+            session.debugRaiseIssue(.locationDenied)
+        case "issue-summary":
+            session.debugFastForward(.quick, seconds: 2537)
+            finishedRun = session.end()
+            session.debugRaiseIssue(.healthDenied)
         case "kmalert": session.debugFastForward(.quick, seconds: 2593, keepAlert: true)
         case "paused": session.debugFastForward(.quick, seconds: 2537, paused: true)
         case "summary":

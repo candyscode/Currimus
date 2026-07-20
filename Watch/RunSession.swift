@@ -12,6 +12,9 @@ import WatchKit
 /// energy; CoreLocation supplies GPS (route + altitude for trail climb).
 /// The finished workout is saved to HealthKit and the run is synced to the
 /// iPhone via WatchConnectivity.
+///
+/// The arithmetic lives in `RunMetrics`; what is left here is lifecycle —
+/// permissions, the workout session, the per-second clock, haptics.
 @MainActor
 final class RunSession: NSObject, ObservableObject {
     enum Phase: Equatable {
@@ -22,6 +25,42 @@ final class RunSession: NSObject, ObservableObject {
         case running
         case paused
         case finished
+    }
+
+    /// Something the recording cannot do, in the user's terms.
+    ///
+    /// These used to be silent `return`s. A denied Health prompt left the
+    /// clock ticking over a distance frozen at 0.00 with nothing on screen to
+    /// explain it — the worst failure this app has, because a run cannot be
+    /// run again.
+    enum RecordingIssue: Equatable, Hashable {
+        case healthUnavailable
+        case healthDenied
+        case workoutFailed
+        case locationDenied
+
+        var headline: String {
+            switch self {
+            case .healthUnavailable: return "No Health data"
+            case .healthDenied: return "Health access off"
+            case .workoutFailed: return "Workout not started"
+            case .locationDenied: return "Location off"
+            }
+        }
+
+        /// What is actually lost, so carrying on is an informed choice.
+        var detail: String {
+            switch self {
+            case .healthUnavailable:
+                return "This watch has no Health data. Time is recorded; heart rate and distance are not."
+            case .healthDenied:
+                return "Without Health access there is no heart rate and no distance. Allow it in Settings › Privacy › Health."
+            case .workoutFailed:
+                return "The workout session did not start. Time and GPS still record; heart rate does not."
+            case .locationDenied:
+                return "Without location there is no route, climb or elevation. Allow it in Settings › Privacy › Location."
+            }
+        }
     }
 
     struct KilometerAlert: Equatable {
@@ -37,15 +76,10 @@ final class RunSession: NSObject, ObservableObject {
     @Published private(set) var elapsed: TimeInterval = 0
     @Published private(set) var distanceKm: Double = 0
     @Published private(set) var heartRate: Int = 0
-    @Published private(set) var rollingPace: TimeInterval = 0
-    @Published private(set) var splits: [TimeInterval] = []
-    @Published private(set) var zoneSeconds: [TimeInterval] = [0, 0, 0, 0, 0]
-    @Published private(set) var climbMeters: Double = 0
-    @Published private(set) var descentMeters: Double = 0
-    @Published private(set) var climbRatePerHour: Double = 0
-    @Published private(set) var altitudeMeters: Double = 0
-    /// Altitude samples of the run so far, for the no-route elevation profile.
-    @Published private(set) var altitudeProfile: [Double] = []
+    @Published private(set) var metrics = RunMetrics()
+    /// Non-fatal recording problems. The run screen shows the first one; the
+    /// summary repeats it so it survives a glance mid-run.
+    @Published private(set) var issues: [RecordingIssue] = []
     @Published var kilometerAlert: KilometerAlert?
     @Published var pacerTarget: TimeInterval = 315
     /// nil = "Off" — pacer runs open-ended, no finish forecast.
@@ -53,6 +87,18 @@ final class RunSession: NSObject, ObservableObject {
     var zones = HRZones()
     var kilometerAlertEnabled = true
     var gpsAccuracy: GPSAccuracy = .high
+
+    // MARK: - Metrics passthrough (what the views read)
+
+    var rollingPace: TimeInterval { metrics.rollingPace }
+    var splits: [TimeInterval] { metrics.splits }
+    var zoneSeconds: [TimeInterval] { metrics.zoneSeconds }
+    var climbMeters: Double { metrics.climbMeters }
+    var descentMeters: Double { metrics.descentMeters }
+    var climbRatePerHour: Double { metrics.climbRatePerHour }
+    var altitudeMeters: Double { metrics.altitudeMeters }
+    /// Altitude samples of the run so far, for the no-route elevation profile.
+    var altitudeProfile: [Double] { metrics.altitudeProfile }
 
     // MARK: - Internals
 
@@ -63,18 +109,9 @@ final class RunSession: NSObject, ObservableObject {
     private let locationManager = CLLocationManager()
 
     private var timer: AnyCancellable?
-    private var lastKmMark: Double = 0
-    private var kmStartElapsed: TimeInterval = 0
     private var alertDismiss: Task<Void, Never>?
-    private var hrSampleSum = 0
-    private var hrSampleCount = 0
-    /// (elapsed, distanceKm) ring for the rolling pace window.
-    private var paceWindow: [(t: TimeInterval, d: Double)] = []
-    /// (elapsed, climbMeters) ring for the 10-minute climb rate.
-    private var climbWindow: [(t: TimeInterval, c: Double)] = []
-    private var lastAltitude: Double?
-    private var lastProfileSample: TimeInterval = 0
-    private var coordinates: [Coordinate] = []
+    /// Wall-clock start, so a paused run still reports when it actually began.
+    private var startDate: Date?
     private var isSimulated = false
     /// When false, `begin` skips the 3-2-1 countdown (iPhone setting).
     var countdownEnabled = true
@@ -84,7 +121,7 @@ final class RunSession: NSObject, ObservableObject {
     /// 0 = no heart-rate reading yet — the zone bar stays unlit.
     var currentZone: Int { heartRate > 0 ? zones.zone(for: heartRate) : 0 }
     var averagePace: TimeInterval { distanceKm > 0.05 ? elapsed / distanceKm : 0 }
-    var averageHR: Int { hrSampleCount > 0 ? hrSampleSum / hrSampleCount : heartRate }
+    var averageHR: Int { metrics.averageHR > 0 ? metrics.averageHR : heartRate }
     /// Pacer: + means slower than target.
     var paceDelta: TimeInterval { rollingPace > 0 ? rollingPace - pacerTarget : 0 }
     /// Pacer: overall time ahead (−) / behind (+) of target schedule.
@@ -109,12 +146,18 @@ final class RunSession: NSObject, ObservableObject {
     func begin(_ type: RunType) {
         self.type = type
         resetMetrics()
+        startDate = .now
         phase = countdownEnabled ? .countdown(3) : .running
         haptic(.start)
         startTimer()
 
         guard !isSimulated else { return }
-        requestAuthorizationThenPrepare()
+        // GPS first, and independently of Health: location needs no HealthKit
+        // grant, and a run with a route but no heart rate beats one with
+        // neither. Starting it inside the authorization callback meant a
+        // declined Health prompt silently killed GPS too.
+        startLocationUpdates()
+        Task { await requestAuthorizationThenPrepare() }
     }
 
     /// Tap-to-skip: jump straight from the countdown into the run.
@@ -147,19 +190,21 @@ final class RunSession: NSObject, ObservableObject {
         // Elevation is recorded for every run (the iPhone shows road climb and
         // uses it for grade-adjusted pace); the GPS track powers the map + GPX.
         let run = Run(
-            date: .now.addingTimeInterval(-elapsed),
+            // `elapsed` excludes pauses, so `now - elapsed` walked the start
+            // time forward on every paused run. Use the real one.
+            date: startDate ?? .now.addingTimeInterval(-elapsed),
             type: type,
             name: defaultName,
             distanceKm: (distanceKm * 100).rounded() / 100,
             duration: elapsed,
             avgHR: averageHR,
-            splits: splits,
-            zoneSeconds: zoneSeconds,
-            climbMeters: climbMeters.rounded(),
-            descentMeters: descentMeters.rounded(),
-            highPointMeters: altitudeProfile.max().map { $0.rounded() },
-            altitudeSamples: altitudeProfile.isEmpty ? nil : altitudeProfile,
-            route: coordinates.isEmpty ? nil : coordinates
+            splits: metrics.splits,
+            zoneSeconds: metrics.zoneSeconds,
+            climbMeters: metrics.climbMeters.rounded(),
+            descentMeters: metrics.descentMeters.rounded(),
+            highPointMeters: metrics.altitudeProfile.max().map { $0.rounded() },
+            altitudeSamples: metrics.altitudeProfile.isEmpty ? nil : metrics.altitudeProfile,
+            route: metrics.coordinates.isEmpty ? nil : metrics.coordinates
         )
 
         finishWorkout()
@@ -170,6 +215,7 @@ final class RunSession: NSObject, ObservableObject {
     func reset() {
         timer?.cancel()
         phase = .idle
+        issues = []
     }
 
     private var defaultName: String {
@@ -183,12 +229,12 @@ final class RunSession: NSObject, ObservableObject {
     }
 
     private func resetMetrics() {
-        elapsed = 0; distanceKm = 0; splits = []; zoneSeconds = [0, 0, 0, 0, 0]
-        climbMeters = 0; descentMeters = 0; climbRatePerHour = 0
-        heartRate = 0; rollingPace = 0; lastKmMark = 0; kmStartElapsed = 0
-        kilometerAlert = nil; hrSampleSum = 0; hrSampleCount = 0
-        paceWindow = []; climbWindow = []; lastAltitude = nil
-        altitudeProfile = []; lastProfileSample = 0; coordinates = []
+        elapsed = 0
+        distanceKm = 0
+        heartRate = 0
+        metrics = RunMetrics()
+        kilometerAlert = nil
+        issues = []
         if type != .pacer { pacerDistanceKm = nil }
     }
 
@@ -197,10 +243,19 @@ final class RunSession: NSObject, ObservableObject {
             .sink { [weak self] _ in self?.tick() }
     }
 
+    private func note(_ issue: RecordingIssue) {
+        guard !issues.contains(issue) else { return }
+        issues.append(issue)
+        Log.session.error("recording degraded: \(issue.headline, privacy: .public)")
+    }
+
     // MARK: - HealthKit
 
-    private func requestAuthorizationThenPrepare() {
-        guard HKHealthStore.isHealthDataAvailable() else { return }
+    private func requestAuthorizationThenPrepare() async {
+        guard HKHealthStore.isHealthDataAvailable() else {
+            note(.healthUnavailable)
+            return
+        }
         let share: Set<HKSampleType> = [
             HKObjectType.workoutType(),
             HKSeriesType.workoutRoute(),
@@ -211,12 +266,20 @@ final class RunSession: NSObject, ObservableObject {
             HKQuantityType(.distanceWalkingRunning),
             HKQuantityType(.activeEnergyBurned),
         ]
-        healthStore.requestAuthorization(toShare: share, read: read) { [weak self] granted, _ in
-            Task { @MainActor in
-                guard granted else { return }
-                self?.startWorkoutSession()
-            }
+        do {
+            try await healthStore.requestAuthorization(toShare: share, read: read)
+        } catch {
+            Log.session.error("health authorization failed: \(error.localizedDescription, privacy: .public)")
+            note(.healthDenied)
+            return
         }
+        // Read authorization is never knowable (Health hides it deliberately),
+        // but a workout we may not save is a denial we can actually detect —
+        // and it is the one that costs the user their heart rate.
+        if healthStore.authorizationStatus(for: HKObjectType.workoutType()) == .sharingDenied {
+            note(.healthDenied)
+        }
+        startWorkoutSession()
     }
 
     private func startWorkoutSession() {
@@ -235,12 +298,20 @@ final class RunSession: NSObject, ObservableObject {
             routeBuilder = HKWorkoutRouteBuilder(healthStore: healthStore, device: nil)
 
             session.startActivity(with: .now)
-            builder.beginCollection(withStart: .now) { _, _ in }
+            builder.beginCollection(withStart: .now) { started, error in
+                if !started {
+                    Log.session.error("collection did not begin: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+                }
+            }
         } catch {
+            Log.session.error("workout session failed: \(error.localizedDescription, privacy: .public)")
             workoutSession = nil
             workoutBuilder = nil
+            note(.workoutFailed)
         }
+    }
 
+    private func startLocationUpdates() {
         locationManager.delegate = self
         // GPS dominates the run's power draw, so the user's choice lands here.
         locationManager.desiredAccuracy = gpsAccuracy == .high
@@ -252,16 +323,33 @@ final class RunSession: NSObject, ObservableObject {
         locationManager.activityType = .fitness
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
+        checkLocationAuthorization()
+    }
+
+    private func checkLocationAuthorization() {
+        switch locationManager.authorizationStatus {
+        case .denied, .restricted: note(.locationDenied)
+        default: break
+        }
     }
 
     private func finishWorkout() {
         locationManager.stopUpdatingLocation()
         guard let session = workoutSession, let builder = workoutBuilder else { return }
         session.end()
-        builder.endCollection(withEnd: .now) { [routeBuilder] _, _ in
-            builder.finishWorkout { workout, _ in
-                if let workout {
-                    routeBuilder?.finishRoute(with: workout, metadata: nil) { _, _ in }
+        builder.endCollection(withEnd: .now) { [routeBuilder] ended, error in
+            if !ended {
+                Log.session.error("collection did not end: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+            }
+            builder.finishWorkout { workout, error in
+                guard let workout else {
+                    Log.session.error("workout not saved: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+                    return
+                }
+                routeBuilder?.finishRoute(with: workout, metadata: nil) { _, error in
+                    if let error {
+                        Log.session.error("route not saved: \(error.localizedDescription, privacy: .public)")
+                    }
                 }
             }
         }
@@ -298,57 +386,15 @@ final class RunSession: NSObject, ObservableObject {
         } else {
             elapsed += 1
         }
-
-        if heartRate > 0 {
-            hrSampleSum += heartRate
-            hrSampleCount += 1
-            zoneSeconds[currentZone - 1] += 1
-        }
-
-        updateRollingPace()
-        updateClimbRate()
-        checkKilometerBoundary()
+        let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
+                                 heartRate: heartRate, zone: currentZone)
+        if let split { raiseKilometerAlert(split) }
     }
 
-    private func updateRollingPace() {
-        paceWindow.append((elapsed, distanceKm))
-        // Rolling last kilometer, falling back to the last 90 s early on.
-        while let first = paceWindow.first,
-              distanceKm - first.d > 1.0 || elapsed - first.t > 600 {
-            paceWindow.removeFirst()
-        }
-        guard let first = paceWindow.first else { return }
-        let dt = elapsed - first.t
-        let dd = distanceKm - first.d
-        if dd > 0.015, dt > 20 {
-            rollingPace = dt / dd
-        } else if dt > 45 {
-            rollingPace = 0 // standing still — no honest pace to show
-        }
-    }
-
-    private func updateClimbRate() {
-        climbWindow.append((elapsed, climbMeters))
-        while let first = climbWindow.first, elapsed - first.t > 600 {
-            climbWindow.removeFirst()
-        }
-        guard let first = climbWindow.first, elapsed - first.t > 60 else { return }
-        let climbed = climbMeters - first.c
-        climbRatePerHour = max(0, climbed / (elapsed - first.t) * 3600)
-    }
-
-    private func checkKilometerBoundary() {
-        guard distanceKm >= lastKmMark + 1 else { return }
-        lastKmMark += 1
-        let split = elapsed - kmStartElapsed
-        kmStartElapsed = elapsed
-        splits.append(split)
+    private func raiseKilometerAlert(_ split: RunMetrics.KilometerSplit) {
         guard kilometerAlertEnabled else { return }
-        kilometerAlert = KilometerAlert(
-            km: Int(lastKmMark),
-            splitSeconds: split,
-            deltaVsAvg: split - averagePace
-        )
+        kilometerAlert = KilometerAlert(km: split.km, splitSeconds: split.seconds,
+                                        deltaVsAvg: split.deltaVsAverage)
         haptic(.notification)
         alertDismiss?.cancel()
         alertDismiss = Task { [weak self] in
@@ -357,46 +403,30 @@ final class RunSession: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Location → distance backstop, route, altitude
+    // MARK: - Location → route, altitude
 
     fileprivate func integrate(_ location: CLLocation) {
         guard phase == .running else { return }
 
-        if location.verticalAccuracy >= 0, location.verticalAccuracy < 12 {
-            altitudeMeters = location.altitude
-            if let last = lastAltitude {
-                let delta = location.altitude - last
-                // Ignore GPS jitter below 1.5 m.
-                if delta > 1.5 {
-                    climbMeters += delta
-                    lastAltitude = location.altitude
-                } else if delta < -1.5 {
-                    descentMeters += -delta
-                    lastAltitude = location.altitude
-                }
-            } else {
-                lastAltitude = location.altitude
-            }
-            if elapsed - lastProfileSample >= 10 {
-                lastProfileSample = elapsed
-                altitudeProfile.append(location.altitude)
-                if altitudeProfile.count > 240 { altitudeProfile.removeFirst() }
-            }
-        }
+        metrics.ingestAltitude(location.altitude,
+                               verticalAccuracy: location.verticalAccuracy,
+                               at: elapsed)
 
-        if location.horizontalAccuracy >= 0, location.horizontalAccuracy < 50 {
-            routeBuilder?.insertRouteData([location]) { _, _ in }
-            // Keep a downsampled local copy for the map + GPX export (~every 5 s).
-            if coordinates.isEmpty || elapsed - (coordinates.last?.t ?? -10) >= 5 {
-                coordinates.append(Coordinate(
-                    lat: location.coordinate.latitude,
-                    lon: location.coordinate.longitude,
-                    elevation: location.altitude,
-                    t: elapsed
-                ))
-                if coordinates.count > 2000 { coordinates.removeFirst() }
+        if location.horizontalAccuracy >= 0,
+           location.horizontalAccuracy < RunMetrics.usableHorizontalAccuracy {
+            routeBuilder?.insertRouteData([location]) { inserted, error in
+                if !inserted {
+                    Log.session.error("route point dropped: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+                }
             }
         }
+        // Local copy for the map + GPX export; the route builder's own copy
+        // goes to Health and is not readable back during the run.
+        metrics.ingestCoordinate(latitude: location.coordinate.latitude,
+                                 longitude: location.coordinate.longitude,
+                                 altitude: location.altitude,
+                                 horizontalAccuracy: location.horizontalAccuracy,
+                                 at: elapsed)
     }
 
     // MARK: - Simulation (DEBUG screenshots / simulator demos only)
@@ -409,17 +439,18 @@ final class RunSession: NSObject, ObservableObject {
 
     /// Screenshot helper: pin the heart rate so the zone-pointer bar can be
     /// captured at an exact position inside a zone.
-    private var debugPinnedHR: Int?
     func debugForceHR(_ hr: Int) { debugPinnedHR = hr; heartRate = hr }
-
-    private var debugPinnedAltitude: Double?
 
     /// Replaces the simulated altitude series with a known one, so the Y axis
     /// can be validated against numbers instead of a moving simulation.
     func debugSetAltitudeProfile(_ samples: [Double]) {
-        altitudeProfile = samples
-        altitudeMeters = samples.last ?? 0
-        debugPinnedAltitude = altitudeMeters
+        metrics.overrideAltitudeProfile(samples)
+        debugPinnedAltitude = true
+    }
+
+    /// Screenshot helper: render an issue banner without a real failure.
+    func debugRaiseIssue(_ issue: RecordingIssue) {
+        issues = [issue]
     }
 
     /// Screenshot / demo helper: jump straight into a simulated run N seconds in.
@@ -434,6 +465,12 @@ final class RunSession: NSObject, ObservableObject {
     }
     #endif
 
+    /// A pinned debug profile owns the altitude — otherwise the simulation
+    /// would drift the readout out of the chart's own axis range.
+    private var debugPinnedAltitude = false
+    /// Pinned heart rate for zone-pointer screenshots.
+    private var debugPinnedHR: Int?
+
     private func simulateOneSecond() {
         elapsed += 1
         let base: TimeInterval = {
@@ -445,39 +482,40 @@ final class RunSession: NSObject, ObservableObject {
         }()
         let wave = sin(elapsed / 285) * 11 + sin(elapsed / 47) * 6 + sin(elapsed / 13) * 3
         let warmup = max(0, 30 - elapsed) * 0.6
-        rollingPace = base + wave + warmup + Double.random(in: -2...2)
-        distanceKm += 1 / rollingPace
-        if let pinned = debugPinnedHR {
-            heartRate = pinned
-        } else {
-            let effortHR: Double = type == .trail ? 158 : (type == .pacer ? 155 : 152)
-            let ramp = min(1, elapsed / 300)
-            heartRate = Int(82 + (effortHR - 82) * ramp + sin(elapsed / 31) * 5 + Double.random(in: -1...1))
-        }
-        hrSampleSum += heartRate
-        hrSampleCount += 1
-        zoneSeconds[currentZone - 1] += 1
+        let pace = base + wave + warmup + Double.random(in: -2...2)
+        metrics.setRollingPace(pace)
+        distanceKm += 1 / pace
+
+        #if DEBUG
+        heartRate = debugPinnedHR ?? simulatedHeartRate
+        #else
+        heartRate = simulatedHeartRate
+        #endif
+
         if type == .trail {
             let climbing = sin(elapsed / 120) > -0.35
             if climbing {
                 let rate = 420 + sin(elapsed / 60) * 140
-                climbMeters += rate / 3600
-                climbRatePerHour = max(0, rate + Double.random(in: -25...25))
+                metrics.addSimulatedClimb(rate / 3600, ratePerHour: rate + Double.random(in: -25...25))
             } else {
-                descentMeters += 700 / 3600
-                climbRatePerHour = max(0, climbRatePerHour - 40)
+                metrics.addSimulatedDescent(700 / 3600)
             }
-            // A pinned debug profile owns the altitude — otherwise the sim
-            // would drift the readout out of the chart's own axis range.
-            if debugPinnedAltitude == nil {
-                altitudeMeters = 704 + climbMeters - descentMeters
-                if elapsed - lastProfileSample >= 10 {
-                    lastProfileSample = elapsed
-                    altitudeProfile.append(altitudeMeters)
-                }
+            if !debugPinnedAltitude {
+                metrics.setSimulatedAltitude(704 + metrics.climbMeters - metrics.descentMeters,
+                                             at: elapsed)
             }
         }
-        checkKilometerBoundary()
+
+        // Zone time and splits follow the same path a real second takes.
+        let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
+                                 heartRate: heartRate, zone: currentZone)
+        if let split { raiseKilometerAlert(split) }
+    }
+
+    private var simulatedHeartRate: Int {
+        let effortHR: Double = type == .trail ? 158 : (type == .pacer ? 155 : 152)
+        let ramp = min(1, elapsed / 300)
+        return Int(82 + (effortHR - 82) * ramp + sin(elapsed / 31) * 5 + Double.random(in: -1...1))
     }
 
     // MARK: - Haptics
@@ -514,7 +552,10 @@ extension RunSession: HKWorkoutSessionDelegate {
         }
     }
 
-    nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {}
+    nonisolated func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
+        Log.session.error("workout session failed: \(error.localizedDescription, privacy: .public)")
+        Task { @MainActor in self.note(.workoutFailed) }
+    }
 }
 
 extension RunSession: HKLiveWorkoutBuilderDelegate {
@@ -547,5 +588,13 @@ extension RunSession: CLLocationManagerDelegate {
         Task { @MainActor in
             for location in locations { self.integrate(location) }
         }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        Log.session.error("location failed: \(error.localizedDescription, privacy: .public)")
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        Task { @MainActor in self.checkLocationAuthorization() }
     }
 }

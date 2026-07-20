@@ -18,6 +18,7 @@ enum RunLayout {
 /// A live run screen: a top-anchored hero group and a bottom-anchored footer
 /// (zone bar / pacer gauge) with the free space pooled between them.
 struct RunScaffold<Hero: View, Footer: View>: View {
+    @Environment(\.recordingIssue) private var issue
     @ViewBuilder var hero: Hero
     @ViewBuilder var footer: Footer
 
@@ -25,6 +26,11 @@ struct RunScaffold<Hero: View, Footer: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             hero
             Spacer(minLength: RunLayout.heroToFooter)
+            // Every live screen goes through here, so a degraded recording is
+            // visible on Run, Pacer and Trail alike.
+            if let issue {
+                RecordingIssueNote(issue: issue).padding(.bottom, 5)
+            }
             footer
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
