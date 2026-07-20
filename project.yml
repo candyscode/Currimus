@@ -12,6 +12,10 @@ settings:
     # were being read from the delegate's background queue.
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
+    # Extract every user-facing literal into Resources/Localizable.xcstrings.
+    # SwiftUI Text literals are already localization keys; this makes them
+    # (and String(localized:) call sites) show up in the catalogue.
+    SWIFT_EMIT_LOC_STRINGS: YES
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_STYLE: Automatic
     CURRENT_PROJECT_VERSION: 1
@@ -26,6 +30,8 @@ targets:
       - iOS
       - Shared
       - path: Fonts
+        buildPhase: resources
+      - path: Resources/Localizable.xcstrings
         buildPhase: resources
     settings:
       base:
@@ -53,6 +59,8 @@ targets:
       - Watch
       - Shared
       - path: Fonts
+        buildPhase: resources
+      - path: Resources/Localizable.xcstrings
         buildPhase: resources
     settings:
       base:

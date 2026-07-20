@@ -57,7 +57,7 @@ struct RecordsView: View {
                     .foregroundStyle(record.value == "—" ? Theme.muted : Theme.ink)
                 Text(record.delta ?? record.date.formatted(.dateTime.day().month(.abbreviated)))
                     .font(.sg(12))
-                    .foregroundStyle(record.delta?.contains("race day") == true ? Theme.signal : Theme.muted)
+                    .foregroundStyle(record.isRaceCountdown ? Theme.signal : Theme.muted)
             }
         }
         .padding(.vertical, 19)

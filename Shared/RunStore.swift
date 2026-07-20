@@ -451,33 +451,38 @@ final class RunStore: ObservableObject {
     private func buildRecords() -> [RecordEntry] {
         let runs = allRuns
         let prs = RunAnalytics.personalBests(runs: runs)
-        var entries: [RecordEntry] = []
 
-        func add(_ label: String, km: Double) {
+        let benchmarks: [RecordEntry.Kind] = [.oneK, .fiveK, .tenK, .half, .marathon]
+        var entries: [RecordEntry] = benchmarks.map { kind in
+            guard let km = kind.km else { preconditionFailure("benchmark kinds carry a distance") }
             if let time = prs[km] {
-                entries.append(RecordEntry(label: label, value: Format.clock(time),
-                                           date: recordDate(km: km, in: runs)))
-            } else {
-                let note = race?.distance.km == km ? "race day in \(race?.daysUntil() ?? 0) days" : "—"
-                entries.append(RecordEntry(label: label, value: "—", date: .now, delta: note))
+                return RecordEntry(kind: kind, value: Format.clock(time),
+                                   date: recordDate(km: km, in: runs))
             }
+            let isTarget = race?.distance.km == km
+            let note = isTarget
+                ? String(localized: "race day in \(race?.daysUntil() ?? 0) days")
+                : "—"
+            return RecordEntry(kind: kind, value: "—", date: .now,
+                               delta: note, isRaceCountdown: isTarget)
         }
-        add("1 km", km: 1)
-        add("5 km", km: 5)
-        add("10 km", km: 10)
-        add("Half marathon", km: 21.0975)
-        add("Marathon", km: 42.195)
         if let longest = longestRun {
-            entries.append(RecordEntry(label: "Longest run",
+            entries.append(RecordEntry(kind: .longest,
                                        value: "\(Format.km(longest.distanceKm, decimals: 1)) km",
                                        date: longest.date))
         }
         if let climb = mostClimbRun, (climb.climbMeters ?? 0) > 0 {
-            entries.append(RecordEntry(label: "Most climb",
+            entries.append(RecordEntry(kind: .mostClimb,
                                        value: "\(Int(climb.climbMeters ?? 0)) m",
-                                       date: climb.date, delta: "trail"))
+                                       date: climb.date, delta: String(localized: "trail")))
         }
         return entries
+    }
+
+    /// One record row by kind — what the Progress cards and the tests want,
+    /// without matching on display text.
+    func record(_ kind: RecordEntry.Kind) -> RecordEntry? {
+        records.first { $0.kind == kind }
     }
 
     /// The benchmark PR the Records banner leads with: the freshest one, and

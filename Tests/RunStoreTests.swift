@@ -66,10 +66,10 @@ final class RunStoreTests: XCTestCase {
     func testRecordsProduceRealBenchmarks() {
         let store = makeStore(seeded: true)
         let records = store.records
-        XCTAssertTrue(records.contains { $0.label == "10 km" && $0.value != "—" })
-        XCTAssertTrue(records.contains { $0.label == "Longest run" })
+        XCTAssertTrue(records.contains { $0.kind == .tenK && $0.value != "—" })
+        XCTAssertTrue(records.contains { $0.kind == .longest })
         // Marathon has no effort yet in the build-up → em dash + race note.
-        XCTAssertEqual(records.first { $0.label == "Marathon" }?.value, "—")
+        XCTAssertEqual(store.record(.marathon)?.value, "—")
     }
 
     func testPredictionExistsForMarathonBuildUp() throws {
@@ -107,9 +107,9 @@ final class RunStoreTests: XCTestCase {
 
     func testRecordsRefreshWhenARunIsAdded() {
         let store = makeStore()
-        XCTAssertEqual(store.records.first { $0.label == "5 km" }?.value, "—")
+        XCTAssertEqual(store.record(.fiveK)?.value, "—")
         store.add(run("5K", km: 5, minutes: 25, splits: Array(repeating: 300, count: 5)))
-        XCTAssertEqual(store.records.first { $0.label == "5 km" }?.value, Format.clock(1500))
+        XCTAssertEqual(store.record(.fiveK)?.value, Format.clock(1500))
     }
 
     func testLatestBenchmarkPrefersTheFresherPR() {

@@ -41,10 +41,10 @@ final class RunSession: NSObject, ObservableObject {
 
         var headline: String {
             switch self {
-            case .healthUnavailable: return "No Health data"
-            case .healthDenied: return "Health access off"
-            case .workoutFailed: return "Workout not started"
-            case .locationDenied: return "Location off"
+            case .healthUnavailable: return String(localized: "No Health data")
+            case .healthDenied: return String(localized: "Health access off")
+            case .workoutFailed: return String(localized: "Workout not started")
+            case .locationDenied: return String(localized: "Location off")
             }
         }
 
@@ -52,13 +52,13 @@ final class RunSession: NSObject, ObservableObject {
         var detail: String {
             switch self {
             case .healthUnavailable:
-                return "This watch has no Health data. Time is recorded; heart rate and distance are not."
+                return String(localized: "This watch has no Health data. Time is recorded; heart rate and distance are not.")
             case .healthDenied:
-                return "Without Health access there is no heart rate and no distance. Allow it in Settings › Privacy › Health."
+                return String(localized: "Without Health access there is no heart rate and no distance. Allow it in Settings › Privacy › Health.")
             case .workoutFailed:
-                return "The workout session did not start. Time and GPS still record; heart rate does not."
+                return String(localized: "The workout session did not start. Time and GPS still record; heart rate does not.")
             case .locationDenied:
-                return "Without location there is no route, climb or elevation. Allow it in Settings › Privacy › Location."
+                return String(localized: "Without location there is no route, climb or elevation. Allow it in Settings › Privacy › Location.")
             }
         }
     }
@@ -220,11 +220,12 @@ final class RunSession: NSObject, ObservableObject {
 
     private var defaultName: String {
         switch type {
-        case .trail: return "Trail run"
-        case .pacer: return "Pacer \(Format.pace(pacerTarget))"
+        case .trail: return String(localized: "Trail run")
+        case .pacer: return String(localized: "Pacer \(Format.pace(pacerTarget))")
         case .quick:
             let hour = Calendar.current.component(.hour, from: .now)
-            return hour < 11 ? "Morning Run" : (hour < 17 ? "Run" : "Evening Run")
+            return hour < 11 ? String(localized: "Morning Run")
+                : (hour < 17 ? String(localized: "Run") : String(localized: "Evening Run"))
         }
     }
 

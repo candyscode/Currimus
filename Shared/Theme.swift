@@ -49,7 +49,16 @@ extension Color {
 }
 
 extension Font {
+    /// Above this size, type is display type: the race countdown, the week
+    /// total, the run hero. It sits in fixed grids tuned to the design and is
+    /// already the largest thing on screen, so it does not scale.
+    static let displayThreshold: CGFloat = 20
+
     /// Bundled Space Grotesk face for a given weight.
+    ///
+    /// Small type — labels, list rows, explanatory copy — scales with Dynamic
+    /// Type. At the default setting `relativeTo:` yields exactly `size`, so
+    /// nothing moves for most people; the app root caps the top end.
     static func sg(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
         let face: String
         switch weight {
@@ -59,6 +68,14 @@ extension Font {
         case .light, .thin, .ultraLight: face = "SpaceGrotesk-Light"
         default: face = "SpaceGrotesk-Regular"
         }
+        #if os(iOS)
+        if size <= displayThreshold {
+            return .custom(face, size: size, relativeTo: .body)
+        }
+        #endif
+        // watchOS stays fixed throughout: the run glance is a measured grid
+        // whose values are already the biggest type in the product, and a
+        // reflowed pace mid-stride helps nobody.
         return .custom(face, size: size)
     }
 

@@ -104,7 +104,7 @@ struct RunDetailView: View {
             Text(stamp).foregroundStyle(Theme.bright)
             + (run.isTrail
                ? Text(" · TRAIL").foregroundStyle(Theme.signal).fontWeight(.semibold)
-               : Text(""))
+               : Text(verbatim: ""))
         )
         .font(.sg(13, weight: .medium)).kerning(13 * 0.12)
         .lineLimit(1).minimumScaleFactor(0.8)

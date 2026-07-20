@@ -38,7 +38,9 @@ struct ProgressScreen: View {
             }
             .padding(.top, 8)
             TrendChart(values: series, topLabel: Format.pace((present.max() ?? 0) + 8),
-                       bottomLabel: Format.pace((present.min() ?? 0) - 8), invert: true)
+                       bottomLabel: Format.pace((present.min() ?? 0) - 8), invert: true,
+                       accessibilityTitle: "Average pace per week, last 12 weeks",
+                       describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 18)
             monthAxis.padding(.top, 4)
 
@@ -47,9 +49,10 @@ struct ProgressScreen: View {
 
             divider
             Text("MONTHLY KM").kicker(13, color: Theme.bright, tracking: 0.12).padding(.bottom, 14)
-            MonthBars(items: store.monthlyTotals(count: 6).map { (shortMonth($0.month), $0.km) }) { "\(Int($0))" }
+            MonthBars(items: store.monthlyTotals(count: 6).map { (shortMonth($0.month), $0.km) },
+                      unit: "km") { "\(Int($0))" }
 
-            recordsCard(title: "Records", value: "\(store.records.first { $0.label == "5 km" }?.value ?? "—") 5K")
+            recordsCard(title: "Records", value: "\(store.record(.fiveK)?.value ?? "—") 5K")
         }
     }
 
@@ -89,7 +92,9 @@ struct ProgressScreen: View {
             }
             .padding(.top, 8)
             TrendChart(values: climbSeries, topLabel: "\(Int((present.max() ?? 0)))",
-                       bottomLabel: "\(Int((present.min() ?? 0)))", invert: false)
+                       bottomLabel: "\(Int((present.min() ?? 0)))", invert: false,
+                       accessibilityTitle: "Climb rate per week, last 12 weeks",
+                       describe: { "\(Int($0)) metres per hour" })
                 .padding(.top, 18)
             monthAxis.padding(.top, 4)
 
@@ -98,7 +103,8 @@ struct ProgressScreen: View {
 
             divider
             Text("MONTHLY CLIMB · M").kicker(13, color: Theme.bright, tracking: 0.12).padding(.bottom, 14)
-            MonthBars(items: store.monthlyClimb(count: 6).map { (shortMonth($0.month), $0.climb) }) { climb in
+            MonthBars(items: store.monthlyClimb(count: 6).map { (shortMonth($0.month), $0.climb) },
+                      unit: "metres of climb") { climb in
                 climb >= 1000 ? String(format: "%.1fk", climb / 1000) : "\(Int(climb))"
             }
 
