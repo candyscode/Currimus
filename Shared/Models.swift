@@ -48,8 +48,18 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     var altitudeSamples: [Double]?
     /// GPS track — map + GPX export.
     var route: [Coordinate]?
+    /// Set when another app recorded this run and Currimus read it from Apple
+    /// Health. Optional on purpose: synthesized `Decodable` ignores property
+    /// defaults, so a non-optional field here would fail to decode every run
+    /// persisted before it existed — i.e. wipe the log. New fields stay
+    /// optional; read it through `isImported`.
+    var imported: Bool?
 
     var paceSecPerKm: TimeInterval { distanceKm > 0.05 ? duration / distanceKm : 0 }
+
+    /// Recorded elsewhere: counts towards every total, but Currimus does not
+    /// own it — it cannot be deleted here and carries no splits or zone data.
+    var isImported: Bool { imported == true }
 
     var isTrail: Bool { type == .trail }
 

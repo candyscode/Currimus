@@ -205,6 +205,7 @@ final class RunSession: NSObject, ObservableObject {
             HKSeriesType.workoutRoute(),
         ]
         let read: Set<HKObjectType> = [
+            HKObjectType.workoutType(),
             HKQuantityType(.heartRate),
             HKQuantityType(.distanceWalkingRunning),
             HKQuantityType(.activeEnergyBurned),

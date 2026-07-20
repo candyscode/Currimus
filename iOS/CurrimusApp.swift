@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct CurrimusApp: App {
     @StateObject private var store = RunStore()
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         FontLoader.registerAll()
@@ -15,6 +16,13 @@ struct CurrimusApp: App {
                 .environmentObject(store)
                 .preferredColorScheme(.dark)
                 .tint(Theme.signal)
+                // Pick up runs other apps recorded on every foreground, so the
+                // totals never lag behind what the user actually ran.
+                .task { await store.refreshImportedRuns() }
+                .onChange(of: scenePhase) { _, phase in
+                    guard phase == .active else { return }
+                    Task { await store.refreshImportedRuns() }
+                }
         }
     }
 }

@@ -13,6 +13,9 @@ struct CurrimusWatchApp: App {
         WindowGroup {
             WatchRootView()
                 .environmentObject(store)
+                // Keeps the shared store — and with it the complications —
+                // in step with runs other apps recorded.
+                .task { await store.refreshImportedRuns() }
         }
     }
 }

@@ -127,6 +127,8 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertEqual(run.distanceKm, 10)
         XCTAssertNil(run.altitudeSamples)
         XCTAssertNil(run.route)
+        // Every field added later must be optional, or old logs stop decoding.
+        XCTAssertFalse(run.isImported)
     }
 
     func testRunRoundTripsWithRouteAndAltitude() throws {

@@ -93,7 +93,12 @@ struct LogRow: View {
 
     @ViewBuilder
     private var detail: some View {
-        if run.isTrail {
+        if run.isImported {
+            // Another app recorded it: name the source instead of claiming
+            // zone data Currimus never captured.
+            Text("\(run.name) · \(Format.clock(run.duration))")
+                .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
+        } else if run.isTrail {
             Text("Trail · \(Format.clock(run.duration)) · +\(Int(run.climbMeters ?? 0)) m")
                 .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
         } else if let prTag, prTag != "Longest" {

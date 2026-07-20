@@ -32,6 +32,12 @@ targets:
         INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads your running workouts from Apple Health."
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Currimus saves your runs as workouts to Apple Health."
         TARGETED_DEVICE_FAMILY: "1"
+    entitlements:
+      path: iOS/Currimus.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.security.application-groups: [group.com.currimus.app]
     dependencies:
       - target: CurrimusWatch
 
@@ -65,6 +71,8 @@ targets:
       path: Watch/CurrimusWatch.entitlements
       properties:
         com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.security.application-groups: [group.com.currimus.app]
     dependencies:
       - target: CurrimusWatchWidgets
 
@@ -80,6 +88,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.watchkitapp.widgets
         INFOPLIST_KEY_CFBundleDisplayName: Currimus
+    entitlements:
+      path: WatchWidgets/CurrimusWatchWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.currimus.app]
     info:
       path: WatchWidgets/Info.plist
       properties:

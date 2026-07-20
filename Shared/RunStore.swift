@@ -1,5 +1,8 @@
 import Foundation
 import Combine
+#if canImport(HealthKit)
+import HealthKit
+#endif
 
 /// App-wide state: run log, race, records, settings. Recorded runs persist
 /// locally; demo content is only seeded with `-demo 1` (screenshots).
@@ -7,7 +10,14 @@ import Combine
 /// consumes them and syncs finished runs back.
 final class RunStore: ObservableObject {
     @Published var runs: [Run] { didSet { persist() } }
+    /// Runs other apps recorded, read from Apple Health. Cached on disk so the
+    /// widgets — which cannot run a HealthKit query — see them too.
+    @Published var importedRuns: [Run] = [] { didSet { persistImported() } }
     @Published var race: Race? { didSet { persistRace(); pushSettings() } }
+
+    /// Everything the user ran, whoever recorded it. Every total, chart and
+    /// record reads this; `runs` alone stays the list Currimus owns.
+    var allRuns: [Run] { (runs + importedRuns).sorted { $0.date > $1.date } }
 
     @Published var zones = HRZones() { didSet { persistSettings(); pushSettings() } }
     @Published var weeklyGoalKm: Double = 55 { didSet { persistSettings() } }
@@ -18,6 +28,7 @@ final class RunStore: ObservableObject {
     @Published var usesKilometers = true { didSet { persistSettings() } }
 
     private static let runsKey = "runs.v2"
+    private static let importedKey = "imported.v1"
     private static let raceKey = "race.v1"
     private static let settingsKey = "settings.v1"
     private var isLoading = true
@@ -28,10 +39,14 @@ final class RunStore: ObservableObject {
             race = SampleData.race
         } else {
             runs = Self.loadRuns()
+            importedRuns = Self.loadImported()
             race = Self.loadRace()
         }
         loadSettings()
         isLoading = false
+        // Seed the shared store on first launch: without this the widget shows
+        // the default goal until the user happens to change a setting.
+        persistSettings()
 
         RunSync.shared.onReceive = { [weak self] run in self?.add(run) }
         RunSync.shared.onSettings = { [weak self] settings in self?.apply(settings) }
@@ -39,58 +54,106 @@ final class RunStore: ObservableObject {
         pushSettings()
     }
 
-    var lastRun: Run? { runs.first }
+    var lastRun: Run? { allRuns.first }
 
     func add(_ run: Run) {
         guard !runs.contains(where: { $0.id == run.id }) else { return }
         runs.insert(run, at: 0)
         runs.sort { $0.date > $1.date }
+        // Health may already hold the same outing from another app.
+        importedRuns = HealthImport.merging(importedRuns, with: runs)
     }
 
     func deleteRuns(at offsets: IndexSet, in subset: [Run]) {
-        let ids = offsets.map { subset[$0].id }
+        // Imported runs live in Health, not here — deleting one locally would
+        // only make it come back on the next refresh.
+        let ids = offsets.map { subset[$0] }.filter { !$0.isImported }.map(\.id)
         runs.removeAll { ids.contains($0.id) }
     }
 
+    // MARK: - Apple Health
+
+    #if canImport(HealthKit)
+    private let healthStore = HKHealthStore()
+
+    /// Pulls in runs other apps recorded. Safe to call on every foreground —
+    /// the list is replaced wholesale, so nothing accumulates.
+    @MainActor
+    func refreshImportedRuns() async {
+        guard !UserDefaults.standard.bool(forKey: "demo") else { return }
+        await HealthImport.requestAuthorization(healthStore)
+        let fetched = await HealthImport.fetchRuns(healthStore)
+        let merged = HealthImport.merging(fetched, with: runs)
+        if merged != importedRuns { importedRuns = merged }
+    }
+    #endif
+
     // MARK: - Persistence
 
+    /// App-group defaults so the widget extension reads the same store as the
+    /// app; falls back to standard defaults if the group is unavailable.
+    static let defaults: UserDefaults = {
+        guard let shared = UserDefaults(suiteName: "group.com.currimus.app") else { return .standard }
+        // The log used to live in standard defaults. Moving to the group would
+        // read as "all my runs vanished", so carry them over once.
+        for key in [runsKey, raceKey, settingsKey, "weeklyGoal", "usesKilometers"]
+        where shared.object(forKey: key) == nil {
+            if let legacy = UserDefaults.standard.object(forKey: key) {
+                shared.set(legacy, forKey: key)
+            }
+        }
+        return shared
+    }()
+
     private static func loadRuns() -> [Run] {
-        guard let data = UserDefaults.standard.data(forKey: runsKey),
+        guard let data = defaults.data(forKey: runsKey),
               let stored = try? JSONDecoder().decode([Run].self, from: data) else { return [] }
         return stored
     }
 
+    private static func loadImported() -> [Run] {
+        guard let data = defaults.data(forKey: importedKey),
+              let stored = try? JSONDecoder().decode([Run].self, from: data) else { return [] }
+        return stored
+    }
+
+    private func persistImported() {
+        guard !isLoading, !UserDefaults.standard.bool(forKey: "demo"),
+              let data = try? JSONEncoder().encode(importedRuns) else { return }
+        Self.defaults.set(data, forKey: Self.importedKey)
+    }
+
     private static func loadRace() -> Race? {
-        guard let data = UserDefaults.standard.data(forKey: raceKey) else { return nil }
+        guard let data = defaults.data(forKey: raceKey) else { return nil }
         return try? JSONDecoder().decode(Race.self, from: data)
     }
 
     private func persist() {
         guard !isLoading, !UserDefaults.standard.bool(forKey: "demo"),
               let data = try? JSONEncoder().encode(runs) else { return }
-        UserDefaults.standard.set(data, forKey: Self.runsKey)
+        Self.defaults.set(data, forKey: Self.runsKey)
     }
 
     private func persistRace() {
         guard !isLoading, !UserDefaults.standard.bool(forKey: "demo") else { return }
         if let race, let data = try? JSONEncoder().encode(race) {
-            UserDefaults.standard.set(data, forKey: Self.raceKey)
+            Self.defaults.set(data, forKey: Self.raceKey)
         } else {
-            UserDefaults.standard.removeObject(forKey: Self.raceKey)
+            Self.defaults.removeObject(forKey: Self.raceKey)
         }
     }
 
     private func persistSettings() {
         guard !isLoading else { return }
         if let data = try? JSONEncoder().encode(watchSettings) {
-            UserDefaults.standard.set(data, forKey: Self.settingsKey)
+            Self.defaults.set(data, forKey: Self.settingsKey)
         }
-        UserDefaults.standard.set(weeklyGoalKm, forKey: "weeklyGoal")
-        UserDefaults.standard.set(usesKilometers, forKey: "usesKilometers")
+        Self.defaults.set(weeklyGoalKm, forKey: "weeklyGoal")
+        Self.defaults.set(usesKilometers, forKey: "usesKilometers")
     }
 
     private func loadSettings() {
-        if let data = UserDefaults.standard.data(forKey: Self.settingsKey),
+        if let data = Self.defaults.data(forKey: Self.settingsKey),
            let s = try? JSONDecoder().decode(WatchSettings.self, from: data) {
             pacerTargetSecPerKm = s.pacerTargetSecPerKm
             pacerDefaultDistanceKm = s.pacerDefaultDistanceKm
@@ -98,11 +161,11 @@ final class RunStore: ObservableObject {
             countdownEnabled = s.countdownEnabled
             zones = HRZones(maxHR: s.maxHR, overrides: s.zoneBounds)
         }
-        if UserDefaults.standard.object(forKey: "weeklyGoal") != nil {
-            weeklyGoalKm = UserDefaults.standard.double(forKey: "weeklyGoal")
+        if Self.defaults.object(forKey: "weeklyGoal") != nil {
+            weeklyGoalKm = Self.defaults.double(forKey: "weeklyGoal")
         }
-        if UserDefaults.standard.object(forKey: "usesKilometers") != nil {
-            usesKilometers = UserDefaults.standard.bool(forKey: "usesKilometers")
+        if Self.defaults.object(forKey: "usesKilometers") != nil {
+            usesKilometers = Self.defaults.bool(forKey: "usesKilometers")
         }
     }
 
@@ -145,11 +208,11 @@ final class RunStore: ObservableObject {
     private var calendar: Calendar { Calendar.current }
 
     func runs(inWeekOf date: Date = .now) -> [Run] {
-        runs.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .weekOfYear) }
+        allRuns.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .weekOfYear) }
     }
 
     func runs(inMonthOf date: Date) -> [Run] {
-        runs.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .month) }
+        allRuns.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .month) }
     }
 
     var weekKm: Double { runs(inWeekOf: .now).reduce(0) { $0 + $1.distanceKm } }
@@ -194,9 +257,9 @@ final class RunStore: ObservableObject {
 
     func filteredRuns(_ filter: LogFilter) -> [Run] {
         switch filter {
-        case .all: return runs
-        case .road: return runs.filter { !$0.isTrail }
-        case .trail: return runs.filter { $0.isTrail }
+        case .all: return allRuns
+        case .road: return allRuns.filter { !$0.isTrail }
+        case .trail: return allRuns.filter { $0.isTrail }
         }
     }
 
@@ -208,7 +271,7 @@ final class RunStore: ObservableObject {
     }
 
     var yearKm: Double {
-        runs.filter { calendar.isDate($0.date, equalTo: .now, toGranularity: .year) }
+        allRuns.filter { calendar.isDate($0.date, equalTo: .now, toGranularity: .year) }
             .reduce(0) { $0 + $1.distanceKm }
     }
 
@@ -227,15 +290,15 @@ final class RunStore: ObservableObject {
 
     var prediction: RunAnalytics.Prediction? {
         guard let race else { return nil }
-        return RunAnalytics.predict(race: race, runs: runs)
+        return RunAnalytics.predict(race: race, runs: allRuns)
     }
 
     /// Longest run and its date.
-    var longestRun: Run? { runs.max { $0.distanceKm < $1.distanceKm } }
-    var mostClimbRun: Run? { runs.max { ($0.climbMeters ?? 0) < ($1.climbMeters ?? 0) } }
+    var longestRun: Run? { allRuns.max { $0.distanceKm < $1.distanceKm } }
+    var mostClimbRun: Run? { allRuns.max { ($0.climbMeters ?? 0) < ($1.climbMeters ?? 0) } }
 
     var records: [RecordEntry] {
-        let prs = RunAnalytics.personalBests(runs: runs)
+        let prs = RunAnalytics.personalBests(runs: allRuns)
         var entries: [RecordEntry] = []
         func add(_ label: String, km: Double) {
             if let t = prs[km] {
@@ -265,7 +328,7 @@ final class RunStore: ObservableObject {
 
     private func recordDate(km: Double) -> Date {
         // Attribute the PR to the run that holds the fastest window.
-        if km <= 10, let run = runs.filter({ $0.splits.count >= Int(km) })
+        if km <= 10, let run = allRuns.filter({ $0.splits.count >= Int(km) })
             .min(by: { (RunAnalytics.fastestWindow(km: Int(km), runs: [$0]) ?? .infinity)
                      < (RunAnalytics.fastestWindow(km: Int(km), runs: [$1]) ?? .infinity) }) {
             return run.date
