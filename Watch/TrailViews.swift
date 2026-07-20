@@ -46,11 +46,7 @@ struct TrailRunPager: View {
         // the kilometer alert owns the canvas.
         .topBarCaption {
             if session.kilometerAlert == nil {
-                if page == 0 {
-                    TopBarCaption(text: "TRAIL", mark: true)
-                } else {
-                    TopBarCaption(text: "ELEVATION · \(Int(session.altitudeMeters)) m", mark: true)
-                }
+                TopBarCaption(text: page == 0 ? "TRAIL" : "ELEVATION", mark: true)
             }
         }
     }
@@ -121,8 +117,6 @@ struct TrailRunPager: View {
 struct ElevationChart: View {
     /// Normalized profile (x 0…1 left→right, y 0…1 bottom→top).
     var points: [CGPoint]
-    /// Planned route drawn behind in grey; `points` is then the progress.
-    var routePoints: [CGPoint]?
     var lowMeters: Double
     var highMeters: Double
     var showsDot = true
@@ -144,11 +138,9 @@ struct ElevationChart: View {
             let plotW = proxy.size.width - plotX
             let topY = topInset
             let bottomY = proxy.size.height - bottomInset
-            let all = (routePoints ?? []) + points
-            let low = all.map(\.y).min() ?? 0
-            let high = all.map(\.y).max() ?? 0
+            let low = points.map(\.y).min() ?? 0
+            let high = points.map(\.y).max() ?? 0
             let band = (low: low, high: high, top: topY, bottom: bottomY)
-            let routeMapped = mapped(routePoints ?? [], plotX: plotX, plotW: plotW, band: band)
             let progressMapped = mapped(points, plotX: plotX, plotW: plotW, band: band)
 
             ZStack(alignment: .topLeading) {
@@ -160,10 +152,6 @@ struct ElevationChart: View {
                 }
                 .stroke(Color(hex: 0x242424), style: .init(lineWidth: 0.75, dash: [1.5, 3]))
 
-                if routeMapped.count > 1 {
-                    line(routeMapped).stroke(
-                        Theme.track, style: .init(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
-                }
                 if progressMapped.count > 1 {
                     line(progressMapped).stroke(
                         Theme.signal, style: .init(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
@@ -219,33 +207,25 @@ struct TrailElevationView: View {
 
             Spacer(minLength: 14)
 
-            if let route = session.plannedRoute {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                        ClimbStat(value: "\(Int(session.climbMeters))", size: 15)
-                        Text("CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
-                    }
-                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                        Text("\(max(Int(route.climbMeters - session.climbMeters), 0))")
-                            .font(.stat(15))
-                            .foregroundStyle(Theme.signal)
-                        Text("M TO TOP").kicker(8, color: Theme.bright, tracking: 0.1)
-                    }
-                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                        ClimbStat(value: "\(Int(session.descentMeters))", size: 15, pointingDown: true)
-                        Text("DOWN").kicker(8, color: Theme.bright, tracking: 0.1)
-                    }
+            // Where the design had M TO TOP (a route-relative goal) the live
+            // altitude now sits — it takes the Signal because on this page it
+            // is the number you came for; climbed and down are the ledger.
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
+                    ClimbStat(value: "\(Int(session.climbMeters))", size: 15)
+                    Text("CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
                 }
-            } else {
-                HStack(alignment: .top, spacing: 20) {
-                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                        ClimbStat(value: "\(Int(session.climbMeters))", size: 15)
-                        Text("CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
-                    }
-                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                        ClimbStat(value: "\(Int(session.descentMeters))", size: 15, pointingDown: true)
-                        Text("DOWN").kicker(8, color: Theme.bright, tracking: 0.1)
-                    }
+                VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
+                    Text(Format.elevation(session.altitudeMeters, unit: false))
+                        .font(.stat(15))
+                        .foregroundStyle(Theme.signal)
+                        .lineLimit(1)
+                    Text("ELEVATION").kicker(8, color: Theme.bright, tracking: 0.1)
+                        .lineLimit(1).fixedSize()
+                }
+                VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
+                    ClimbStat(value: "\(Int(session.descentMeters))", size: 15, pointingDown: true)
+                    Text("DOWN").kicker(8, color: Theme.bright, tracking: 0.1)
                 }
             }
         }
@@ -253,26 +233,14 @@ struct TrailElevationView: View {
         .padding(EdgeInsets(top: 8, leading: 20, bottom: 16, trailing: 20))
     }
 
-    @ViewBuilder
+    /// The axis is live: it follows what you have actually run.
     private var chart: some View {
-        if let route = session.plannedRoute {
-            // Y axis = the route's own extremes.
-            let progress = min(session.distanceKm / route.distanceKm, 1)
-            ElevationChart(
-                points: RoutePoints.upTo(route.profile, fraction: progress),
-                routePoints: route.profile,
-                lowMeters: route.lowMeters,
-                highMeters: route.highMeters
-            )
-        } else {
-            // No route: the axis is live — it follows what you have run.
-            let samples = session.altitudeProfile
-            ElevationChart(
-                points: RoutePoints.normalized(samples),
-                lowMeters: samples.min() ?? 0,
-                highMeters: samples.max() ?? 0
-            )
-        }
+        let samples = session.altitudeProfile
+        return ElevationChart(
+            points: RoutePoints.normalized(samples),
+            lowMeters: samples.min() ?? 0,
+            highMeters: samples.max() ?? 0
+        )
     }
 }
 

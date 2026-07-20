@@ -224,15 +224,17 @@ enum Format {
     }
 
     /// Elevation with the design's grouping and a non-breaking unit:
-    /// 1622 → "1.622 m"
-    static func elevation(_ meters: Double) -> String {
+    /// 1622 → "1.622 m". `unit: false` drops the suffix for stat rows, where
+    /// the label carries the unit.
+    static func elevation(_ meters: Double, unit: Bool = true) -> String {
         let value = Int(meters.rounded())
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.usesGroupingSeparator = true
         formatter.groupingSeparator = "."
         formatter.groupingSize = 3
-        return (formatter.string(from: NSNumber(value: value)) ?? "\(value)") + "\u{00A0}m"
+        let digits = formatter.string(from: NSNumber(value: value)) ?? "\(value)"
+        return unit ? digits + "\u{00A0}m" : digits
     }
 
     /// Signed pace delta, e.g. "−0:06" / "+0:12"

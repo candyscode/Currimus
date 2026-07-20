@@ -125,43 +125,5 @@ enum RoutePoints {
         }
     }
 
-    static func upTo(_ route: [CGPoint], fraction: Double) -> [CGPoint] {
-        var result: [CGPoint] = []
-        for point in route where point.x <= fraction { result.append(point) }
-        if let last = result.last, last.x < fraction,
-           let next = route.first(where: { $0.x > fraction }) {
-            let t = (fraction - last.x) / (next.x - last.x)
-            result.append(.init(x: fraction, y: last.y + (next.y - last.y) * t))
-        }
-        return result
-    }
-
-    static func elevation(_ route: [CGPoint], at fraction: Double) -> Double {
-        Double(upTo(route, fraction: fraction).last?.y ?? 0)
-    }
 }
 
-/// The mountain used across trail screens.
-enum TrailProfile {
-    static let route: [CGPoint] = [
-        .init(x: 0.00, y: 0.07), .init(x: 0.10, y: 0.19), .init(x: 0.20, y: 0.16),
-        .init(x: 0.31, y: 0.39), .init(x: 0.42, y: 0.35), .init(x: 0.53, y: 0.61),
-        .init(x: 0.64, y: 0.56), .init(x: 0.75, y: 0.80), .init(x: 0.86, y: 0.72),
-        .init(x: 1.00, y: 0.91),
-    ]
-
-    static func upTo(_ fraction: Double) -> [CGPoint] {
-        var result: [CGPoint] = []
-        for point in route where point.x <= fraction { result.append(point) }
-        if let last = result.last, last.x < fraction,
-           let next = route.first(where: { $0.x > fraction }) {
-            let t = (fraction - last.x) / (next.x - last.x)
-            result.append(.init(x: fraction, y: last.y + (next.y - last.y) * t))
-        }
-        return result
-    }
-
-    static func elevation(at fraction: Double) -> Double {
-        Double(upTo(fraction).last?.y ?? 0)
-    }
-}

@@ -50,19 +50,6 @@ final class RunSession: NSObject, ObservableObject {
     @Published var pacerTarget: TimeInterval = 315
     /// nil = "Off" — pacer runs open-ended, no finish forecast.
     @Published var pacerDistanceKm: Double?
-    /// Planned route elevation profile (normalized points), e.g. a GPX loaded
-    /// from the iPhone. nil → the elevation page shows the profile so far.
-    @Published var plannedRoute: RoutePlan?
-
-    struct RoutePlan: Equatable {
-        var profile: [CGPoint]   // x 0…1 along route, y 0…1 normalized altitude
-        var distanceKm: Double
-        var climbMeters: Double
-        /// Absolute elevation extremes of the route — the chart's Y axis.
-        var lowMeters: Double = 640
-        var highMeters: Double = 1622
-    }
-
     var zones = HRZones()
     var kilometerAlertEnabled = true
 
@@ -417,20 +404,19 @@ final class RunSession: NSObject, ObservableObject {
     private var debugPinnedHR: Int?
     func debugForceHR(_ hr: Int) { debugPinnedHR = hr; heartRate = hr }
 
+    private var debugPinnedAltitude: Double?
+
     /// Replaces the simulated altitude series with a known one, so the Y axis
     /// can be validated against numbers instead of a moving simulation.
     func debugSetAltitudeProfile(_ samples: [Double]) {
         altitudeProfile = samples
         altitudeMeters = samples.last ?? 0
+        debugPinnedAltitude = altitudeMeters
     }
 
     /// Screenshot / demo helper: jump straight into a simulated run N seconds in.
     func debugFastForward(_ type: RunType, seconds: Int, paused: Bool = false, keepAlert: Bool = false) {
         isSimulated = true
-        let screen = UserDefaults.standard.string(forKey: "screen") ?? ""
-        if type == .trail, !screen.hasPrefix("elevation-") {
-            plannedRoute = RoutePlan(profile: TrailProfile.route, distanceKm: 14.2, climbMeters: 918)
-        }
         begin(type)
         phase = .running
         for _ in 0..<seconds { simulateOneSecond() }
@@ -473,10 +459,14 @@ final class RunSession: NSObject, ObservableObject {
                 descentMeters += 700 / 3600
                 climbRatePerHour = max(0, climbRatePerHour - 40)
             }
-            altitudeMeters = 704 + climbMeters - descentMeters
-            if elapsed - lastProfileSample >= 10 {
-                lastProfileSample = elapsed
-                altitudeProfile.append(altitudeMeters)
+            // A pinned debug profile owns the altitude — otherwise the sim
+            // would drift the readout out of the chart's own axis range.
+            if debugPinnedAltitude == nil {
+                altitudeMeters = 704 + climbMeters - descentMeters
+                if elapsed - lastProfileSample >= 10 {
+                    lastProfileSample = elapsed
+                    altitudeProfile.append(altitudeMeters)
+                }
             }
         }
         checkKilometerBoundary()

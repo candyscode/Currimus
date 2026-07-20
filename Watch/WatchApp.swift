@@ -86,8 +86,7 @@ struct WatchRootView: View {
                         run: run,
                         // The saved run owns its samples — the live session
                         // may already have been reset.
-                        profile: session.plannedRoute?.profile
-                            ?? RoutePoints.normalized(run.altitudeSamples ?? session.altitudeProfile),
+                        profile: RoutePoints.normalized(run.altitudeSamples ?? session.altitudeProfile),
                         onDone: done
                     )
                 case .quick:
