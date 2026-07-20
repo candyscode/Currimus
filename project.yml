@@ -6,7 +6,12 @@ options:
   createIntermediateGroups: true
 settings:
   base:
-    SWIFT_VERSION: "5.10"
+    # Swift 6 language mode. The project targets iOS 26 / watchOS 11, so there
+    # is no runtime reason to stay on 5.10 — and 5.10 hid a real data race on
+    # the WatchConnectivity callbacks, which are written on the main actor and
+    # were being read from the delegate's background queue.
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_STYLE: Automatic
     CURRENT_PROJECT_VERSION: 1
