@@ -68,6 +68,25 @@ extension Font {
     }
 }
 
+/// Space Grotesk's line box is 1.276 em tall (984 ascent / 292 descent at
+/// 1000 upm, cap height 700). The design crops every numeric line to
+/// `line-height: 1`, slicing 0.138 em off each side of that box; SwiftUI
+/// keeps the full box. So a padding copied 1:1 from the design renders
+/// 0.138 em too tall for every cropped text edge it touches — these helpers
+/// convert the design's gaps into the paddings that land the same ink gap.
+enum LineBox {
+    /// What `line-height: 1` crops from each side, as a fraction of the size.
+    static let crop: CGFloat = (1.276 - 1) / 2
+    /// Descender room under a digit line (digits have no descenders).
+    static let descent: CGFloat = 0.292
+
+    /// The design's gap minus the crop for each `line-height: 1` edge it
+    /// touches. Label edges (`line-height: normal`) need no correction.
+    static func gap(_ designGap: CGFloat, cropping sizes: CGFloat...) -> CGFloat {
+        sizes.reduce(designGap) { $0 - crop * $1 }
+    }
+}
+
 extension View {
     /// Uppercase tracked label in muted gray, e.g. "LAST RUN".
     /// `tracking` is the CSS letter-spacing in em (design uses 0.10–0.20).

@@ -22,6 +22,12 @@ struct TopBarCaption: View {
                 .kerning(size * 0.08)
                 .foregroundStyle(color)
         }
+        // The system toolbar leads at 16.5 pt (Ultra) but *centers* items
+        // narrower than its minimum slot — a wide leading-aligned frame keeps
+        // short captions ("RUN") pinned left like long ones. The 3.5 pt nudge
+        // then lands every caption on the content column's 20 pt edge.
+        .frame(minWidth: 64, alignment: .leading)
+        .padding(.leading, 3.5)
     }
 }
 

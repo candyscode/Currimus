@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0;background:#141414;font-family:'Space Grotesk',sans-serif}a{color:#F5F4F2;text-decoration:none}a:hover{color:#FF4D00}</style>
+</helmet>
+<div style="min-width:2400px;padding:48px 56px;color:#F5F4F2">
+  <div style="display:flex;align-items:baseline;gap:24px;border-bottom:1px solid #2a2a2a;padding-bottom:20px">
+    <span style="font-size:22px;font-weight:700;letter-spacing:-0.02em">CURRIMUS</span>
+    <span style="font-size:12px;color:#6b6b6b">Apple Watch · Exploration — proportional zone bar: the live zone widens, a pointer shows where the BPM sits inside it</span>
+    <nav style="margin-left:auto;display:flex;gap:20px;font-size:12px"><a href="Watch Screens - Readability.dc.html">Watch Screens →</a><a href="Design System.dc.html">Design System →</a><a href="iPhone Screens v2.dc.html">iPhone Screens v2 →</a></nav>
+  </div>
+
+  <div style="font-size:12px;color:#6b6b6b;margin-top:44px;border-bottom:1px solid #2a2a2a;padding-bottom:14px">Anatomy · The active zone stretches to 3.4× width; a white pointer marks (bpm − zoneMin) / (zoneMax − zoneMin). No BPM digits on the watch — the runner reads position, not numbers. Zone changes re-flow the widths with a spring; the pointer glides continuously</div>
+  <div style="display:flex;gap:56px;margin-top:28px;align-items:flex-start">
+
+    <!-- ANATOMY -->
+    <div data-screen-label="Zone Pointer — Anatomy" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Element anatomy — shown at 2× for spec<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">SPEC · FOR CLAUDE CODE</span></span>
+      <div style="width:560px;background:#0A0A0A;border-radius:28px;border:1px solid #2f2f2f;padding:44px 40px;box-sizing:border-box">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="flex:1;height:24px;border-radius:12px;background:#2e2e2e"></div>
+          <div style="flex:3.4;height:24px;border-radius:12px;background:rgba(255,77,0,0.30);border:1px solid rgba(255,77,0,0.45);position:relative">
+            <div style="position:absolute;top:-9px;left:62%;width:7px;height:42px;margin-left:-3.5px;border-radius:3.5px;background:#F5F4F2;box-shadow:0 0 12px rgba(245,244,242,0.45)"></div>
+          </div>
+          <div style="flex:1;height:24px;border-radius:12px;background:#2e2e2e"></div>
+          <div style="flex:1;height:24px;border-radius:12px;background:#2e2e2e"></div>
+          <div style="flex:1;height:24px;border-radius:12px;background:#2e2e2e"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:14px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:16px;color:#FF4D00;font-weight:600;font-variant-numeric:tabular-nums">2</span></div>
+        <div style="border-top:1px solid #242424;margin-top:28px;padding-top:22px;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.55;color:#A8A8A8">
+          <div><span style="color:#F5F4F2;font-weight:600">Widths.</span> Active zone flex 3.4, resting zones flex 1, gap 6px. On zone change the flex values animate (spring, ~350 ms) — the bar re-flows, nothing jumps.</div>
+          <div><span style="color:#F5F4F2;font-weight:600">Fill.</span> Active segment: 30% orange fill + 45% orange border. Resting: #2e2e2e. Zone 5 active: solid #FF4D00 + glow.</div>
+          <div><span style="color:#F5F4F2;font-weight:600">Pointer.</span> 4×22 pt white bar (2 pt radius), overshoots the 12 pt track by 5 pt top/bottom, soft white glow. Position = (bpm − zoneMin) / (zoneMax − zoneMin), clamped 4%–96%, eased over 1 s as HR updates.</div>
+          <div><span style="color:#F5F4F2;font-weight:600">No digits.</span> BPM is never shown — position inside the zone is the message.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Z1 -->
+    <div data-screen-label="Watch — Zone Pointer Z1" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Zone 1 · warm-up — pointer mid-zone<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · LIVE ZONE 1 — HR AT 45% OF ZONE</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px">RUN</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">6:12</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">0.94</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">6:38</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="flex:3.4;height:12px;border-radius:6px;background:rgba(255,77,0,0.30);border:1px solid rgba(255,77,0,0.45);position:relative;box-sizing:border-box">
+              <div style="position:absolute;top:-6px;left:45%;width:4px;height:22px;margin-left:-2px;border-radius:2px;background:#F5F4F2;box-shadow:0 0 8px rgba(245,244,242,0.45)"></div>
+            </div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#F5F4F2;font-weight:600;font-variant-numeric:tabular-nums">1</span></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Comfortably inside Z1 — pointer sits mid-segment, nothing to act on.</span>
+    </div>
+
+    <!-- Z2 LOW -->
+    <div data-screen-label="Watch — Zone Pointer Z2 low" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Zone 2 · easy — pointer at the lower edge<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · LIVE ZONE 2 — HR AT 12% OF ZONE</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px">RUN</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">18:26</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">2.88</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">6:18</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:3.4;height:12px;border-radius:6px;background:rgba(255,77,0,0.30);border:1px solid rgba(255,77,0,0.45);position:relative;box-sizing:border-box">
+              <div style="position:absolute;top:-6px;left:12%;width:4px;height:22px;margin-left:-2px;border-radius:2px;background:#F5F4F2;box-shadow:0 0 8px rgba(245,244,242,0.45)"></div>
+            </div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#F5F4F2;font-weight:600;font-variant-numeric:tabular-nums">2</span></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Just above Z1 — room to push a little without leaving easy effort.</span>
+    </div>
+
+    <!-- Z2 HIGH -->
+    <div data-screen-label="Watch — Zone Pointer Z2 high" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Zone 2 · easy — pointer near the upper edge<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · LIVE ZONE 2 — HR AT 88% OF ZONE</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div>
+          <div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-bottom:12px">RUN</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">24:40</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">3.71</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">6:05</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:3.4;height:12px;border-radius:6px;background:rgba(255,77,0,0.30);border:1px solid rgba(255,77,0,0.45);position:relative;box-sizing:border-box">
+              <div style="position:absolute;top:-6px;left:88%;width:4px;height:22px;margin-left:-2px;border-radius:2px;background:#F5F4F2;box-shadow:0 0 8px rgba(245,244,242,0.45)"></div>
+            </div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:#2e2e2e"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#F5F4F2;font-weight:600;font-variant-numeric:tabular-nums">2</span></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Drifting toward Z3 — the pointer warns before the zone number changes. Ease off to stay easy.</span>
+    </div>
+
+    <!-- Z5 -->
+    <div data-screen-label="Watch — Zone Pointer Z5" style="display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:12px;color:#6b6b6b">Zone 5 · max — full segment burns, pointer stays<span style="display:block;margin-top:5px;font-size:10.5px;letter-spacing:0.08em;font-weight:600;color:#FF4D00">CONFIG · LIVE ZONE 5 — HR AT 62% OF ZONE</span></span>
+      <div style="width:396px;height:484px;background:#0A0A0A;border-radius:96px;border:1px solid #2f2f2f;padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span></span><span style="font-size:17px;color:#6b6b6b;font-variant-numeric:tabular-nums">9:41</span></div>
+        <div>
+          <div style="font-size:15px;letter-spacing:0.14em;color:#FF4D00;font-weight:600;margin-bottom:12px">MAX</div><div style="font-size:104px;font-weight:600;letter-spacing:-0.045em;line-height:1;font-variant-numeric:tabular-nums">45:02</div>
+          <div style="display:flex;gap:40px;margin-top:20px;font-variant-numeric:tabular-nums">
+            <div><div style="font-size:44px;font-weight:600;line-height:1">9.71</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">KM</div></div>
+            <div><div style="font-size:44px;font-weight:600;line-height:1;color:#FF4D00">4:21</div><div style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8;margin-top:6px">PACE /KM</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.25)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.4)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.55)"></div>
+            <div style="flex:1;height:12px;border-radius:6px;background:rgba(255,77,0,0.75)"></div>
+            <div style="flex:3.4;height:12px;border-radius:6px;background:#FF4D00;box-shadow:0 0 14px rgba(255,77,0,0.5);position:relative">
+              <div style="position:absolute;top:-6px;left:62%;width:4px;height:22px;margin-left:-2px;border-radius:2px;background:#F5F4F2;box-shadow:0 0 8px rgba(0,0,0,0.5)"></div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:9px"><span style="font-size:16px;letter-spacing:0.1em;color:#A8A8A8">ZONE</span><span style="font-size:15px;color:#FF4D00;font-weight:600;font-variant-numeric:tabular-nums">5</span></div>
+        </div>
+      </div>
+      <span style="font-size:11px;color:#5a5a5a;max-width:396px;line-height:1.5">Zone 5 keeps the heat gradient; the wide segment goes solid orange. Pointer flips to a dark-edged white so it survives the glow.</span>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

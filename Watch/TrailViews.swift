@@ -59,40 +59,52 @@ struct TrailRunPager: View {
         RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
                 // Same 52 pt hero box as Run/Pacer (shrinks to fit long trail
-                // times), so the value sits at an identical height on all three.
+                // times), so the value sits at an identical height on all
+                // three. No digit-morph — it blurred the ticking seconds.
                 Text(Format.clock(session.elapsed))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .contentTransition(.numericText())
-                    .animation(.linear(duration: 0.25), value: session.elapsed)
 
-                // The design's 1fr 1fr grid — grouped right under the timer so
-                // the free space pools above the zone bar.
-                Grid(alignment: .topLeading, horizontalSpacing: 12, verticalSpacing: 12) {
+                // The design's 1fr 1fr grid (gap 20 px 36 px, 22 px below the
+                // hero) — grouped under the timer so the free space pools
+                // above the zone bar.
+                Grid(alignment: .topLeading, horizontalSpacing: 18,
+                     verticalSpacing: LineBox.gap(10, cropping: 17)) {
                     GridRow {
-                        BigStat(value: Format.km(session.distanceKm), label: "KM", size: 17)
+                        BigStat(value: Format.km(session.distanceKm), label: "KM",
+                                size: 17, labelGap: 2.5, labelOutsideLayout: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", size: 17)
+                        BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
+                                size: 17, labelGap: 2.5, labelOutsideLayout: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     GridRow {
-                        VStack(alignment: .leading, spacing: 2.5) {
+                        VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 17)) {
                             ClimbStat(value: "\(Int(session.climbMeters))", size: 17)
-                            Text("M CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
-                                .lineLimit(1).fixedSize()
+                            Text(verbatim: " ").kicker(8, tracking: 0.1)
+                                .overlay(alignment: .leading) {
+                                    Text("M CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
+                                        .lineLimit(1).fixedSize()
+                                }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(
                             value: "\(Int(session.climbRatePerHour))",
                             label: "M/H · LAST 10 MIN",
-                            valueColor: Theme.signal, size: 17
+                            valueColor: Theme.signal, size: 17, labelGap: 2.5,
+                            labelOutsideLayout: true
                         )
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .padding(.top, 12)
+                // The design draws Trail's hero at 38 pt; ours stays 52 (same
+                // box as Run — the user's call). Preserve the *drawn* ink gap:
+                // the 11 pt margin plus the design box's slack under a 38 pt
+                // line, minus our 52 pt descender room and the 17 pt cap crop.
+                .padding(.top, 11 + (LineBox.descent - LineBox.crop) * 38
+                              - LineBox.descent * 52 - LineBox.crop * 17)
             }
         } footer: {
             ZoneFooter(zone: session.currentZone,
@@ -191,28 +203,28 @@ struct TrailElevationView: View {
 
             if let route = session.plannedRoute {
                 HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 2.5) {
+                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
                         ClimbStat(value: "\(Int(session.climbMeters))", size: 15)
                         Text("CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
                     }
-                    VStack(alignment: .leading, spacing: 2.5) {
+                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
                         Text("\(max(Int(route.climbMeters - session.climbMeters), 0))")
                             .font(.stat(15))
                             .foregroundStyle(Theme.signal)
                         Text("M TO TOP").kicker(8, color: Theme.bright, tracking: 0.1)
                     }
-                    VStack(alignment: .leading, spacing: 2.5) {
+                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
                         ClimbStat(value: "\(Int(session.descentMeters))", size: 15, pointingDown: true)
                         Text("DOWN").kicker(8, color: Theme.bright, tracking: 0.1)
                     }
                 }
             } else {
                 HStack(alignment: .top, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 2.5) {
+                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
                         ClimbStat(value: "\(Int(session.climbMeters))", size: 15)
                         Text("CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
                     }
-                    VStack(alignment: .leading, spacing: 2.5) {
+                    VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
                         ClimbStat(value: "\(Int(session.descentMeters))", size: 15, pointingDown: true)
                         Text("DOWN").kicker(8, color: Theme.bright, tracking: 0.1)
                     }

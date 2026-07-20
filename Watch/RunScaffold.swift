@@ -48,7 +48,7 @@ struct ZoneFooter: View {
                     .font(.stat(7.5))
                     .foregroundStyle(zone >= 3 ? Theme.signal : Theme.ink)
             }
-            .padding(.top, 6)
+            .padding(.top, 4.5)   // design 9 px
         }
     }
 }
@@ -75,18 +75,21 @@ struct ZonePointerBar: View {
             let clamped = min(max(position, 0.04), 0.96)
             let pointerX = leftEdge + clamped * widths[activeIdx]
 
-            ZStack(alignment: .topLeading) {
-                HStack(spacing: gap) {
-                    ForEach(0..<5, id: \.self) { i in
-                        segment(i).frame(width: widths[i])
-                    }
+            HStack(spacing: gap) {
+                ForEach(0..<5, id: \.self) { i in
+                    segment(i).frame(width: widths[i], height: height)
                 }
+            }
+            // Overlay, not ZStack: the taller pointer must not stretch the
+            // 6 pt track. Centered vertically, it overshoots 2.5 pt each side.
+            .overlay(alignment: .leading) {
                 if zone > 0 {
                     RoundedRectangle(cornerRadius: pointerW / 2)
                         .fill(Theme.ink)
+                        // CSS `0 0 8px` ≈ 2 pt of SwiftUI shadow radius.
+                        .shadow(color: zone == 5 ? .black.opacity(0.5) : Theme.ink.opacity(0.45), radius: 2)
                         .frame(width: pointerW, height: pointerH)
-                        .shadow(color: zone == 5 ? .black.opacity(0.5) : Theme.ink.opacity(0.45), radius: 4)
-                        .offset(x: pointerX - pointerW / 2, y: -(pointerH - height) / 2)
+                        .offset(x: pointerX - pointerW / 2)
                         .animation(.easeInOut(duration: 1), value: position)
                 }
             }
@@ -95,12 +98,16 @@ struct ZonePointerBar: View {
         .frame(height: height)
     }
 
-    /// Segment widths: active zone flex 3.4, the rest flex 1 (equal when no HR).
+    /// Segment widths: active zone flex 3.4, the rest flex 1 (equal when no
+    /// HR). Snapped to the 0.5 pt pixel grid so all four gaps render the same
+    /// width; the active segment absorbs the rounding remainder.
     private func widths(in total: CGFloat) -> [CGFloat] {
         let avail = max(total - gap * 4, 0)
         let flexes: [CGFloat] = (1...5).map { $0 == zone ? activeFlex : 1 }
         let sum = flexes.reduce(0, +)
-        return flexes.map { avail * $0 / sum }
+        var snapped = flexes.map { ((avail * $0 / sum) * 2).rounded() / 2 }
+        snapped[max(min(zone - 1, 4), 0)] += avail - snapped.reduce(0, +)
+        return snapped
     }
 
     @ViewBuilder
@@ -109,13 +116,16 @@ struct ZonePointerBar: View {
         let shape = RoundedRectangle(cornerRadius: height / 2)
         if zone == 5 {
             if z == 5 {
-                shape.fill(Theme.signal).shadow(color: Theme.signal.opacity(0.5), radius: 7)
+                // CSS `0 0 14px` ≈ 3.5 pt — big enough to burn, small enough
+                // to keep the gap to zone 4 legible.
+                shape.fill(Theme.signal).shadow(color: Theme.signal.opacity(0.5), radius: 3.5)
             } else {
                 shape.fill(Theme.signal.opacity(heat[i]))
             }
         } else if z == zone {
             shape.fill(Theme.signal.opacity(0.30))
-                .overlay(shape.stroke(Theme.signal.opacity(0.45), lineWidth: 0.75))
+                // The design's border sits inside the segment (border-box).
+                .overlay(shape.strokeBorder(Theme.signal.opacity(0.45), lineWidth: 0.5))
         } else {
             shape.fill(Theme.track)
         }

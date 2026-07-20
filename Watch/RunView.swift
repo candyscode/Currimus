@@ -45,18 +45,18 @@ struct RunView: View {
         let zone = session.currentZone
         return RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
+                // No digit-morph transition: at 52 pt the crossfade blurred
+                // the seconds for a quarter of every second. Hard ticks read.
                 Text(Format.clock(session.elapsed))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .contentTransition(.numericText())
-                    .animation(.linear(duration: 0.25), value: session.elapsed)
                 HStack(alignment: .top, spacing: 20) {
                     BigStat(value: Format.km(session.distanceKm), label: "KM", size: 22)
                     BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM", valueColor: Theme.signal, size: 22)
                 }
-                .padding(.top, 12)
+                .padding(.top, LineBox.gap(10, cropping: 52, 22))   // design 20 px
             }
         } footer: {
             ZoneFooter(zone: zone, position: session.zones.position(forHR: session.heartRate))
@@ -70,17 +70,36 @@ struct BigStat: View {
     var valueColor: Color = Theme.ink
     var size: CGFloat = 21
     var labelSize: CGFloat = 8
+    /// The design's margin under the value (run cards 3, trail cards 2.5).
+    var labelGap: CGFloat = 3
+    /// In a `1fr` grid the design lets a long label paint past its column
+    /// edge without widening it; SwiftUI would widen. `true` takes the label
+    /// out of layout: a ghost keeps the line height, an overlay draws it.
+    var labelOutsideLayout = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        // Only the value line is cropped in the design; the label keeps its
+        // natural box there too.
+        VStack(alignment: .leading, spacing: LineBox.gap(labelGap, cropping: size)) {
             Text(value)
                 .font(.stat(size))
                 .foregroundStyle(valueColor)
                 .lineLimit(1)
-            Text(label)
-                .kicker(labelSize, color: Theme.bright, tracking: 0.1)
-                .lineLimit(1)
-                .fixedSize()
+            if labelOutsideLayout {
+                Text(verbatim: " ")
+                    .kicker(labelSize, tracking: 0.1)
+                    .overlay(alignment: .leading) {
+                        Text(label)
+                            .kicker(labelSize, color: Theme.bright, tracking: 0.1)
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+            } else {
+                Text(label)
+                    .kicker(labelSize, color: Theme.bright, tracking: 0.1)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
         }
     }
 }
