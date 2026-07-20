@@ -120,6 +120,8 @@ struct WatchRootView: View {
         session.pacerTarget = store.pacerTargetSecPerKm
         switch UserDefaults.standard.string(forKey: "screen") {
         case "run": session.debugFastForward(.quick, seconds: 2537)
+        // Long run: five-glyph KM value ("16.xx") — the grid's width edge.
+        case "run-long": session.debugFastForward(.quick, seconds: 5537)
         case "pacer-set": session.setupPacer()
         case "pacer-distance":
             session.setupPacer()

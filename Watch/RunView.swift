@@ -62,12 +62,18 @@ struct RunView: View {
                 Spacer(minLength: 0)
                 // Same two-column grid as Trail (equal columns, 18 pt gap),
                 // so PACE /KM sits at the same x on every run screen.
+                // 30 pt: five tabular glyphs ("16.93") run 1.4 pt past the
+                // half-width column, so the values paint over the edge at
+                // full size (valueOutsideLayout) exactly like the design's
+                // CSS grid — never scaled, baselines locked.
                 HStack(alignment: .top, spacing: 18) {
                     BigStat(value: Format.km(session.distanceKm), label: "KM",
-                            size: 28, labelSize: 10, labelGap: 4)
+                            size: 30, labelSize: 11, labelGap: 4,
+                            valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
-                            valueColor: Theme.signal, size: 28, labelSize: 10, labelGap: 4)
+                            valueColor: Theme.signal, size: 30, labelSize: 11, labelGap: 4,
+                            valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.bottom, 14)
@@ -91,6 +97,11 @@ struct BigStat: View {
     /// edge without widening it; SwiftUI would widen. `true` takes the label
     /// out of layout: a ghost keeps the line height, an overlay draws it.
     var labelOutsideLayout = false
+    /// Same, for the value: paint past the column edge at full size (CSS
+    /// overflow) instead of scaling down. Five tabular glyphs ("16.93",
+    /// "10:00") outgrow a half-width column at 30 pt; scaling one column
+    /// would break the shared baseline with its neighbour.
+    var valueOutsideLayout = false
 
     var body: some View {
         // Only the value line is cropped in the design; the label keeps its
@@ -100,6 +111,10 @@ struct BigStat: View {
                 .font(.stat(size))
                 .foregroundStyle(valueColor)
                 .lineLimit(1)
+                .fixedSize(horizontal: valueOutsideLayout, vertical: false)
+                // Compress rather than truncate when the value must stay in
+                // its column (summaries' three-across rows).
+                .minimumScaleFactor(valueOutsideLayout ? 1 : 0.85)
             if labelOutsideLayout {
                 Text(verbatim: " ")
                     .kicker(labelSize, tracking: 0.1)
