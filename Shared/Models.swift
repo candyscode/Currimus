@@ -179,6 +179,27 @@ struct HRZones: Codable, Equatable {
         default: return "> \(b[3])"
         }
     }
+
+    /// (lower, upper) HR bound of a zone. Zone 1 has no hard floor, so a
+    /// resting-ish floor (~50 % max) anchors the pointer.
+    func range(forZone zone: Int) -> (lower: Int, upper: Int) {
+        let b = bounds
+        switch zone {
+        case 1: return (Int((Double(maxHR) * 0.5).rounded()), b[0])
+        case 2: return (b[0], b[1])
+        case 3: return (b[1], b[2])
+        case 4: return (b[2], b[3])
+        default: return (b[3], maxHR)
+        }
+    }
+
+    /// Where `hr` sits inside its zone, 0 (lower edge) … 1 (upper edge).
+    func position(forHR hr: Int) -> Double {
+        guard hr > 0 else { return 0.5 }
+        let (lo, hi) = range(forZone: zone(for: hr))
+        guard hi > lo else { return 0.5 }
+        return min(max(Double(hr - lo) / Double(hi - lo), 0), 1)
+    }
 }
 
 enum Format {

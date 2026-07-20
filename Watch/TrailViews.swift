@@ -95,7 +95,8 @@ struct TrailRunPager: View {
                 .padding(.top, 12)
             }
         } footer: {
-            ZoneFooter(zone: session.currentZone)
+            ZoneFooter(zone: session.currentZone,
+                       position: session.zones.position(forHR: session.heartRate))
         }
     }
 }

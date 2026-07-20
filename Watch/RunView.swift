@@ -59,7 +59,7 @@ struct RunView: View {
                 .padding(.top, 12)
             }
         } footer: {
-            ZoneFooter(zone: zone)
+            ZoneFooter(zone: zone, position: session.zones.position(forHR: session.heartRate))
         }
     }
 }

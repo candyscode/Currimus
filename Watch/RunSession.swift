@@ -409,6 +409,11 @@ final class RunSession: NSObject, ObservableObject {
         phase = .finished
     }
 
+    /// Screenshot helper: pin the heart rate so the zone-pointer bar can be
+    /// captured at an exact position inside a zone.
+    private var debugPinnedHR: Int?
+    func debugForceHR(_ hr: Int) { debugPinnedHR = hr; heartRate = hr }
+
     /// Screenshot / demo helper: jump straight into a simulated run N seconds in.
     func debugFastForward(_ type: RunType, seconds: Int, paused: Bool = false, keepAlert: Bool = false) {
         isSimulated = true
@@ -437,9 +442,13 @@ final class RunSession: NSObject, ObservableObject {
         let warmup = max(0, 30 - elapsed) * 0.6
         rollingPace = base + wave + warmup + Double.random(in: -2...2)
         distanceKm += 1 / rollingPace
-        let effortHR: Double = type == .trail ? 158 : (type == .pacer ? 155 : 152)
-        let ramp = min(1, elapsed / 300)
-        heartRate = Int(82 + (effortHR - 82) * ramp + sin(elapsed / 31) * 5 + Double.random(in: -1...1))
+        if let pinned = debugPinnedHR {
+            heartRate = pinned
+        } else {
+            let effortHR: Double = type == .trail ? 158 : (type == .pacer ? 155 : 152)
+            let ramp = min(1, elapsed / 300)
+            heartRate = Int(82 + (effortHR - 82) * ramp + sin(elapsed / 31) * 5 + Double.random(in: -1...1))
+        }
         hrSampleSum += heartRate
         hrSampleCount += 1
         zoneSeconds[currentZone - 1] += 1

@@ -136,6 +136,11 @@ struct WatchRootView: View {
             finishedRun = session.end()
         case "trail", "elevation", "elevation-noroute":
             session.debugFastForward(.trail, seconds: 4500)
+        // Zone-pointer positions matching the design exploration.
+        case "zone1": session.debugFastForward(.quick, seconds: 372); session.debugForceHR(104)   // Z1 · 45%
+        case "zone2low": session.debugFastForward(.quick, seconds: 1100); session.debugForceHR(117) // Z2 · 12%
+        case "zone2high": session.debugFastForward(.quick, seconds: 1480); session.debugForceHR(131) // Z2 · 88%
+        case "zone5": session.debugFastForward(.quick, seconds: 2702); session.debugForceHR(183)     // Z5 · 62%
         case "trail-early":
             session.debugFastForward(.trail, seconds: 10)
         case "summary-empty":
