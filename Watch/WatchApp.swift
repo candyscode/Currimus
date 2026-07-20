@@ -84,8 +84,10 @@ struct WatchRootView: View {
                 case .trail:
                     TrailSummaryView(
                         run: run,
+                        // The saved run owns its samples — the live session
+                        // may already have been reset.
                         profile: session.plannedRoute?.profile
-                            ?? RoutePoints.normalized(session.altitudeProfile),
+                            ?? RoutePoints.normalized(run.altitudeSamples ?? session.altitudeProfile),
                         onDone: done
                     )
                 case .quick:
@@ -138,6 +140,19 @@ struct WatchRootView: View {
             finishedRun = session.end()
         case "trail", "elevation", "elevation-noroute":
             session.debugFastForward(.trail, seconds: 4500)
+        // Deterministic no-route profiles — the Y axis measured against known
+        // numbers rather than a live simulation.
+        // Extremes deliberately interior, so neither lands under the progress
+        // dot and both ends of the curve stay measurable.
+        case "elevation-known":
+            session.debugFastForward(.trail, seconds: 4500)
+            session.debugSetAltitudeProfile([760, 870, 700, 820, 780, 840, 730, 800])
+        case "elevation-flat":
+            session.debugFastForward(.trail, seconds: 4500)
+            session.debugSetAltitudeProfile([706, 708, 705, 707.5, 706.2, 707, 705.5, 706.8])
+        case "elevation-zero":
+            session.debugFastForward(.trail, seconds: 4500)
+            session.debugSetAltitudeProfile(Array(repeating: 705, count: 8))
         // Zone-pointer positions matching the design exploration.
         case "zone1": session.debugFastForward(.quick, seconds: 372); session.debugForceHR(104)   // Z1 · 45%
         case "zone2low": session.debugFastForward(.quick, seconds: 1100); session.debugForceHR(117) // Z2 · 12%
@@ -162,8 +177,31 @@ struct WatchRootView: View {
         case "trail-summary":
             session.debugFastForward(.trail, seconds: 6728)
             finishedRun = session.end()
+        // Flat-profile edge cases the Y axis has to survive: a 3 m river-path
+        // run, and a treadmill-flat one with no span at all.
+        case "trail-summary-flat":
+            finishedRun = debugFlatTrail(
+                samples: [705, 705.4, 706, 705.6, 706.5, 707, 706.8, 707.6, 708])
+            session.debugShowSummary()
+        case "trail-summary-zero":
+            finishedRun = debugFlatTrail(samples: Array(repeating: 705, count: 9))
+            session.debugShowSummary()
         default: break
         }
         #endif
     }
+
+    #if DEBUG
+    private func debugFlatTrail(samples: [Double]) -> Run {
+        let climb = zip(samples, samples.dropFirst())
+            .reduce(0.0) { $0 + max($1.1 - $1.0, 0) }
+        return Run(
+            date: .now, type: .trail, name: "Trail",
+            distanceKm: 0.1, duration: 30, avgHR: 121,
+            splits: [], zoneSeconds: [12, 18, 0, 0, 0],
+            climbMeters: climb, descentMeters: 0,
+            highPointMeters: samples.max(), altitudeSamples: samples
+        )
+    }
+    #endif
 }

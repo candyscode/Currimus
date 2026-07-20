@@ -86,7 +86,9 @@ struct TrailSummaryView: View {
                     highMeters: elevationRange.high,
                     showsDot: false,
                     lineWidth: 1.25,
-                    labelSize: 6.5
+                    labelSize: 6.5,
+                    topInset: 5,      // design 10 px of 62
+                    bottomInset: 4    // design  8 px of 62
                 )
                 .frame(height: 31)   // design 62 px
                 .padding(.top, 18)

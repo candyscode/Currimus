@@ -417,10 +417,18 @@ final class RunSession: NSObject, ObservableObject {
     private var debugPinnedHR: Int?
     func debugForceHR(_ hr: Int) { debugPinnedHR = hr; heartRate = hr }
 
+    /// Replaces the simulated altitude series with a known one, so the Y axis
+    /// can be validated against numbers instead of a moving simulation.
+    func debugSetAltitudeProfile(_ samples: [Double]) {
+        altitudeProfile = samples
+        altitudeMeters = samples.last ?? 0
+    }
+
     /// Screenshot / demo helper: jump straight into a simulated run N seconds in.
     func debugFastForward(_ type: RunType, seconds: Int, paused: Bool = false, keepAlert: Bool = false) {
         isSimulated = true
-        if type == .trail, UserDefaults.standard.string(forKey: "screen") != "elevation-noroute" {
+        let screen = UserDefaults.standard.string(forKey: "screen") ?? ""
+        if type == .trail, !screen.hasPrefix("elevation-") {
             plannedRoute = RoutePlan(profile: TrailProfile.route, distanceKm: 14.2, climbMeters: 918)
         }
         begin(type)

@@ -3,8 +3,8 @@ import SwiftUI
 /// Trail run: the glance plus climb, swipe left for the elevation page.
 struct TrailRunPager: View {
     @ObservedObject var session: RunSession
-    @State private var page = ["elevation", "elevation-noroute"]
-        .contains(UserDefaults.standard.string(forKey: "screen") ?? "") ? 1 : 0
+    @State private var page = (UserDefaults.standard.string(forKey: "screen") ?? "")
+        .hasPrefix("elevation") ? 1 : 0
 
     var body: some View {
         // Hand-rolled pager instead of TabView: TabView reserves ~20pt at the
@@ -128,6 +128,12 @@ struct ElevationChart: View {
     var showsDot = true
     var lineWidth: CGFloat = 1.5
     var labelSize: CGFloat = 7
+    /// Hairline positions, measured from the chart's edges (design: 14 / 10 px
+    /// of 150 on the trail page, 10 / 8 px of 62 on the summary). They are
+    /// fixed, so the two labels always sit the same distance apart however
+    /// flat the run was — the profile is scaled into the band between them.
+    var topInset: CGFloat = 7
+    var bottomInset: CGFloat = 5
 
     /// The design starts the plot at x = 64 of 308 to clear the labels.
     private let gutter = 64.0 / 308.0
@@ -136,12 +142,14 @@ struct ElevationChart: View {
         GeometryReader { proxy in
             let plotX = proxy.size.width * gutter
             let plotW = proxy.size.width - plotX
-            let h = proxy.size.height
+            let topY = topInset
+            let bottomY = proxy.size.height - bottomInset
             let all = (routePoints ?? []) + points
-            let topY = (1 - (all.map(\.y).max() ?? 1)) * h
-            let bottomY = (1 - (all.map(\.y).min() ?? 0)) * h
-            let routeMapped = mapped(routePoints ?? [], plotX: plotX, plotW: plotW, h: h)
-            let progressMapped = mapped(points, plotX: plotX, plotW: plotW, h: h)
+            let low = all.map(\.y).min() ?? 0
+            let high = all.map(\.y).max() ?? 0
+            let band = (low: low, high: high, top: topY, bottom: bottomY)
+            let routeMapped = mapped(routePoints ?? [], plotX: plotX, plotW: plotW, band: band)
+            let progressMapped = mapped(points, plotX: plotX, plotW: plotW, band: band)
 
             ZStack(alignment: .topLeading) {
                 Path { p in
@@ -172,8 +180,18 @@ struct ElevationChart: View {
         }
     }
 
-    private func mapped(_ pts: [CGPoint], plotX: CGFloat, plotW: CGFloat, h: CGFloat) -> [CGPoint] {
-        pts.map { CGPoint(x: plotX + $0.x * plotW, y: (1 - $0.y) * h) }
+    /// Scales the profile so its lowest point lands on the bottom hairline and
+    /// its highest on the top one. A dead-flat run has no span to scale into —
+    /// the line then rides the middle of the band and both labels read the
+    /// same elevation, so the chart never changes shape or size.
+    private func mapped(_ pts: [CGPoint], plotX: CGFloat, plotW: CGFloat,
+                        band: (low: CGFloat, high: CGFloat, top: CGFloat, bottom: CGFloat)) -> [CGPoint] {
+        let span = band.high - band.low
+        return pts.map { point in
+            let t = span > 0.0001 ? (point.y - band.low) / span : 0.5
+            return CGPoint(x: plotX + point.x * plotW,
+                           y: band.bottom - t * (band.bottom - band.top))
+        }
     }
 
     private func line(_ pts: [CGPoint]) -> Path {
