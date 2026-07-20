@@ -1,7 +1,14 @@
 import SwiftUI
 
 struct RunDetailView: View {
-    var run: Run
+    @EnvironmentObject private var store: RunStore
+    private let storedRun: Run
+
+    init(run: Run) { storedRun = run }
+
+    /// The log carries metadata only — the elevation series and the GPS track
+    /// come out of the store's sidecar files, cached after the first ask.
+    private var run: Run { store.hydrated(storedRun) }
 
     var body: some View {
         PushedScreen(title: run.isTrail ? "Trail run" : "Run") {

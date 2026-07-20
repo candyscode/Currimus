@@ -5,8 +5,9 @@ struct RecordsView: View {
 
     var body: some View {
         PushedScreen(title: "Records") {
+            let banner = store.latestBenchmark
             VStack(alignment: .leading, spacing: 0) {
-                if let banner = newest {
+                if let banner {
                     newestBanner(banner)
                 }
                 VStack(spacing: 0) {
@@ -17,7 +18,7 @@ struct RecordsView: View {
                         }
                     }
                 }
-                .padding(.top, newest == nil ? 0 : 14)
+                .padding(.top, banner == nil ? 0 : 14)
 
                 Text("Records come from your runs automatically. No badges, no confetti.")
                     .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 16)
@@ -25,22 +26,10 @@ struct RecordsView: View {
         }
     }
 
-    /// The 5K PR and how much it beat the previous-best 5K window.
-    private var newest: (value: String, delta: String?, date: Date)? {
-        guard let best = RunAnalytics.fastestWindow(km: 5, runs: store.runs) else { return nil }
-        let holder = store.runs.min {
-            (RunAnalytics.fastestWindow(km: 5, runs: [$0]) ?? .infinity)
-            < (RunAnalytics.fastestWindow(km: 5, runs: [$1]) ?? .infinity)
-        }
-        let previous = RunAnalytics.fastestWindow(km: 5, runs: store.runs.filter { $0.id != holder?.id })
-        let delta = previous.map { "\(Format.paceDelta(best - $0)) vs previous" }
-        return (Format.clock(best), delta, holder?.date ?? .now)
-    }
-
-    private func newestBanner(_ b: (value: String, delta: String?, date: Date)) -> some View {
+    private func newestBanner(_ b: RunStore.LatestBenchmark) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("NEW · 5K").kicker(13, color: Theme.signal, tracking: 0.14).fontWeight(.semibold)
+                Text("NEW · \(b.label)").kicker(13, color: Theme.signal, tracking: 0.14).fontWeight(.semibold)
                 Spacer()
                 Text(b.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
                     .font(.sg(13)).foregroundStyle(Theme.muted)

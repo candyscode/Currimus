@@ -85,7 +85,13 @@ struct SettingsScreen: View {
     }
 
     private func exportRuns() {
-        exportURLs = try? RunExport.exportFiles(store.runs)
+        do {
+            // GPX needs the tracks, which live outside the log.
+            exportURLs = try RunExport.exportFiles(store.runs.map(store.hydrated))
+        } catch {
+            Log.store.error("export failed: \(error.localizedDescription, privacy: .public)")
+            exportURLs = nil
+        }
     }
 
     private func section(_ t: String) -> some View {

@@ -22,13 +22,16 @@ struct WeekEntry: TimelineEntry {
 
 struct WeekProvider: TimelineProvider {
     private func entry() -> WeekEntry {
-        let store = RunStore()
+        // Reads the shared defaults directly rather than building a RunStore:
+        // a timeline provider has no business activating WatchConnectivity,
+        // and the store is main-actor bound.
+        let snapshot = WeekSnapshot.current()
         return WeekEntry(
             date: .now,
-            weekKm: store.weekKm,
-            goalKm: store.weeklyGoalKm,
-            lastPace: store.lastRun?.paceSecPerKm ?? 0,
-            runCount: store.runs(inWeekOf: .now).count
+            weekKm: snapshot.weekKm,
+            goalKm: snapshot.goalKm,
+            lastPace: snapshot.lastPace,
+            runCount: snapshot.runCount
         )
     }
 

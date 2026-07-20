@@ -8,16 +8,16 @@ import HealthKit
 /// locally; demo content is only seeded with `-demo 1` (screenshots).
 /// The iPhone owns the settings and pushes them to the watch; the watch
 /// consumes them and syncs finished runs back.
+///
+/// The log itself holds metadata only — GPS tracks and altitude series live in
+/// `RunSampleStore`, reachable through `samples(for:)` / `hydrated(_:)`.
+@MainActor
 final class RunStore: ObservableObject {
-    @Published var runs: [Run] { didSet { persist() } }
+    @Published var runs: [Run] { didSet { invalidateAggregates(); persist() } }
     /// Runs other apps recorded, read from Apple Health. Cached on disk so the
     /// widgets — which cannot run a HealthKit query — see them too.
-    @Published var importedRuns: [Run] = [] { didSet { persistImported() } }
-    @Published var race: Race? { didSet { persistRace(); pushSettings() } }
-
-    /// Everything the user ran, whoever recorded it. Every total, chart and
-    /// record reads this; `runs` alone stays the list Currimus owns.
-    var allRuns: [Run] { (runs + importedRuns).sorted { $0.date > $1.date } }
+    @Published var importedRuns: [Run] = [] { didSet { invalidateAggregates(); persistImported() } }
+    @Published var race: Race? { didSet { invalidateAggregates(); persistRace(); pushSettings() } }
 
     @Published var zones = HRZones() { didSet { persistSettings(); pushSettings() } }
     @Published var weeklyGoalKm: Double = 55 { didSet { persistSettings() } }
@@ -29,20 +29,33 @@ final class RunStore: ObservableObject {
     /// GPS fidelity the watch records with — the run's dominant battery cost.
     @Published var gpsAccuracy: GPSAccuracy = .high { didSet { persistSettings(); pushSettings() } }
 
-    private static let runsKey = "runs.v2"
-    private static let importedKey = "imported.v1"
-    private static let raceKey = "race.v1"
-    private static let settingsKey = "settings.v1"
+    /// Where this store reads and writes. Injected so tests get a scratch
+    /// suite instead of scribbling on the real app group. `nonisolated(unsafe)`
+    /// for the same reason as `AppDefaults.shared`: thread-safe, unannotated.
+    private nonisolated(unsafe) let defaults: UserDefaults
+    /// Demo builds keep everything in memory — no disk writes at all.
+    private let isDemo: Bool
     private var isLoading = true
 
-    init(seeded: Bool = UserDefaults.standard.bool(forKey: "demo")) {
+    /// Encoding the log used to happen synchronously inside `didSet`, i.e. on
+    /// the main thread on every single mutation. It is off the main thread now.
+    private static let ioQueue = DispatchQueue(label: "com.currimus.app.store-io", qos: .utility)
+
+    init(seeded: Bool = UserDefaults.standard.bool(forKey: "demo"),
+         defaults: UserDefaults = AppDefaults.shared,
+         isDemo: Bool? = nil) {
+        self.defaults = defaults
+        // Seeded runs and demo mode are the same thing everywhere except in
+        // tests, which want the sample log without the "never persist" rule.
+        self.isDemo = isDemo ?? seeded
+
         if seeded {
             runs = SampleData.runs
             race = SampleData.race
         } else {
-            runs = Self.loadRuns()
-            importedRuns = Self.loadImported()
-            race = Self.loadRace()
+            runs = Self.loadRuns(from: defaults)
+            importedRuns = Self.loadImported(from: defaults)
+            race = Self.loadRace(from: defaults)
         }
         loadSettings()
         isLoading = false
@@ -56,11 +69,39 @@ final class RunStore: ObservableObject {
         pushSettings()
     }
 
+    // MARK: - Log
+
+    /// Everything the user ran, whoever recorded it. Every total, chart and
+    /// record reads this; `runs` alone stays the list Currimus owns.
+    ///
+    /// Cached: it used to re-merge and re-sort the whole log on every access,
+    /// and SwiftUI touches it many times per body pass.
+    var allRuns: [Run] {
+        if let cachedAllRuns { return cachedAllRuns }
+        let merged = (runs + importedRuns).sorted { $0.date > $1.date }
+        cachedAllRuns = merged
+        return merged
+    }
+
+    private var cachedAllRuns: [Run]?
+    private var cachedRecords: [RecordEntry]?
+    private var cachedHolders: [UUID: String]?
+    private var cachedLatestBenchmark: LatestBenchmark??
+
+    private func invalidateAggregates() {
+        cachedAllRuns = nil
+        cachedRecords = nil
+        cachedHolders = nil
+        cachedLatestBenchmark = nil
+    }
+
     var lastRun: Run? { allRuns.first }
 
     func add(_ run: Run) {
         guard !runs.contains(where: { $0.id == run.id }) else { return }
-        runs.insert(run, at: 0)
+        storeSamples(of: run)
+        // The log keeps metadata; the track and profile went to their sidecar.
+        runs.insert(run.strippingSamples, at: 0)
         runs.sort { $0.date > $1.date }
         // Health may already hold the same outing from another app.
         importedRuns = HealthImport.merging(importedRuns, with: runs)
@@ -71,6 +112,36 @@ final class RunStore: ObservableObject {
         // only make it come back on the next refresh.
         let ids = offsets.map { subset[$0] }.filter { !$0.isImported }.map(\.id)
         runs.removeAll { ids.contains($0.id) }
+        for id in ids {
+            sampleCache[id] = nil
+            if !isDemo { RunSampleStore.delete(id) }
+        }
+    }
+
+    // MARK: - Samples (GPS track + altitude series)
+
+    private var sampleCache: [UUID: RunSamples] = [:]
+
+    /// The heavy half of a run, loaded from its sidecar on first ask.
+    func samples(for run: Run) -> RunSamples {
+        if let cached = sampleCache[run.id] { return cached }
+        // A run that still carries its samples (demo data, a run just handed
+        // over by the watch) is its own source.
+        let loaded = RunSampleStore.load(run.id) ?? RunSamples(run)
+        sampleCache[run.id] = loaded
+        return loaded
+    }
+
+    /// The run with its GPS track and altitude series put back — what a detail
+    /// screen or an export needs, and nothing else does.
+    func hydrated(_ run: Run) -> Run { run.merging(samples(for: run)) }
+
+    private func storeSamples(of run: Run) {
+        guard run.carriesSamples else { return }
+        let samples = RunSamples(run)
+        sampleCache[run.id] = samples
+        guard !isDemo else { return }
+        RunSampleStore.save(samples, for: run.id)
     }
 
     // MARK: - Apple Health
@@ -85,9 +156,8 @@ final class RunStore: ObservableObject {
     /// the sheet is expected. The watch never asks here: it would cover a live
     /// run screen at launch. Its own prompt comes when a run starts, and this
     /// query simply returns nothing until then.
-    @MainActor
     func refreshImportedRuns(requestingAccess: Bool = false) async {
-        guard !UserDefaults.standard.bool(forKey: "demo") else { return }
+        guard !isDemo else { return }
         if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
         let fetched = await HealthImport.fetchRuns(healthStore)
         let merged = HealthImport.merging(fetched, with: runs)
@@ -114,85 +184,126 @@ final class RunStore: ObservableObject {
 
     // MARK: - Persistence
 
-    /// App-group defaults so the widget extension reads the same store as the
-    /// app; falls back to standard defaults if the group is unavailable.
-    static let defaults: UserDefaults = {
-        guard let shared = UserDefaults(suiteName: "group.com.currimus.app") else { return .standard }
-        // The log used to live in standard defaults. Moving to the group would
-        // read as "all my runs vanished", so carry them over once.
-        for key in [runsKey, raceKey, settingsKey, "weeklyGoal", "usesKilometers"]
-        where shared.object(forKey: key) == nil {
-            if let legacy = UserDefaults.standard.object(forKey: key) {
-                shared.set(legacy, forKey: key)
+    private static func loadRuns(from defaults: UserDefaults) -> [Run] {
+        guard let data = defaults.data(forKey: AppDefaults.runsKey) else { return [] }
+        do {
+            let stored = try JSONDecoder().decode([Run].self, from: data)
+            return migrateSamplesIfNeeded(stored, in: defaults)
+        } catch {
+            Log.store.error("run log unreadable: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
+    }
+
+    /// Older installs kept the GPS track and altitude series inside the log
+    /// blob. Move them to their sidecar files once, so the blob the widget
+    /// faults in shrinks back to metadata.
+    private static func migrateSamplesIfNeeded(_ stored: [Run], in defaults: UserDefaults) -> [Run] {
+        guard stored.contains(where: \.carriesSamples) else { return stored }
+        let lightweight = stored.map { run -> Run in
+            guard run.carriesSamples else { return run }
+            RunSampleStore.save(RunSamples(run), for: run.id)
+            return run.strippingSamples
+        }
+        do {
+            defaults.set(try JSONEncoder().encode(lightweight), forKey: AppDefaults.runsKey)
+            Log.store.notice("moved samples of \(lightweight.count) runs into sidecar files")
+        } catch {
+            Log.store.error("sample migration could not be saved: \(error.localizedDescription, privacy: .public)")
+            return stored
+        }
+        return lightweight
+    }
+
+    private static func loadImported(from defaults: UserDefaults) -> [Run] {
+        guard let data = defaults.data(forKey: AppDefaults.importedKey) else { return [] }
+        do {
+            return try JSONDecoder().decode([Run].self, from: data)
+        } catch {
+            Log.store.error("imported log unreadable: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
+    }
+
+    private static func loadRace(from defaults: UserDefaults) -> Race? {
+        guard let data = defaults.data(forKey: AppDefaults.raceKey) else { return nil }
+        do {
+            return try JSONDecoder().decode(Race.self, from: data)
+        } catch {
+            Log.store.error("race unreadable: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
+    private func write<T: Encodable>(_ value: T, forKey key: String) {
+        guard !isLoading, !isDemo else { return }
+        let defaults = self.defaults
+        Self.ioQueue.async {
+            do {
+                defaults.set(try JSONEncoder().encode(value), forKey: key)
+            } catch {
+                Log.store.error("could not save \(key, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
         }
-        return shared
-    }()
-
-    private static func loadRuns() -> [Run] {
-        guard let data = defaults.data(forKey: runsKey),
-              let stored = try? JSONDecoder().decode([Run].self, from: data) else { return [] }
-        return stored
-    }
-
-    private static func loadImported() -> [Run] {
-        guard let data = defaults.data(forKey: importedKey),
-              let stored = try? JSONDecoder().decode([Run].self, from: data) else { return [] }
-        return stored
-    }
-
-    private func persistImported() {
-        guard !isLoading, !UserDefaults.standard.bool(forKey: "demo"),
-              let data = try? JSONEncoder().encode(importedRuns) else { return }
-        Self.defaults.set(data, forKey: Self.importedKey)
-    }
-
-    private static func loadRace() -> Race? {
-        guard let data = defaults.data(forKey: raceKey) else { return nil }
-        return try? JSONDecoder().decode(Race.self, from: data)
     }
 
     private func persist() {
-        guard !isLoading, !UserDefaults.standard.bool(forKey: "demo"),
-              let data = try? JSONEncoder().encode(runs) else { return }
-        Self.defaults.set(data, forKey: Self.runsKey)
+        write(runs, forKey: AppDefaults.runsKey)
+        guard !isLoading, !isDemo else { return }
+        // A deleted run must not leave its track behind.
+        let live = Set(runs.map(\.id))
+        Self.ioQueue.async { RunSampleStore.prune(keeping: live) }
     }
 
+    private func persistImported() { write(importedRuns, forKey: AppDefaults.importedKey) }
+
+    /// Test seam: block until the queued writes have landed on disk.
+    static func flushPendingWrites() { ioQueue.sync {} }
+
     private func persistRace() {
-        guard !isLoading, !UserDefaults.standard.bool(forKey: "demo") else { return }
-        if let race, let data = try? JSONEncoder().encode(race) {
-            Self.defaults.set(data, forKey: Self.raceKey)
+        guard !isLoading, !isDemo else { return }
+        if let race {
+            write(race, forKey: AppDefaults.raceKey)
         } else {
-            Self.defaults.removeObject(forKey: Self.raceKey)
+            defaults.removeObject(forKey: AppDefaults.raceKey)
         }
     }
 
     private func persistSettings() {
         guard !isLoading else { return }
-        if let data = try? JSONEncoder().encode(watchSettings) {
-            Self.defaults.set(data, forKey: Self.settingsKey)
+        // Settings are tiny and the widget reads them on the next tick, so
+        // these stay synchronous — demo builds included, the widget has no
+        // other way to learn the goal.
+        do {
+            defaults.set(try JSONEncoder().encode(watchSettings), forKey: AppDefaults.settingsKey)
+        } catch {
+            Log.store.error("could not save settings: \(error.localizedDescription, privacy: .public)")
         }
-        Self.defaults.set(weeklyGoalKm, forKey: "weeklyGoal")
-        Self.defaults.set(usesKilometers, forKey: "usesKilometers")
-        Self.defaults.set(gpsAccuracy.rawValue, forKey: "gpsAccuracy")
+        defaults.set(weeklyGoalKm, forKey: AppDefaults.goalKey)
+        defaults.set(usesKilometers, forKey: AppDefaults.unitsKey)
+        defaults.set(gpsAccuracy.rawValue, forKey: AppDefaults.gpsAccuracyKey)
     }
 
     private func loadSettings() {
-        if let data = Self.defaults.data(forKey: Self.settingsKey),
-           let s = try? JSONDecoder().decode(WatchSettings.self, from: data) {
-            pacerTargetSecPerKm = s.pacerTargetSecPerKm
-            pacerDefaultDistanceKm = s.pacerDefaultDistanceKm
-            kilometerAlert = s.kilometerAlert
-            countdownEnabled = s.countdownEnabled
-            zones = HRZones(maxHR: s.maxHR, overrides: s.zoneBounds)
+        if let data = defaults.data(forKey: AppDefaults.settingsKey) {
+            do {
+                let s = try JSONDecoder().decode(WatchSettings.self, from: data)
+                pacerTargetSecPerKm = s.pacerTargetSecPerKm
+                pacerDefaultDistanceKm = s.pacerDefaultDistanceKm
+                kilometerAlert = s.kilometerAlert
+                countdownEnabled = s.countdownEnabled
+                zones = HRZones(maxHR: s.maxHR, overrides: s.zoneBounds)
+            } catch {
+                Log.store.error("settings unreadable: \(error.localizedDescription, privacy: .public)")
+            }
         }
-        if Self.defaults.object(forKey: "weeklyGoal") != nil {
-            weeklyGoalKm = Self.defaults.double(forKey: "weeklyGoal")
+        if defaults.object(forKey: AppDefaults.goalKey) != nil {
+            weeklyGoalKm = defaults.double(forKey: AppDefaults.goalKey)
         }
-        if Self.defaults.object(forKey: "usesKilometers") != nil {
-            usesKilometers = Self.defaults.bool(forKey: "usesKilometers")
+        if defaults.object(forKey: AppDefaults.unitsKey) != nil {
+            usesKilometers = defaults.bool(forKey: AppDefaults.unitsKey)
         }
-        if let raw = Self.defaults.string(forKey: "gpsAccuracy"),
+        if let raw = defaults.string(forKey: AppDefaults.gpsAccuracyKey),
            let accuracy = GPSAccuracy(rawValue: raw) {
             gpsAccuracy = accuracy
         }
@@ -331,12 +442,21 @@ final class RunStore: ObservableObject {
     var mostClimbRun: Run? { allRuns.max { ($0.climbMeters ?? 0) < ($1.climbMeters ?? 0) } }
 
     var records: [RecordEntry] {
-        let prs = RunAnalytics.personalBests(runs: allRuns)
+        if let cachedRecords { return cachedRecords }
+        let built = buildRecords()
+        cachedRecords = built
+        return built
+    }
+
+    private func buildRecords() -> [RecordEntry] {
+        let runs = allRuns
+        let prs = RunAnalytics.personalBests(runs: runs)
         var entries: [RecordEntry] = []
+
         func add(_ label: String, km: Double) {
-            if let t = prs[km] {
-                let date = recordDate(km: km)
-                entries.append(RecordEntry(label: label, value: Format.clock(t), date: date))
+            if let time = prs[km] {
+                entries.append(RecordEntry(label: label, value: Format.clock(time),
+                                           date: recordDate(km: km, in: runs)))
             } else {
                 let note = race?.distance.km == km ? "race day in \(race?.daysUntil() ?? 0) days" : "—"
                 entries.append(RecordEntry(label: label, value: "—", date: .now, delta: note))
@@ -348,24 +468,77 @@ final class RunStore: ObservableObject {
         add("Half marathon", km: 21.0975)
         add("Marathon", km: 42.195)
         if let longest = longestRun {
-            entries.append(RecordEntry(label: "Longest run", value: "\(Format.km(longest.distanceKm, decimals: 1)) km", date: longest.date))
+            entries.append(RecordEntry(label: "Longest run",
+                                       value: "\(Format.km(longest.distanceKm, decimals: 1)) km",
+                                       date: longest.date))
         }
         if let climb = mostClimbRun, (climb.climbMeters ?? 0) > 0 {
-            entries.append(RecordEntry(label: "Most climb", value: "\(Int(climb.climbMeters ?? 0)) m", date: climb.date, delta: "trail"))
+            entries.append(RecordEntry(label: "Most climb",
+                                       value: "\(Int(climb.climbMeters ?? 0)) m",
+                                       date: climb.date, delta: "trail"))
         }
         return entries
     }
 
-    /// The single most impressive fresh PR for the Records banner, if any.
-    var newestRecord: RecordEntry? { records.first { $0.label == "5 km" && $0.value != "—" } }
+    /// The benchmark PR the Records banner leads with: the freshest one, and
+    /// what it beat.
+    struct LatestBenchmark {
+        var label: String
+        var value: String
+        /// How much it beat the previous best, when there was one.
+        var delta: String?
+        var date: Date
+    }
 
-    private func recordDate(km: Double) -> Date {
-        // Attribute the PR to the run that holds the fastest window.
-        if km <= 10, let run = allRuns.filter({ $0.splits.count >= Int(km) })
-            .min(by: { (RunAnalytics.fastestWindow(km: Int(km), runs: [$0]) ?? .infinity)
-                     < (RunAnalytics.fastestWindow(km: Int(km), runs: [$1]) ?? .infinity) }) {
-            return run.date
+    /// Cached because it is O(runs × splits) and the Records screen used to
+    /// recompute it — twice — on every body pass.
+    var latestBenchmark: LatestBenchmark? {
+        if let cachedLatestBenchmark { return cachedLatestBenchmark }
+        let built = buildLatestBenchmark()
+        cachedLatestBenchmark = .some(built)
+        return built
+    }
+
+    private func buildLatestBenchmark() -> LatestBenchmark? {
+        let runs = allRuns
+        let candidates: [(km: Int, label: String)] = [(5, "5K"), (10, "10K")]
+        // Freshest first: a 10K PR set last week leads over a 5K PR from May.
+        let held = candidates.compactMap { candidate -> LatestBenchmark? in
+            guard let holder = RunAnalytics.fastestWindowHolder(km: candidate.km, runs: runs) else { return nil }
+            let previous = RunAnalytics.fastestWindow(
+                km: candidate.km, runs: runs.filter { $0.id != holder.run.id })
+            return LatestBenchmark(
+                label: candidate.label,
+                value: Format.clock(holder.seconds),
+                delta: previous.map { "\(Format.paceDelta(holder.seconds - $0)) vs previous" },
+                date: holder.run.date
+            )
         }
-        return runs.filter { $0.distanceKm >= km - 0.4 }.min { $0.paceSecPerKm < $1.paceSecPerKm }?.date ?? .now
+        return held.max { $0.date < $1.date }
+    }
+
+    /// Which runs currently hold a benchmark, for the log's inline PR tag.
+    /// Computed once per log change instead of once per row render.
+    var benchmarkHolders: [UUID: String] {
+        if let cachedHolders { return cachedHolders }
+        var map: [UUID: String] = [:]
+        let runs = allRuns
+        for (km, label) in [(5, "5K PR"), (10, "10K PR")] {
+            if let holder = RunAnalytics.fastestWindowHolder(km: km, runs: runs) {
+                map[holder.run.id] = label
+            }
+        }
+        if let longest = longestRun { map[longest.id, default: ""] = "Longest" }
+        cachedHolders = map
+        return map
+    }
+
+    /// Attribute a PR to the run that holds the fastest window.
+    private func recordDate(km: Double, in runs: [Run]) -> Date {
+        if km <= 10, let holder = RunAnalytics.fastestWindowHolder(km: Int(km), runs: runs) {
+            return holder.run.date
+        }
+        return runs.filter { $0.distanceKm >= km - 0.4 }
+            .min { $0.paceSecPerKm < $1.paceSecPerKm }?.date ?? .now
     }
 }

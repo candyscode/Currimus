@@ -201,7 +201,8 @@ struct RecordEntry: Identifiable {
     var label: String
     var value: String
     var date: Date
-    var isNew = false
+    /// Secondary line: how much a PR beat the previous best, or why there is
+    /// no time yet. `nil` falls back to the date.
     var delta: String?
 }
 
