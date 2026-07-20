@@ -6,7 +6,8 @@ import SwiftUI
 enum RunLayout {
     /// Top inset of the content. Negative pulls the hero up under the caption
     /// (which lives on the clock line), shrinking the gap the design asks for.
-    static let topInset: CGFloat = -20
+    /// One knob for Run, Trail and Pacer — their heroes move in parallel.
+    static let topInset: CGFloat = -14
     static let horizontal: CGFloat = 20
     static let bottom: CGFloat = 16
     /// Minimum gap the scaffold keeps between the hero group and the footer;
