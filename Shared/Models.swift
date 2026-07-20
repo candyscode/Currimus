@@ -223,6 +223,18 @@ enum Format {
         String(format: "%.\(decimals)f", km)
     }
 
+    /// Elevation with the design's grouping and a non-breaking unit:
+    /// 1622 → "1.622 m"
+    static func elevation(_ meters: Double) -> String {
+        let value = Int(meters.rounded())
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.usesGroupingSeparator = true
+        formatter.groupingSeparator = "."
+        formatter.groupingSize = 3
+        return (formatter.string(from: NSNumber(value: value)) ?? "\(value)") + "\u{00A0}m"
+    }
+
     /// Signed pace delta, e.g. "−0:06" / "+0:12"
     static func paceDelta(_ seconds: TimeInterval) -> String {
         let sign = seconds < 0 ? "−" : "+"

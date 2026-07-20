@@ -44,6 +44,16 @@ struct TrailSummaryView: View {
     var profile: [CGPoint]
     var onDone: () -> Void
 
+    /// The run's own elevation extremes for the Y axis; falls back to the high
+    /// point and total climb when no samples were recorded.
+    private var elevationRange: (low: Double, high: Double) {
+        if let samples = run.altitudeSamples, let low = samples.min(), let high = samples.max() {
+            return (low, high)
+        }
+        let high = run.highPointMeters ?? 0
+        return (max(high - (run.climbMeters ?? 0), 0), high)
+    }
+
     var body: some View {
         SummaryScroller(onDone: onDone, caption: TopBarCaption(text: "TRAIL COMPLETE", mark: true)) {
             VStack(alignment: .leading, spacing: 0) {
@@ -68,18 +78,20 @@ struct TrailSummaryView: View {
                 }
                 .padding(.top, 13)
 
-                LineChart(points: profile)
-                    .stroke(Theme.signal, style: .init(lineWidth: 1.25, lineCap: .round, lineJoin: .round))
-                    .frame(height: 27)
-                    .padding(.top, 18)
-                HStack {
-                    Text("PROFILE").kicker(8, color: Theme.bright, tracking: 0.1)
-                    Spacer()
-                    Text("high \(Int(run.highPointMeters ?? 0)) m")
-                        .font(.stat(7, weight: .regular))
-                        .foregroundStyle(Theme.muted)
-                }
-                .padding(.top, 4)
+                // The axis carries both extremes now — the old "high … m"
+                // caption is gone, the number sits where the summit is.
+                ElevationChart(
+                    points: profile,
+                    lowMeters: elevationRange.low,
+                    highMeters: elevationRange.high,
+                    showsDot: false,
+                    lineWidth: 1.25,
+                    labelSize: 6.5
+                )
+                .frame(height: 31)   // design 62 px
+                .padding(.top, 18)
+                Text("PROFILE").kicker(8, color: Theme.bright, tracking: 0.1)
+                    .padding(.top, 4)
             }
         }
     }

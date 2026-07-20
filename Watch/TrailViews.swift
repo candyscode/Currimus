@@ -101,6 +101,82 @@ struct TrailRunPager: View {
     }
 }
 
+/// An elevation profile with a two-value Y axis: the lowest and highest
+/// elevation reached (or on the route), as dashed hairlines on the curve's
+/// extremes with the values in a left gutter. No axis line, no ticks, no X
+/// axis — the profile itself is the scale. (Design: "Watch Elevation Y-Axis
+/// Exploration"; px values halved to watch points.)
+struct ElevationChart: View {
+    /// Normalized profile (x 0…1 left→right, y 0…1 bottom→top).
+    var points: [CGPoint]
+    /// Planned route drawn behind in grey; `points` is then the progress.
+    var routePoints: [CGPoint]?
+    var lowMeters: Double
+    var highMeters: Double
+    var showsDot = true
+    var lineWidth: CGFloat = 1.5
+    var labelSize: CGFloat = 7
+
+    /// The design starts the plot at x = 64 of 308 to clear the labels.
+    private let gutter = 64.0 / 308.0
+
+    var body: some View {
+        GeometryReader { proxy in
+            let plotX = proxy.size.width * gutter
+            let plotW = proxy.size.width - plotX
+            let h = proxy.size.height
+            let all = (routePoints ?? []) + points
+            let topY = (1 - (all.map(\.y).max() ?? 1)) * h
+            let bottomY = (1 - (all.map(\.y).min() ?? 0)) * h
+            let routeMapped = mapped(routePoints ?? [], plotX: plotX, plotW: plotW, h: h)
+            let progressMapped = mapped(points, plotX: plotX, plotW: plotW, h: h)
+
+            ZStack(alignment: .topLeading) {
+                Path { p in
+                    p.move(to: .init(x: plotX, y: topY))
+                    p.addLine(to: .init(x: proxy.size.width, y: topY))
+                    p.move(to: .init(x: plotX, y: bottomY))
+                    p.addLine(to: .init(x: proxy.size.width, y: bottomY))
+                }
+                .stroke(Color(hex: 0x242424), style: .init(lineWidth: 0.75, dash: [1.5, 3]))
+
+                if routeMapped.count > 1 {
+                    line(routeMapped).stroke(
+                        Theme.track, style: .init(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
+                }
+                if progressMapped.count > 1 {
+                    line(progressMapped).stroke(
+                        Theme.signal, style: .init(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
+                }
+                if showsDot, let last = progressMapped.last {
+                    Circle().fill(Theme.ink).frame(width: 7, height: 7).position(last)
+                }
+
+                label(Format.elevation(highMeters), color: Theme.bright)
+                    .frame(width: plotX, alignment: .leading).position(x: plotX / 2, y: topY)
+                label(Format.elevation(lowMeters), color: Theme.muted)
+                    .frame(width: plotX, alignment: .leading).position(x: plotX / 2, y: bottomY)
+            }
+        }
+    }
+
+    private func mapped(_ pts: [CGPoint], plotX: CGFloat, plotW: CGFloat, h: CGFloat) -> [CGPoint] {
+        pts.map { CGPoint(x: plotX + $0.x * plotW, y: (1 - $0.y) * h) }
+    }
+
+    private func line(_ pts: [CGPoint]) -> Path {
+        var path = Path()
+        guard let first = pts.first else { return path }
+        path.move(to: first)
+        pts.dropFirst().forEach { path.addLine(to: $0) }
+        return path
+    }
+
+    private func label(_ text: String, color: Color) -> some View {
+        Text(text).font(.stat(labelSize, weight: .regular)).foregroundStyle(color).lineLimit(1)
+    }
+}
+
 /// Where am I on the mountain. With a planned route: the dot is you, gray is
 /// what's left. Without one: the profile you have run so far, growing right.
 struct TrailElevationView: View {
@@ -109,7 +185,7 @@ struct TrailElevationView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             chart
-                .frame(height: 96)
+                .frame(height: 75)   // design 150 px
 
             Spacer(minLength: 14)
 
@@ -150,39 +226,22 @@ struct TrailElevationView: View {
     @ViewBuilder
     private var chart: some View {
         if let route = session.plannedRoute {
+            // Y axis = the route's own extremes.
             let progress = min(session.distanceKm / route.distanceKm, 1)
-            ZStack {
-                LineChart(points: route.profile)
-                    .stroke(Theme.track, style: .init(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-                LineChart(points: RoutePoints.upTo(route.profile, fraction: progress))
-                    .stroke(Theme.signal, style: .init(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-                GeometryReader { proxy in
-                    Circle()
-                        .fill(Theme.ink)
-                        .frame(width: 7, height: 7)
-                        .position(
-                            x: progress * proxy.size.width,
-                            y: (1 - RoutePoints.elevation(route.profile, at: progress)) * proxy.size.height
-                        )
-                }
-            }
+            ElevationChart(
+                points: RoutePoints.upTo(route.profile, fraction: progress),
+                routePoints: route.profile,
+                lowMeters: route.lowMeters,
+                highMeters: route.highMeters
+            )
         } else {
-            let points = RoutePoints.normalized(session.altitudeProfile)
-            ZStack {
-                LineChart(points: points)
-                    .stroke(Theme.signal, style: .init(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
-                if let last = points.last {
-                    GeometryReader { proxy in
-                        Circle()
-                            .fill(Theme.ink)
-                            .frame(width: 7, height: 7)
-                            .position(
-                                x: last.x * proxy.size.width,
-                                y: (1 - last.y) * proxy.size.height
-                            )
-                    }
-                }
-            }
+            // No route: the axis is live — it follows what you have run.
+            let samples = session.altitudeProfile
+            ElevationChart(
+                points: RoutePoints.normalized(samples),
+                lowMeters: samples.min() ?? 0,
+                highMeters: samples.max() ?? 0
+            )
         }
     }
 }

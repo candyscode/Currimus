@@ -58,6 +58,9 @@ final class RunSession: NSObject, ObservableObject {
         var profile: [CGPoint]   // x 0…1 along route, y 0…1 normalized altitude
         var distanceKm: Double
         var climbMeters: Double
+        /// Absolute elevation extremes of the route — the chart's Y axis.
+        var lowMeters: Double = 640
+        var highMeters: Double = 1622
     }
 
     var zones = HRZones()
