@@ -46,7 +46,9 @@ struct ZoneFooter: View {
                 Spacer()
                 Text(zone > 0 ? "\(zone)" : "–")
                     .font(.stat(7.5))
-                    .foregroundStyle(zone >= 3 ? Theme.signal : Theme.ink)
+                    // Signal is reserved for zone 5 — the number turning red
+                    // means max effort, nothing else.
+                    .foregroundStyle(zone == 5 ? Theme.signal : Theme.ink)
             }
             .padding(.top, 4.5)   // design 9 px
         }
