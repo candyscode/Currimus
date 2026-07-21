@@ -34,9 +34,10 @@ struct RunMetricsSchedule: TimelineSchedule {
 struct RunTimeline<Content: View>: View {
     @ObservedObject var session: RunSession
     @Environment(\.isLuminanceReduced) private var systemDimmed
+    @Environment(\.alwaysOnReduced) private var reducedEnabled
     @ViewBuilder var content: (TimeInterval) -> Content
 
-    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
 
     var body: some View {
         TimelineView(RunMetricsSchedule(start: session.startedAt)) { _ in

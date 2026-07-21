@@ -280,4 +280,26 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertEqual(RunPalette(dimmed: false).activeZoneFill, 0.30, accuracy: 0.001)
         XCTAssertEqual(RunPalette(dimmed: true).activeZoneFill, 0.28, accuracy: 0.001)
     }
+
+    func testReducedScreenOnlyEngagesWhenTheSettingIsOn() {
+        // Wrist down but switched off → no extra reduction from Currimus.
+        XCTAssertFalse(RunPalette.resolve(systemDimmed: true, enabled: false).dimmed)
+        XCTAssertTrue(RunPalette.resolve(systemDimmed: true, enabled: true).dimmed)
+        // Wrist up is never reduced, whatever the setting says.
+        XCTAssertFalse(RunPalette.resolve(systemDimmed: false, enabled: true).dimmed)
+        XCTAssertFalse(RunPalette.resolve(systemDimmed: false, enabled: false).dimmed)
+    }
+
+    func testAlwaysOnSettingSyncsToTheWatchAndDefaultsToOn() throws {
+        XCTAssertTrue(WatchSettings().alwaysOnReduced ?? true, "default must be on")
+        let sent = WatchSettings(maxHR: 190, alwaysOnReduced: false)
+        let back = try JSONDecoder().decode(WatchSettings.self, from: JSONEncoder().encode(sent))
+        XCTAssertEqual(back.alwaysOnReduced, false)
+        // An older watch build sends no such field; the watch must then keep
+        // its own value rather than read nil as "off".
+        let legacy = """
+        {"pacerTargetSecPerKm":315,"kilometerAlert":true,"countdownEnabled":true,"maxHR":190}
+        """.data(using: .utf8)!
+        XCTAssertNil(try JSONDecoder().decode(WatchSettings.self, from: legacy).alwaysOnReduced)
+    }
 }

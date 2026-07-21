@@ -31,6 +31,16 @@ struct SettingsScreen: View {
                             Text("\(Format.pace(store.pacerTargetSecPerKm)) /km · \(pacerDistanceLabel)")
                         }
                     }.buttonStyle(.plain)
+                    hairline
+                    // Says what it does *not* do as well: the watch dims the
+                    // panel and drops to 1 Hz on its own either way.
+                    ChevronRow(
+                        title: "Dim screen when wrist is down",
+                        subtitle: "Turns the run screen down while you are not looking. The watch dims and slows the display by itself regardless — this only stops Currimus reducing further.",
+                        showsChevron: false
+                    ) {
+                        Toggle("", isOn: $store.alwaysOnReduced).toggleStyle(SignalToggleStyle())
+                    }
                 }
 
                 section("RACE & ZONES")

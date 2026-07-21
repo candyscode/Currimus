@@ -74,8 +74,9 @@ struct CountdownView: View {
     /// Tap anywhere to skip straight into the run.
     var onSkip: () -> Void = {}
     @Environment(\.isLuminanceReduced) private var systemDimmed
+    @Environment(\.alwaysOnReduced) private var reducedEnabled
 
-    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
     private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     var body: some View {

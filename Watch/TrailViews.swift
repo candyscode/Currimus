@@ -4,8 +4,9 @@ import SwiftUI
 struct TrailRunPager: View {
     @ObservedObject var session: RunSession
     @Environment(\.isLuminanceReduced) private var systemDimmed
+    @Environment(\.alwaysOnReduced) private var reducedEnabled
 
-    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
     private var palette: RunPalette { RunPalette(dimmed: dimmed) }
     @State private var page = (UserDefaults.standard.string(forKey: "screen") ?? "")
         .hasPrefix("elevation") ? 1 : 0
@@ -221,8 +222,9 @@ struct ElevationChart: View {
 struct TrailElevationView: View {
     @ObservedObject var session: RunSession
     @Environment(\.isLuminanceReduced) private var systemDimmed
+    @Environment(\.alwaysOnReduced) private var reducedEnabled
 
-    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
     private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     var body: some View {

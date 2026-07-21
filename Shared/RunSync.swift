@@ -14,6 +14,7 @@ struct WatchSettings: Codable, Equatable {
     /// decode a payload from a newer phone.
     var restingHR: Int?
     var gpsAccuracy: GPSAccuracy?
+    var alwaysOnReduced: Bool?
 }
 
 /// Watch ↔ iPhone transfer.

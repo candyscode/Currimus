@@ -28,6 +28,8 @@ final class RunStore: ObservableObject {
     @Published var usesKilometers = true { didSet { persistSettings() } }
     /// GPS fidelity the watch records with — the run's dominant battery cost.
     @Published var gpsAccuracy: GPSAccuracy = .high { didSet { persistSettings(); pushSettings() } }
+    /// Dim and simplify the run screen while the wrist is down.
+    @Published var alwaysOnReduced = true { didSet { persistSettings(); pushSettings() } }
 
     /// Where this store reads and writes. Injected so tests get a scratch
     /// suite instead of scribbling on the real app group. `nonisolated(unsafe)`
@@ -323,7 +325,8 @@ final class RunStore: ObservableObject {
             maxHR: zones.maxHR,
             zoneBounds: zones.overrides,
             restingHR: zones.restingHR,
-            gpsAccuracy: gpsAccuracy
+            gpsAccuracy: gpsAccuracy,
+            alwaysOnReduced: alwaysOnReduced
         )
     }
 
@@ -345,6 +348,7 @@ final class RunStore: ObservableObject {
         zones = HRZones(maxHR: settings.maxHR, overrides: settings.zoneBounds,
                         restingHR: settings.restingHR)
         if let accuracy = settings.gpsAccuracy { gpsAccuracy = accuracy }
+        if let reduced = settings.alwaysOnReduced { alwaysOnReduced = reduced }
         isLoading = false
         persistSettings()
         #endif

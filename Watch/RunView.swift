@@ -6,8 +6,9 @@ import SwiftUI
 struct RunView: View {
     @ObservedObject var session: RunSession
     @Environment(\.isLuminanceReduced) private var systemDimmed
+    @Environment(\.alwaysOnReduced) private var reducedEnabled
 
-    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
     private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     var body: some View {
@@ -159,8 +160,9 @@ struct BigStat: View {
 struct KilometerAlertView: View {
     var alert: RunSession.KilometerAlert
     @Environment(\.isLuminanceReduced) private var systemDimmed
+    @Environment(\.alwaysOnReduced) private var reducedEnabled
 
-    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
     private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     var body: some View {

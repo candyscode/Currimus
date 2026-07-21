@@ -22,6 +22,20 @@ struct RunPalette {
 
     /// Live fill of the active zone segment (design: 0.28 reduced, 0.30 live).
     var activeZoneFill: Double { dimmed ? 0.28 : 0.30 }
+
+    /// The screen only reduces when the wrist is down *and* the setting is on.
+    static func resolve(systemDimmed: Bool, enabled: Bool) -> RunPalette {
+        RunPalette(dimmed: systemDimmed && enabled)
+    }
+}
+
+/// Whether the reduced always-on screen is switched on in Settings.
+///
+/// Switching it off does not restore brightness or refresh rate — watchOS
+/// dims the panel and holds 1 Hz either way. It only stops Currimus adding
+/// its own reduction on top.
+private struct AlwaysOnReducedKey: EnvironmentKey {
+    static let defaultValue = true
 }
 
 private struct RunPaletteKey: EnvironmentKey {
@@ -29,6 +43,11 @@ private struct RunPaletteKey: EnvironmentKey {
 }
 
 extension EnvironmentValues {
+    var alwaysOnReduced: Bool {
+        get { self[AlwaysOnReducedKey.self] }
+        set { self[AlwaysOnReducedKey.self] = newValue }
+    }
+
     /// Colours for the current luminance state, injected once per run screen so
     /// nested components (zone bar, stat rows, gauge) need no flag of their own.
     var runPalette: RunPalette {

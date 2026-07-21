@@ -36,6 +36,9 @@ struct WatchRootView: View {
                 // clock via .topBarCaption.
                 content
                     .ignoresSafeArea(edges: [.horizontal, .bottom])
+                    // One injection point for the whole run UI, overlays
+                    // included — they have no session to read it from.
+                    .environment(\.alwaysOnReduced, store.alwaysOnReduced)
             }
             .foregroundStyle(Theme.ink)
         }

@@ -158,8 +158,9 @@ struct PacerDistanceView: View {
 struct PacerRunView: View {
     @ObservedObject var session: RunSession
     @Environment(\.isLuminanceReduced) private var systemDimmed
+    @Environment(\.alwaysOnReduced) private var reducedEnabled
 
-    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
     private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     private enum PaceState { case onPace, fast, slow }
