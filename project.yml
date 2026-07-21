@@ -82,7 +82,11 @@ targets:
       properties:
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.currimus.app
-        WKBackgroundModes: [workout-processing]
+        # `location` alongside the workout mode: the workout session keeps the
+        # app alive, but CoreLocation still refuses to deliver fixes in the
+        # background without its own declaration — and
+        # `allowsBackgroundLocationUpdates` traps at runtime if it is missing.
+        WKBackgroundModes: [workout-processing, location]
         WKSupportsAlwaysOnDisplay: true
         CFBundleDisplayName: Currimus
     entitlements:

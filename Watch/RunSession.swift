@@ -332,6 +332,13 @@ final class RunSession: NSObject, ObservableObject {
             ? gpsAccuracy.distanceFilter
             : kCLDistanceFilterNone
         locationManager.activityType = .fitness
+        // The wrist drops and the app leaves the foreground within seconds of
+        // the start — which is most of a run. Without this the fixes stop
+        // arriving there, and the route, the climb and the elevation profile
+        // end wherever the runner last looked at the watch. It requires the
+        // `location` background mode (Watch/Info.plist); setting it without
+        // that declaration is a runtime trap, so the two belong together.
+        locationManager.allowsBackgroundLocationUpdates = true
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
         checkLocationAuthorization()
@@ -346,6 +353,9 @@ final class RunSession: NSObject, ObservableObject {
 
     private func finishWorkout() {
         locationManager.stopUpdatingLocation()
+        // Hand the background assertion back — the run is over, and holding it
+        // would keep waking the app for fixes nobody reads.
+        locationManager.allowsBackgroundLocationUpdates = false
         guard let session = workoutSession, let builder = workoutBuilder else { return }
         session.end()
         builder.endCollection(withEnd: .now) { [routeBuilder] ended, error in
