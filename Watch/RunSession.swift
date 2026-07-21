@@ -40,6 +40,20 @@ final class RunSession: NSObject, ObservableObject {
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var type: RunType = .quick
     @Published private(set) var elapsed: TimeInterval = 0
+    /// Anchor for the always-on redraw schedule, so its 1 Hz ticks land on the
+    /// same instants the run's own seconds change.
+    var startedAt: Date { startDate ?? .now }
+
+    /// Elapsed time read at draw time. HealthKit's builder is the authority
+    /// during a real run: with the wrist down the app is only woken once a
+    /// second, so a value pushed by a timer can be stale by the time the frame
+    /// is actually drawn.
+    var displayElapsed: TimeInterval {
+        if !isSimulated, let builderElapsed = workoutBuilder?.elapsedTime, builderElapsed > 0 {
+            return builderElapsed
+        }
+        return elapsed
+    }
     @Published private(set) var distanceKm: Double = 0
     @Published private(set) var heartRate: Int = 0
     @Published private(set) var metrics = RunMetrics()

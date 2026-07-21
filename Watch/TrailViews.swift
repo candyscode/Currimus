@@ -3,6 +3,10 @@ import SwiftUI
 /// Trail run: the glance plus climb, swipe left for the elevation page.
 struct TrailRunPager: View {
     @ObservedObject var session: RunSession
+    @Environment(\.isLuminanceReduced) private var systemDimmed
+
+    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var palette: RunPalette { RunPalette(dimmed: dimmed) }
     @State private var page = (UserDefaults.standard.string(forKey: "screen") ?? "")
         .hasPrefix("elevation") ? 1 : 0
 
@@ -46,23 +50,30 @@ struct TrailRunPager: View {
         // the kilometer alert owns the canvas.
         .topBarCaption {
             if session.kilometerAlert == nil {
-                TopBarCaption(text: page == 0 ? "TRAIL" : "ELEVATION", mark: true)
+                TopBarCaption(text: page == 0 ? "TRAIL" : "ELEVATION", color: palette.label,
+                              mark: true, markColor: palette.signal)
             }
         }
     }
 
     private var trailGlance: some View {
+        RunTimeline(session: session) { elapsed in
+            trailGlanceBody(elapsed: elapsed)
+        }
+    }
+
+    private func trailGlanceBody(elapsed: TimeInterval) -> some View {
         RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
                 // Same 52 pt hero box as Run/Pacer (shrinks to fit long trail
                 // times), so the value sits at an identical height on all three.
-                Text(Format.clock(session.elapsed))
+                Text(Format.clock(elapsed))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .contentTransition(.numericText())
-                    .animation(.linear(duration: 0.25), value: session.elapsed)
+                    .contentTransition(dimmed ? .identity : .numericText())
+                    .animation(dimmed ? nil : .linear(duration: 0.25), value: elapsed)
 
                 // The design's 1fr 1fr grid (gap 20 px 36 px, 22 px below the
                 // hero) — grouped under the timer so the free space pools
@@ -71,18 +82,22 @@ struct TrailRunPager: View {
                      verticalSpacing: LineBox.gap(10, cropping: 17)) {
                     GridRow {
                         BigStat(value: Format.km(session.distanceKm), label: "KM",
+                                valueColor: palette.stat,
                                 size: 17, labelGap: 2.5, labelOutsideLayout: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
+                                valueColor: palette.stat,
                                 size: 17, labelGap: 2.5, labelOutsideLayout: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     GridRow {
                         VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 17)) {
-                            ClimbStat(value: "\(Int(session.climbMeters))", size: 17)
+                            // Metres climbed is the honest trail-progress
+                            // number, so it keeps the read when dimmed.
+                            ClimbStat(value: "\(Int(session.climbMeters))", size: 17, color: palette.hero)
                             Text(verbatim: " ").kicker(8, tracking: 0.1)
                                 .overlay(alignment: .leading) {
-                                    Text("M CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
+                                    Text("M CLIMBED").kicker(8, color: palette.label, tracking: 0.1)
                                         .lineLimit(1).fixedSize()
                                 }
                         }
@@ -90,8 +105,8 @@ struct TrailRunPager: View {
                         BigStat(
                             value: "\(Int(session.climbRatePerHour))",
                             label: "M/H · LAST 10 MIN",
-                            valueColor: Theme.signal, size: 17, labelGap: 2.5,
-                            labelOutsideLayout: true
+                            valueColor: dimmed ? palette.stat : Theme.signal,
+                            size: 17, labelGap: 2.5, labelOutsideLayout: true
                         )
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -132,6 +147,7 @@ struct ElevationChart: View {
 
     /// The design starts the plot at x = 64 of 308 to clear the labels.
     private let gutter = 64.0 / 308.0
+    @Environment(\.runPalette) private var palette
 
     var body: some View {
         GeometryReader { proxy in
@@ -151,19 +167,23 @@ struct ElevationChart: View {
                     p.move(to: .init(x: plotX, y: bottomY))
                     p.addLine(to: .init(x: proxy.size.width, y: bottomY))
                 }
-                .stroke(Color(hex: 0x242424), style: .init(lineWidth: 0.75, dash: [1.5, 3]))
+                .stroke(palette.dimmed ? Color(hex: 0x1C1C1C) : Color(hex: 0x242424),
+                        style: .init(lineWidth: 0.75, dash: [1.5, 3]))
 
                 if progressMapped.count > 1 {
                     line(progressMapped).stroke(
-                        Theme.signal, style: .init(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
+                        palette.signal, style: .init(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
                 }
                 if showsDot, let last = progressMapped.last {
-                    Circle().fill(Theme.ink).frame(width: 7, height: 7).position(last)
+                    // Parks with the wrist down: at 1 Hz it would only nudge
+                    // once a second anyway, so it reads as still either way.
+                    Circle().fill(palette.dimmed ? palette.stat : Theme.ink)
+                        .frame(width: 7, height: 7).position(last)
                 }
 
-                label(Format.elevation(highMeters), color: Theme.bright)
+                label(Format.elevation(highMeters), color: palette.dimmed ? Color(hex: 0x5A5A5A) : Theme.bright)
                     .frame(width: plotX, alignment: .leading).position(x: plotX / 2, y: topY)
-                label(Format.elevation(lowMeters), color: Theme.muted)
+                label(Format.elevation(lowMeters), color: palette.dimmed ? Color(hex: 0x454545) : Theme.muted)
                     .frame(width: plotX, alignment: .leading).position(x: plotX / 2, y: bottomY)
             }
         }
@@ -200,6 +220,10 @@ struct ElevationChart: View {
 /// what's left. Without one: the profile you have run so far, growing right.
 struct TrailElevationView: View {
     @ObservedObject var session: RunSession
+    @Environment(\.isLuminanceReduced) private var systemDimmed
+
+    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -213,25 +237,30 @@ struct TrailElevationView: View {
             // is the number you came for; climbed and down are the ledger.
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                    ClimbStat(value: "\(Int(session.climbMeters))", size: 15)
-                    Text("CLIMBED").kicker(8, color: Theme.bright, tracking: 0.1)
+                    // Metres climbed stays the brightest — the honest number.
+                    ClimbStat(value: "\(Int(session.climbMeters))", size: 15, color: palette.hero)
+                    Text("CLIMBED").kicker(8, color: palette.label, tracking: 0.1)
                 }
                 VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
                     Text(Format.elevation(session.altitudeMeters, unit: false))
                         .font(.stat(15))
-                        .foregroundStyle(Theme.signal)
+                        .foregroundStyle(dimmed ? palette.stat : Theme.signal)
                         .lineLimit(1)
-                    Text("ELEVATION").kicker(8, color: Theme.bright, tracking: 0.1)
+                    Text("ELEVATION").kicker(8, color: palette.label, tracking: 0.1)
                         .lineLimit(1).fixedSize()
                 }
                 VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                    ClimbStat(value: "\(Int(session.descentMeters))", size: 15, pointingDown: true)
-                    Text("DOWN").kicker(8, color: Theme.bright, tracking: 0.1)
+                    ClimbStat(value: "\(Int(session.descentMeters))", size: 15,
+                              color: palette.stat, pointingDown: true)
+                    Text("DOWN").kicker(8, color: palette.label, tracking: 0.1)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(EdgeInsets(top: 8, leading: 20, bottom: 16, trailing: 20))
+        // The chart reads its colours from the ambient palette, and this page
+        // sits outside the run scaffold — so it publishes its own.
+        .environment(\.runPalette, palette)
     }
 
     /// The axis is live: it follows what you have actually run.

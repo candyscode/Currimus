@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 
 /// Unit tests for the analytics that power the iPhone screens: race
 /// prediction, records, classification, grade-adjusted pace, trends, and the
@@ -239,5 +240,44 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertLessThan(GPSAccuracy.high.distanceFilter, GPSAccuracy.balanced.distanceFilter)
         XCTAssertLessThan(GPSAccuracy.balanced.distanceFilter, GPSAccuracy.saving.distanceFilter)
         XCTAssertEqual(GPSAccuracy.high.distanceFilter, 0)
+    }
+
+    // MARK: Always-On palette
+
+    private func rgba(_ color: Color) -> [CGFloat] {
+        #if canImport(UIKit)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a)
+        return [r, g, b, a]
+        #else
+        return []
+        #endif
+    }
+
+    func testReducedScreenKeepsTheHeroAtFullContrast() {
+        // The system already dims the panel; dimming the largest number again
+        // would cost the readable glance the mode exists for.
+        XCTAssertEqual(rgba(RunPalette(dimmed: true).hero), rgba(Theme.ink))
+        XCTAssertEqual(rgba(RunPalette(dimmed: false).hero), rgba(Theme.ink))
+    }
+
+    func testReducedScreenStepsSecondaryInkBack() {
+        let live = RunPalette(dimmed: false)
+        let dim = RunPalette(dimmed: true)
+        // Every supporting colour must get darker, never brighter.
+        for (a, b) in [(live.stat, dim.stat), (live.label, dim.label), (live.track, dim.track)] {
+            let (bright, dark) = (rgba(a), rgba(b))
+            XCTAssertGreaterThan(bright[0], dark[0], "reduced colour must be darker")
+        }
+    }
+
+    func testReducedSignalDropsToTheDesignsFiftyFivePercent() {
+        XCTAssertEqual(rgba(RunPalette(dimmed: true).signal)[3], 0.55, accuracy: 0.01)
+        XCTAssertEqual(rgba(RunPalette(dimmed: false).signal)[3], 1.0, accuracy: 0.01)
+    }
+
+    func testActiveZoneFillFollowsTheDesignPerState() {
+        XCTAssertEqual(RunPalette(dimmed: false).activeZoneFill, 0.30, accuracy: 0.001)
+        XCTAssertEqual(RunPalette(dimmed: true).activeZoneFill, 0.28, accuracy: 0.001)
     }
 }

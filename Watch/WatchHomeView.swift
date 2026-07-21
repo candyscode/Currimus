@@ -73,16 +73,22 @@ struct CountdownView: View {
     var count: Int
     /// Tap anywhere to skip straight into the run.
     var onSkip: () -> Void = {}
+    @Environment(\.isLuminanceReduced) private var systemDimmed
+
+    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     var body: some View {
         VStack(spacing: 4) {
-            Text("GET READY").kicker(7.5, tracking: 0.2)
+            Text("GET READY").kicker(7.5, color: palette.label, tracking: 0.2)
+            // Parks on its resting frame with the wrist down rather than
+            // playing a tween the panel cannot show at 1 Hz.
             Text("\(count)")
                 .font(.stat(85))
                 .kerning(-4.25)
-                .foregroundStyle(Theme.signal)
-                .contentTransition(.numericText(countsDown: true))
-                .animation(.snappy, value: count)
+                .foregroundStyle(palette.signal)
+                .contentTransition(dimmed ? .identity : .numericText(countsDown: true))
+                .animation(dimmed ? nil : .snappy, value: count)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())

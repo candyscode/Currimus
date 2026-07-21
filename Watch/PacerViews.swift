@@ -157,6 +157,10 @@ struct PacerDistanceView: View {
 /// Live pacing — the dot tells you everything; numbers confirm it.
 struct PacerRunView: View {
     @ObservedObject var session: RunSession
+    @Environment(\.isLuminanceReduced) private var systemDimmed
+
+    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     private enum PaceState { case onPace, fast, slow }
 
@@ -167,31 +171,40 @@ struct PacerRunView: View {
     }
 
     var body: some View {
+        RunTimeline(session: session) { elapsed in
+            body(elapsed: elapsed)
+        }
+    }
+
+    private func body(elapsed: TimeInterval) -> some View {
         RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
+                // Live pace stays put and re-ticks at 1 Hz, but gives up its
+                // orange when dimmed — the haptics carry the correction.
                 Text(Format.pace(session.rollingPace))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)   // match Run/Trail hero metrics exactly
-                    .foregroundStyle(state == .fast ? Theme.signal : Theme.ink)
+                    .foregroundStyle(dimmed ? palette.hero : (state == .fast ? Theme.signal : Theme.ink))
                 statusLine
                     .padding(.top, 4)
 
                 StatRow {
-                    BigStat(value: Format.clock(session.elapsed), label: "TIME", size: 13)
+                    BigStat(value: Format.clock(elapsed), label: "TIME",
+                            valueColor: palette.hero, size: 13)
                     BigStat(
                         value: Format.km(session.distanceKm),
                         label: session.pacerDistanceKm.map { "/ \(Int($0)) KM" } ?? "KM",
-                        size: 13
+                        valueColor: palette.hero, size: 13
                     )
                     VStack(alignment: .leading, spacing: 3) {
                         ZoneBar(zone: session.currentZone, height: 4, gap: 1.5)
                             .frame(width: 48)
                             .padding(.top, 5)
-                        (Text("ZONE ").foregroundStyle(Theme.bright)
+                        (Text("ZONE ").foregroundStyle(palette.label)
                             + Text(session.currentZone > 0 ? "\(session.currentZone)" : "–")
-                                .foregroundStyle(Theme.ink).fontWeight(.semibold))
+                                .foregroundStyle(palette.stat).fontWeight(.semibold))
                             .font(.sg(8))
                             .kerning(8 * 0.1)
                             .padding(.top, 2)
@@ -205,7 +218,8 @@ struct PacerRunView: View {
                 HStack {
                     Text("FAST")
                         .kicker(state == .fast ? 7 : 8,
-                                color: state == .fast ? Theme.signal : Theme.bright,
+                                color: dimmed ? palette.label
+                                    : (state == .fast ? Theme.signal : Theme.bright),
                                 tracking: state == .fast ? 0.12 : 0.1)
                         .fontWeight(state == .fast ? .semibold : .regular)
                     Spacer()
@@ -213,7 +227,8 @@ struct PacerRunView: View {
                     Spacer()
                     Text("SLOW")
                         .kicker(state == .slow ? 7 : 8,
-                                color: state == .slow ? Theme.signal : Theme.bright,
+                                color: dimmed ? palette.label
+                                    : (state == .slow ? Theme.signal : Theme.bright),
                                 tracking: state == .slow ? 0.12 : 0.1)
                         .fontWeight(state == .slow ? .semibold : .regular)
                 }
@@ -227,13 +242,13 @@ struct PacerRunView: View {
         switch state {
         case .onPace:
             Text("PACER · ON TARGET \(Format.pace(session.pacerTarget))")
-                .kicker(8, color: Theme.bright, tracking: 0.1)
+                .kicker(8, color: palette.label, tracking: 0.1)
         case .fast:
             Text("\(Format.pace(abs(session.paceDelta))) FAST · TARGET \(Format.pace(session.pacerTarget))")
-                .kicker(7.5, color: Theme.signal, tracking: 0.12)
+                .kicker(7.5, color: dimmed ? palette.label : Theme.signal, tracking: 0.12)
         case .slow:
             Text("\(Format.pace(session.paceDelta)) SLOW · TARGET \(Format.pace(session.pacerTarget))")
-                .kicker(8, color: Theme.bright, tracking: 0.1)
+                .kicker(8, color: palette.label, tracking: 0.1)
         }
     }
 
@@ -264,6 +279,7 @@ struct PacerGauge: View {
     /// Seconds off target; negative = fast.
     var delta: TimeInterval
     var offTarget: Bool
+    @Environment(\.runPalette) private var palette
 
     var body: some View {
         GeometryReader { proxy in
@@ -272,24 +288,29 @@ struct PacerGauge: View {
             let fraction = max(-1, min(1, delta / 30))
             let x = width / 2 + fraction * (width / 2 - 9)
 
+            // With the wrist down the whole scale goes quiet: the dot is not
+            // actionable and a lone target notch would read as a low-power
+            // pointer. The empty track stays as the anchor the eye returns to.
             ZStack(alignment: .topLeading) {
-                Capsule().fill(Theme.track)
+                Capsule().fill(palette.track)
                     .frame(width: width, height: 3)
                     .offset(y: 6)
-                if offTarget {
+                if offTarget, !palette.dimmed {
                     Rectangle()
                         .fill(Theme.signal.opacity(0.4))
                         .frame(width: abs(x - width / 2), height: 3)
                         .offset(x: min(x, width / 2), y: 6)
                 }
-                Rectangle()
-                    .fill(Theme.muted)
-                    .frame(width: 1.5, height: 11)
-                    .offset(x: width / 2 - 0.75, y: 2)
-                Circle()
-                    .fill(offTarget ? Theme.signal : Theme.ink)
-                    .frame(width: 9, height: 9)
-                    .offset(x: x - 4.5, y: 3)
+                if !palette.dimmed {
+                    Rectangle()
+                        .fill(Theme.muted)
+                        .frame(width: 1.5, height: 11)
+                        .offset(x: width / 2 - 0.75, y: 2)
+                    Circle()
+                        .fill(offTarget ? Theme.signal : Theme.ink)
+                        .frame(width: 9, height: 9)
+                        .offset(x: x - 4.5, y: 3)
+                }
             }
             .animation(.easeInOut(duration: 0.6), value: fraction)
         }

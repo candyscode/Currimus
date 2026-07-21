@@ -50,6 +50,7 @@ struct PreparingView: View {
 /// small enough to ignore until the end.
 struct RecordingIssueNote: View {
     var issue: RecordingIssue
+    @Environment(\.runPalette) private var palette
 
     var body: some View {
         // No glyph: the triangle belongs to trail and climb, and borrowing it
@@ -57,7 +58,7 @@ struct RecordingIssueNote: View {
         // already reads as "look here".
         Text(issue.headline)
             .font(.sg(9, weight: .medium))
-            .foregroundStyle(Theme.signal)
+            .foregroundStyle(palette.signal)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
             .accessibilityElement(children: .ignore)

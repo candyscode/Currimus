@@ -45,17 +45,19 @@ struct ZoneFooter: View {
     /// Where the live HR sits inside the current zone, 0…1.
     var position: Double
 
+    @Environment(\.runPalette) private var palette
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ZonePointerBar(zone: zone, position: position)
             HStack {
-                Text("ZONE").kicker(8, color: Theme.bright, tracking: 0.1)
+                Text("ZONE").kicker(8, color: palette.label, tracking: 0.1)
                 Spacer()
                 Text(zone > 0 ? "\(zone)" : "–")
                     .font(.stat(7.5))
                     // Signal is reserved for zone 5 — the number turning red
                     // means max effort, nothing else.
-                    .foregroundStyle(zone == 5 ? Theme.signal : Theme.ink)
+                    .foregroundStyle(zone == 5 ? palette.signal : (palette.dimmed ? palette.stat : Theme.ink))
             }
             .padding(.top, 4.5)   // design 9 px
         }
@@ -75,6 +77,7 @@ struct ZonePointerBar: View {
     private let heat: [Double] = [0.25, 0.4, 0.55, 0.75]   // Z1–Z4 when Z5 is live
     private let pointerW: CGFloat = 2
     private let pointerH: CGFloat = 11
+    @Environment(\.runPalette) private var palette
 
     var body: some View {
         GeometryReader { proxy in
@@ -91,8 +94,13 @@ struct ZonePointerBar: View {
             }
             // Overlay, not ZStack: the taller pointer must not stretch the
             // 6 pt track. Centered vertically, it overshoots 2.5 pt each side.
+            //
+            // Hidden entirely when dimmed rather than frozen: with the wrist
+            // down heart rate arrives sparsely, and a parked needle would read
+            // as a live BPM position it no longer is. The widened segment
+            // still carries the zone.
             .overlay(alignment: .leading) {
-                if zone > 0 {
+                if zone > 0, !palette.dimmed {
                     RoundedRectangle(cornerRadius: pointerW / 2)
                         .fill(Theme.ink)
                         // CSS `0 0 8px` ≈ 2 pt of SwiftUI shadow radius.
@@ -126,17 +134,23 @@ struct ZonePointerBar: View {
         if zone == 5 {
             if z == 5 {
                 // CSS `0 0 14px` ≈ 3.5 pt — big enough to burn, small enough
-                // to keep the gap to zone 4 legible.
-                shape.fill(Theme.signal).shadow(color: Theme.signal.opacity(0.5), radius: 3.5)
+                // to keep the gap to zone 4 legible. The glow lights extra
+                // pixels for decoration, so it goes when dimmed.
+                shape.fill(palette.signal)
+                    .shadow(color: palette.dimmed ? .clear : Theme.signal.opacity(0.5), radius: 3.5)
             } else {
-                shape.fill(Theme.signal.opacity(heat[i]))
+                shape.fill(palette.signal.opacity(heat[i]))
             }
         } else if z == zone {
-            shape.fill(Theme.signal.opacity(0.30))
-                // The design's border sits inside the segment (border-box).
-                .overlay(shape.strokeBorder(Theme.signal.opacity(0.45), lineWidth: 0.5))
+            shape.fill(Theme.signal.opacity(palette.activeZoneFill))
+                // The design's border sits inside the segment (border-box);
+                // it is chrome, so it drops out of the reduced screen.
+                .overlay(
+                    shape.strokeBorder(
+                        palette.dimmed ? .clear : Theme.signal.opacity(0.45), lineWidth: 0.5)
+                )
         } else {
-            shape.fill(Theme.track)
+            shape.fill(palette.track)
         }
     }
 }

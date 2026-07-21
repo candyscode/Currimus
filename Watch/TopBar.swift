@@ -9,12 +9,14 @@ struct TopBarCaption: View {
     /// Leading trail triangle mark.
     var mark: Bool = false
     var size: CGFloat = 12
+    /// nil → full Signal; the reduced screen passes its dimmed accent.
+    var markColor: Color?
 
     var body: some View {
         HStack(spacing: 4) {
             if mark {
                 TriangleMark()
-                    .fill(Theme.signal)
+                    .fill(markColor ?? Theme.signal)
                     .frame(width: size * 0.6, height: size * 0.52)
             }
             Text(text)

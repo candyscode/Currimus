@@ -70,6 +70,7 @@
 		782D299EA462322E9724CBA6 /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */; };
 		79F43D75C534282329132BD0 /* Scaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65AEBA896B9201B26676F060 /* Scaffold.swift */; };
 		7BCB1A4A803954AE36866C9E /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
+		7D7DDAD960A42C75E9FB606E /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
 		7F84D2D9C84563F992B44A82 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		82ACFB09DDF6B7B2DCC420F1 /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		830260335BDEAF3CD5BCBE7F /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
@@ -88,12 +89,14 @@
 		9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		9ADAF4F78A56DF1F635A50C9 /* RecordingIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC5D9A0957780EACF963837 /* RecordingIssue.swift */; };
 		9B9424914A12A92D7CB3F61C /* RaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */; };
+		A10FC0458A9B7ADD0008EE8A /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
 		A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6CFB5CC07067218F2414163 /* Assets.xcassets */; };
 		A28544720DE563808062AEE6 /* RunMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776C9DC6EFBBC77654B2C197 /* RunMetricsTests.swift */; };
 		A28A4016C9EF471DC28C03A9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315BB07B29A7E2F717AFC457 /* SettingsView.swift */; };
 		A4E9CEEEFE94B2D7711201C3 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
 		A50593043F2F4E43C5CF7D98 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2A0A8C374CC2DF912776427 /* LogView.swift */; };
+		A6734944701C0004DB0EEB48 /* AlwaysOn.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A703AB6859F2CA4B35CC46 /* AlwaysOn.swift */; };
 		A931CDE83BEE82558E4CE220 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		AB3F9B670C35A7DF7524C002 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		AF7888360F4BF7DBD2E1BF2A /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
@@ -101,6 +104,7 @@
 		B088041022A6EF3E28813E66 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C025916FFE193709BFE79626 /* Localizable.xcstrings */; };
 		B1750243611A3E10BDCD574D /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C9CB42153EFED5140123404 /* RecordsView.swift */; };
 		B1A27DE2B7F0E859A492023D /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
+		B22739DB9864EA01A42319F5 /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
 		B749CFE69D9A5A8A4D6D3A8D /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D363B4FE9688A032EED38C4 /* OFL.txt */; };
 		B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		B9AB9B26A8F7D7B113454FE8 /* RunAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */; };
@@ -109,6 +113,7 @@
 		BE8B9BE35F089EDE445C643B /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		C1BC79A4D874C952DAE8F3E1 /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		C2486B37815CA4713B1A972F /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
+		C3408FCD4D821DCB249C039C /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
 		C402C57F16B22CD36FCDBC7E /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
 		CA1AED99715D51D64C75A9FB /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
@@ -190,6 +195,7 @@
 		4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
 		506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAnalytics.swift; sourceTree = "<group>"; };
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
+		60332871CFEA2AFE9925CDAE /* RunPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunPalette.swift; sourceTree = "<group>"; };
 		61423834EFBB80EBFAC112C9 /* CurrimusWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatchWidgets.entitlements; sourceTree = "<group>"; };
 		65AEBA896B9201B26676F060 /* Scaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scaffold.swift; sourceTree = "<group>"; };
 		65B6A62A4E92A05F4D05C253 /* RunStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStore.swift; sourceTree = "<group>"; };
@@ -229,6 +235,7 @@
 		DCBE840AF1F7A6789D2DADA0 /* Currimus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Currimus.entitlements; sourceTree = "<group>"; };
 		DD88986EEA97DE1411F9263F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E47BCF44600BC83F472F7AE0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		E4A703AB6859F2CA4B35CC46 /* AlwaysOn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlwaysOn.swift; sourceTree = "<group>"; };
 		E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-SemiBold.ttf"; sourceTree = "<group>"; };
 		E7F9B6C5CE55770CF0FED06C /* RunStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStoreTests.swift; sourceTree = "<group>"; };
 		EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceView.swift; sourceTree = "<group>"; };
@@ -249,6 +256,7 @@
 				506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */,
 				C4AE7EB972483756B1B4BD09 /* RunExport.swift */,
 				6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */,
+				60332871CFEA2AFE9925CDAE /* RunPalette.swift */,
 				35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */,
 				65B6A62A4E92A05F4D05C253 /* RunStore.swift */,
 				99659A5B888C4EF67485D477 /* RunSync.swift */,
@@ -321,6 +329,7 @@
 		64931F4C1BECC8078974DD90 /* Watch */ = {
 			isa = PBXGroup;
 			children = (
+				E4A703AB6859F2CA4B35CC46 /* AlwaysOn.swift */,
 				DD88986EEA97DE1411F9263F /* Assets.xcassets */,
 				BB4A80647FF8D963E8F48FFA /* CurrimusWatch.entitlements */,
 				FBF1B697133D1D045364B6E4 /* Info.plist */,
@@ -542,6 +551,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A6734944701C0004DB0EEB48 /* AlwaysOn.swift in Sources */,
 				6924813CBAB2B1FE0D43B31E /* AppDefaults.swift in Sources */,
 				CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */,
 				4E9DC5F07B3CCE7B709E81C6 /* HealthImport.swift in Sources */,
@@ -554,6 +564,7 @@
 				46B6E33C7D7A8381DA916D62 /* RunAnalytics.swift in Sources */,
 				1036F046D58875E97CB5C429 /* RunExport.swift in Sources */,
 				7643EAA0E5005D421F7CA092 /* RunMetrics.swift in Sources */,
+				A10FC0458A9B7ADD0008EE8A /* RunPalette.swift in Sources */,
 				420A6A484F0DE550B615F0C8 /* RunSampleStore.swift in Sources */,
 				045548523ED1B5719BF4BF25 /* RunScaffold.swift in Sources */,
 				59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */,
@@ -589,6 +600,7 @@
 				A4E9CEEEFE94B2D7711201C3 /* RunExport.swift in Sources */,
 				CB051C7B414C753DA3945E3A /* RunMetrics.swift in Sources */,
 				A28544720DE563808062AEE6 /* RunMetricsTests.swift in Sources */,
+				C3408FCD4D821DCB249C039C /* RunPalette.swift in Sources */,
 				3EDCB951E6A8420B6587553D /* RunSampleStore.swift in Sources */,
 				C402C57F16B22CD36FCDBC7E /* RunStore.swift in Sources */,
 				2FBDE3651DB7F383C79F5873 /* RunStoreTests.swift in Sources */,
@@ -615,6 +627,7 @@
 				C2486B37815CA4713B1A972F /* RunAnalytics.swift in Sources */,
 				190698F50C3CAC3A718B9688 /* RunExport.swift in Sources */,
 				82ACFB09DDF6B7B2DCC420F1 /* RunMetrics.swift in Sources */,
+				7D7DDAD960A42C75E9FB606E /* RunPalette.swift in Sources */,
 				97FDBDF1A2B41336BA763A90 /* RunSampleStore.swift in Sources */,
 				4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */,
 				0AF2B49944699FB95A35180D /* RunSync.swift in Sources */,
@@ -649,6 +662,7 @@
 				8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */,
 				6905CDB7A68F0AF8003D5E95 /* RunExport.swift in Sources */,
 				6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */,
+				B22739DB9864EA01A42319F5 /* RunPalette.swift in Sources */,
 				6841D02032CC9CDD2B2C09B3 /* RunSampleStore.swift in Sources */,
 				BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */,
 				6EB9B6945D9E649D58FC53D1 /* RunSync.swift in Sources */,

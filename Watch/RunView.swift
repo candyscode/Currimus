@@ -5,6 +5,10 @@ import SwiftUI
 /// Tap to pause (the both-buttons hardware gesture pauses too).
 struct RunView: View {
     @ObservedObject var session: RunSession
+    @Environment(\.isLuminanceReduced) private var systemDimmed
+
+    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     var body: some View {
         ZStack {
@@ -29,12 +33,12 @@ struct RunView: View {
             if session.kilometerAlert == nil {
                 switch session.type {
                 case .pacer:
-                    TopBarCaption(text: "PACER")
+                    TopBarCaption(text: "PACER", color: palette.label)
                 default:
                     if session.currentZone >= 5 {
-                        TopBarCaption(text: "MAX", color: Theme.signal)
+                        TopBarCaption(text: "MAX", color: palette.signal)
                     } else {
-                        TopBarCaption(text: "RUN")
+                        TopBarCaption(text: "RUN", color: palette.label)
                     }
                 }
             }
@@ -42,16 +46,26 @@ struct RunView: View {
     }
 
     private var quickRun: some View {
+        RunTimeline(session: session) { elapsed in
+            quickRunBody(elapsed: elapsed)
+        }
+    }
+
+    @ViewBuilder
+    private func quickRunBody(elapsed: TimeInterval) -> some View {
         let zone = session.currentZone
-        return RunScaffold {
+        RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
-                Text(Format.clock(session.elapsed))
+                // The digit morph is a wrist-up nicety: animations do not run
+                // in always-on, and a half-tweened glyph at 1 Hz would read as
+                // a rendering fault.
+                Text(Format.clock(elapsed))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .contentTransition(.numericText())
-                    .animation(.linear(duration: 0.25), value: session.elapsed)
+                    .contentTransition(dimmed ? .identity : .numericText())
+                    .animation(dimmed ? nil : .linear(duration: 0.25), value: elapsed)
 
                 // Run only shows two values, and the Ultra leaves ~120 pt of
                 // air under them — so they grow to 28 pt and float centered
@@ -68,11 +82,15 @@ struct RunView: View {
                 // CSS grid — never scaled, baselines locked.
                 HStack(alignment: .top, spacing: 18) {
                     BigStat(value: Format.km(session.distanceKm), label: "KM",
+                            valueColor: palette.stat,
                             size: 30, labelSize: 11, labelGap: 4,
                             valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                    // Pace gives up its orange when dimmed — the reduced screen
+                    // keeps exactly one accent, and it belongs to the zone.
                     BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
-                            valueColor: Theme.signal, size: 30, labelSize: 11, labelGap: 4,
+                            valueColor: dimmed ? palette.stat : Theme.signal,
+                            size: 30, labelSize: 11, labelGap: 4,
                             valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -91,6 +109,8 @@ struct BigStat: View {
     var valueColor: Color = Theme.ink
     var size: CGFloat = 21
     var labelSize: CGFloat = 8
+    /// nil → follow the ambient palette, so labels dim with the screen.
+    var labelColor: Color?
     /// The design's margin under the value (run cards 3, trail cards 2.5).
     var labelGap: CGFloat = 3
     /// In a `1fr` grid the design lets a long label paint past its column
@@ -102,6 +122,7 @@ struct BigStat: View {
     /// "10:00") outgrow a half-width column at 30 pt; scaling one column
     /// would break the shared baseline with its neighbour.
     var valueOutsideLayout = false
+    @Environment(\.runPalette) private var palette
 
     var body: some View {
         // Only the value line is cropped in the design; the label keeps its
@@ -120,13 +141,13 @@ struct BigStat: View {
                     .kicker(labelSize, tracking: 0.1)
                     .overlay(alignment: .leading) {
                         Text(label)
-                            .kicker(labelSize, color: Theme.bright, tracking: 0.1)
+                            .kicker(labelSize, color: labelColor ?? palette.label, tracking: 0.1)
                             .lineLimit(1)
                             .fixedSize()
                     }
             } else {
                 Text(label)
-                    .kicker(labelSize, color: Theme.bright, tracking: 0.1)
+                    .kicker(labelSize, color: labelColor ?? palette.label, tracking: 0.1)
                     .lineLimit(1)
                     .fixedSize()
             }
@@ -137,21 +158,30 @@ struct BigStat: View {
 /// Auto kilometer alert — shows for 5 s over the run screen.
 struct KilometerAlertView: View {
     var alert: RunSession.KilometerAlert
+    @Environment(\.isLuminanceReduced) private var systemDimmed
+
+    private var dimmed: Bool { systemDimmed || AlwaysOn.forcedForDebug }
+    private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
     var body: some View {
+        // If a split lands with the wrist down it renders in the reduced
+        // palette too. The haptic still fires at full strength — that is what
+        // actually gets attention; waking the panel to full brightness would
+        // spend exactly what this mode protects.
         VStack(spacing: 0) {
-            Text("KILOMETER").kicker(8.5, tracking: 0.16)
+            Text("KILOMETER").kicker(8.5, color: palette.label, tracking: 0.16)
             Text("\(alert.km)")
                 .font(.stat(65))
                 .kerning(-3.25)
+                .foregroundStyle(palette.hero)
                 .padding(.top, 3)
             Text(Format.pace(alert.splitSeconds))
                 .font(.stat(20))
-                .foregroundStyle(Theme.signal)
+                .foregroundStyle(palette.signal)
                 .padding(.top, 10)
             Text("\(Format.paceDelta(alert.deltaVsAvg)) vs avg")
                 .font(.stat(8.5, weight: .regular))
-                .foregroundStyle(Theme.bright)
+                .foregroundStyle(palette.label)
                 .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

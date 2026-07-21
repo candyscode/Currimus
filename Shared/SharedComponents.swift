@@ -39,6 +39,9 @@ struct ZoneBar: View {
     var zone: Int
     var height: CGFloat = 6
     var gap: CGFloat = 3
+    #if os(watchOS)
+    @Environment(\.runPalette) private var palette
+    #endif
 
     var body: some View {
         HStack(spacing: gap) {
@@ -46,10 +49,7 @@ struct ZoneBar: View {
                 RoundedRectangle(cornerRadius: height / 2)
                     .fill(color(for: segment))
                     .frame(height: height)
-                    .shadow(
-                        color: zone == 5 && segment == 5 ? Theme.signal.opacity(0.5) : .clear,
-                        radius: 7
-                    )
+                    .shadow(color: glowColor(segment), radius: 7)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: zone)
@@ -58,6 +58,15 @@ struct ZoneBar: View {
         .accessibilityValue(zone > 0
             ? "\(zone) of 5, \(HRZones.zoneNames[zone - 1])"
             : "no reading yet")
+    }
+
+    /// No glow on the reduced screen — it lights extra pixels for decoration.
+    private func glowColor(_ segment: Int) -> Color {
+        guard zone == 5, segment == 5 else { return .clear }
+        #if os(watchOS)
+        if palette.dimmed { return .clear }
+        #endif
+        return Theme.signal.opacity(0.5)
     }
 
     private func color(for segment: Int) -> Color {
