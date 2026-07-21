@@ -95,6 +95,8 @@ final class RunSession: NSObject, ObservableObject {
     private var isSimulated = false
     /// When false, `begin` skips the 3-2-1 countdown (iPhone setting).
     var countdownEnabled = true
+    /// Parked while the location prompt is on screen; see `requestLocationAccess`.
+    private var locationPromptWaiter: CheckedContinuation<Void, Never>?
 
     // MARK: - Derived
 
@@ -287,7 +289,41 @@ final class RunSession: NSObject, ObservableObject {
         }
 
         guard makeWorkoutSession() else { return block(.workoutFailed) }
+
+        // Location is asked for here rather than in `startLocationUpdates`,
+        // which runs after the countdown: the prompt used to land on top of a
+        // run that had already started, with the clock ticking behind it. It
+        // still never blocks — a refusal costs the route, the climb and the
+        // elevation, and the run records distance, pace and zones regardless.
+        await requestLocationAccess()
         return true
+    }
+
+    /// Raises the location prompt and waits for an answer, so the countdown
+    /// starts on a settled permission state.
+    private func requestLocationAccess() async {
+        locationManager.delegate = self
+        guard locationManager.authorizationStatus == .notDetermined else { return }
+
+        // The sheet is modal, so this normally returns the moment the runner
+        // taps it. The timeout covers the case where it never appears at all:
+        // a run must not be stuck behind a dialog that is not there.
+        let timeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            self?.finishLocationPrompt()
+        }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            locationPromptWaiter = continuation
+            locationManager.requestWhenInUseAuthorization()
+        }
+        timeout.cancel()
+    }
+
+    /// Resumes `requestLocationAccess`, once and only once.
+    private func finishLocationPrompt() {
+        guard let waiter = locationPromptWaiter else { return }
+        locationPromptWaiter = nil
+        waiter.resume()
     }
 
     @discardableResult
@@ -339,7 +375,7 @@ final class RunSession: NSObject, ObservableObject {
         // `location` background mode (Watch/Info.plist); setting it without
         // that declaration is a runtime trap, so the two belong together.
         locationManager.allowsBackgroundLocationUpdates = true
-        locationManager.requestWhenInUseAuthorization()
+        // Authorization was settled in `prepareRecording`, before the clock.
         locationManager.startUpdatingLocation()
         checkLocationAuthorization()
     }
