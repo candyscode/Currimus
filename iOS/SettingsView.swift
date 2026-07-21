@@ -68,8 +68,6 @@ struct SettingsScreen: View {
                         ChevronRow(title: "GPS accuracy") { Text(store.gpsAccuracy.label) }
                     }.buttonStyle(.plain)
                     hairline
-                    ChevronRow(title: "Units", showsChevron: false) { Text("Kilometers") }
-                    hairline
                     ChevronRow(title: "Apple Health", showsChevron: false) {
                         Text("Connected").foregroundStyle(Theme.signal)
                     }

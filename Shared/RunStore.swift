@@ -25,7 +25,6 @@ final class RunStore: ObservableObject {
     @Published var pacerDefaultDistanceKm: Double? = 10 { didSet { persistSettings(); pushSettings() } }
     @Published var kilometerAlert = true { didSet { persistSettings(); pushSettings() } }
     @Published var countdownEnabled = true { didSet { persistSettings(); pushSettings() } }
-    @Published var usesKilometers = true { didSet { persistSettings() } }
     /// GPS fidelity the watch records with — the run's dominant battery cost.
     @Published var gpsAccuracy: GPSAccuracy = .high { didSet { persistSettings(); pushSettings() } }
     /// Dim and simplify the run screen while the wrist is down.
@@ -308,7 +307,6 @@ final class RunStore: ObservableObject {
             Log.store.error("could not save settings: \(error.localizedDescription, privacy: .public)")
         }
         defaults.set(weeklyGoalKm, forKey: AppDefaults.goalKey)
-        defaults.set(usesKilometers, forKey: AppDefaults.unitsKey)
         defaults.set(gpsAccuracy.rawValue, forKey: AppDefaults.gpsAccuracyKey)
     }
 
@@ -327,9 +325,6 @@ final class RunStore: ObservableObject {
         }
         if defaults.object(forKey: AppDefaults.goalKey) != nil {
             weeklyGoalKm = defaults.double(forKey: AppDefaults.goalKey)
-        }
-        if defaults.object(forKey: AppDefaults.unitsKey) != nil {
-            usesKilometers = defaults.bool(forKey: AppDefaults.unitsKey)
         }
         if let raw = defaults.string(forKey: AppDefaults.gpsAccuracyKey),
            let accuracy = GPSAccuracy(rawValue: raw) {
