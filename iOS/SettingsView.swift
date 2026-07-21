@@ -87,6 +87,10 @@ struct SettingsScreen: View {
                     Button(action: exportRuns) {
                         ChevronRow(title: "Export all runs", showsChevron: false) { Text("GPX / CSV") }
                     }.buttonStyle(.plain)
+                    hairline
+                    Button { push(.acknowledgements) } label: {
+                        ChevronRow(title: "Acknowledgements") { Text(appVersion) }
+                    }.buttonStyle(.plain)
                 }
             }
         }
@@ -97,6 +101,14 @@ struct SettingsScreen: View {
 
     private var pacerDistanceLabel: String {
         store.pacerDefaultDistanceKm.map { $0 == 21.0975 ? "21.1 km" : "\(Int($0)) km" } ?? "Off"
+    }
+
+    /// Version and build, where a support email can be asked for it.
+    private var appVersion: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = info?["CFBundleVersion"] as? String ?? "1"
+        return "\(short) (\(build))"
     }
 
     private var healthLabel: String {

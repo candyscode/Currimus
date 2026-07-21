@@ -12,6 +12,7 @@ enum Route: Hashable {
     case pacerDefaults
     case hrZones
     case gpsAccuracy
+    case acknowledgements
 }
 
 enum AppTab: Hashable { case home, log, progress }

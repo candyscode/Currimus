@@ -55,6 +55,7 @@
 		6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
 		6531B6F7EE07A875F176BC98 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
+		66EEF7F6247B07B2DD689B96 /* AcknowledgementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840F76F4456F3229DB916764 /* AcknowledgementsView.swift */; };
 		682DE7363C94109DF8D8A910 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
 		6841D02032CC9CDD2B2C09B3 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		68D6599A4AFBC9796959F88B /* TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485542A4B0D645CFCC648C51 /* TopBar.swift */; };
@@ -226,6 +227,7 @@
 		7833EDFB1BA31C1B90CF2A5E /* Charts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Charts.swift; sourceTree = "<group>"; };
 		7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Regular.ttf"; sourceTree = "<group>"; };
 		7D363B4FE9688A032EED38C4 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
+		840F76F4456F3229DB916764 /* AcknowledgementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgementsView.swift; sourceTree = "<group>"; };
 		858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Bold.ttf"; sourceTree = "<group>"; };
 		87DFFE92F35B99B3676E4629 /* FirstLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchView.swift; sourceTree = "<group>"; };
 		8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Light.ttf"; sourceTree = "<group>"; };
@@ -328,6 +330,7 @@
 		5C62DF926D8D3642EBDDEFC5 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
+				840F76F4456F3229DB916764 /* AcknowledgementsView.swift */,
 				A6CFB5CC07067218F2414163 /* Assets.xcassets */,
 				7833EDFB1BA31C1B90CF2A5E /* Charts.swift */,
 				DCBE840AF1F7A6789D2DADA0 /* Currimus.entitlements */,
@@ -679,6 +682,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				66EEF7F6247B07B2DD689B96 /* AcknowledgementsView.swift in Sources */,
 				782D299EA462322E9724CBA6 /* AppDefaults.swift in Sources */,
 				7772564C47ADC2DC7E2C838C /* Charts.swift in Sources */,
 				D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */,

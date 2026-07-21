@@ -97,6 +97,7 @@ struct RootView: View {
         case "pacerDefaults": return [.pacerDefaults]
         case "hrZones": return [.hrZones]
         case "gpsAccuracy": return [.gpsAccuracy]
+        case "acknowledgements": return [.acknowledgements]
         case "detailRoad": return store.runs.first { !$0.isTrail }.map { [.runDetail($0)] } ?? []
         case "detailTrail": return store.runs.first { $0.isTrail }.map { [.runDetail($0)] } ?? []
         case "editRun": return store.runs.first { !$0.isTrail }.map { [.runEdit($0)] } ?? []
@@ -165,5 +166,6 @@ func routeDestination(_ route: Route) -> some View {
     case .pacerDefaults: PacerDefaultsView()
     case .hrZones: HRZonesView()
     case .gpsAccuracy: GPSAccuracyView()
+    case .acknowledgements: AcknowledgementsView()
     }
 }
