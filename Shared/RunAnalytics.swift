@@ -137,6 +137,25 @@ enum RunAnalytics {
         return max(flatTime, 0) / run.distanceKm
     }
 
+    /// Raw and flat-equivalent pace across a set of runs.
+    ///
+    /// Weighted by distance, because averaging pace *values* treats a 4 km jog
+    /// and a 30 km mountain day as equal evidence. Total time over total
+    /// distance is what "average pace across these runs" actually means.
+    ///
+    /// Only runs that recorded climb count. Without elevation the adjustment
+    /// is the identity, so every flat or GPS-less run used to drag the
+    /// difference between the two numbers toward zero — and that difference is
+    /// the entire point of showing them.
+    static func gradeAdjustedSummary(runs: [Run]) -> (raw: TimeInterval, adjusted: TimeInterval)? {
+        let climbed = runs.filter { ($0.climbMeters ?? 0) > 0 && $0.distanceKm > 0.05 }
+        let km = climbed.reduce(0) { $0 + $1.distanceKm }
+        guard km > 0 else { return nil }
+        let time = climbed.reduce(0) { $0 + $1.duration }
+        let flatTime = climbed.reduce(0.0) { $0 + gradeAdjustedPace($1) * $1.distanceKm }
+        return (raw: time / km, adjusted: flatTime / km)
+    }
+
     // MARK: - Trends
 
     /// Average pace (s/km) per ISO week for the last `weeks`, oldest first.

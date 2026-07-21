@@ -174,17 +174,20 @@ struct ProgressScreen: View {
     }
 
     private var gapRow: some View {
-        let trail = store.filteredRuns(.trail)
-        let rawPace = trail.reduce(0) { $0 + $1.paceSecPerKm } / Double(max(trail.count, 1))
-        let gap = trail.reduce(0.0) { $0 + RunAnalytics.gradeAdjustedPace($1) } / Double(max(trail.count, 1))
+        let summary = RunAnalytics.gradeAdjustedSummary(runs: store.filteredRuns(.trail))
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Grade-adjusted pace").font(.sg(16))
-                Text("Climbing costs you less").font(.sg(13)).foregroundStyle(Theme.muted)
+                Text("What your trail pace is worth on the flat")
+                    .font(.sg(13)).foregroundStyle(Theme.muted)
             }
             Spacer()
-            Text("\(Format.pace(gap)) \(Text(Format.paceDelta(gap - rawPace)).font(.stat(14)).foregroundStyle(Theme.signal))")
-                .font(.stat(26))
+            if let summary {
+                Text("\(Format.pace(summary.adjusted)) \(Text(Format.paceDelta(summary.adjusted - summary.raw)).font(.stat(14)).foregroundStyle(Theme.signal))")
+                    .font(.stat(26))
+            } else {
+                Text("—").font(.stat(26)).foregroundStyle(Theme.muted)
+            }
         }
     }
 

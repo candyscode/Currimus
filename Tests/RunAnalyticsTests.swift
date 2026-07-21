@@ -102,6 +102,38 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNil(prs[42.195]) // no marathon-length effort
     }
 
+    // MARK: Grade-adjusted pace
+
+    private func trailRun(km: Double, pace: TimeInterval, climb: Double?) -> Run {
+        Run(date: .now, type: .trail, name: "t", distanceKm: km, duration: km * pace,
+            avgHR: 150, climbMeters: climb, descentMeters: climb.map { $0 * 0.5 })
+    }
+
+    /// A short jog and a long mountain day are not equal evidence. Weighting
+    /// by distance is what "average pace across these runs" means.
+    func testGradeAdjustedSummaryIsWeightedByDistance() {
+        let short = trailRun(km: 2, pace: 600, climb: 100)
+        let long = trailRun(km: 30, pace: 400, climb: 1000)
+        let summary = try? XCTUnwrap(RunAnalytics.gradeAdjustedSummary(runs: [short, long]))
+        let expectedRaw = (short.duration + long.duration) / 32
+        XCTAssertEqual(try XCTUnwrap(summary?.raw), expectedRaw, accuracy: 0.5)
+        // The unweighted mean of the two paces would be 500; the long run has
+        // to dominate.
+        XCTAssertLessThan(try XCTUnwrap(summary?.raw), 450)
+    }
+
+    /// Runs with no elevation recorded make the adjustment the identity, so
+    /// including them only dilutes the difference the row exists to show.
+    func testGradeAdjustedSummarySkipsRunsWithoutClimb() {
+        let flat = trailRun(km: 10, pace: 400, climb: nil)
+        XCTAssertNil(RunAnalytics.gradeAdjustedSummary(runs: [flat]))
+
+        let climbed = trailRun(km: 10, pace: 400, climb: 500)
+        let summary = try? XCTUnwrap(RunAnalytics.gradeAdjustedSummary(runs: [flat, climbed]))
+        XCTAssertEqual(try XCTUnwrap(summary?.raw), 400, accuracy: 0.5)
+        XCTAssertLessThan(try XCTUnwrap(summary?.adjusted), 400)   // climbing explains the pace
+    }
+
     // MARK: Cardiac drift
 
     private func easyRun(_ pace: TimeInterval, hr: Int, daysAgo: Int) -> Run {
