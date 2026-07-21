@@ -1,7 +1,14 @@
 import SwiftUI
 
 /// The promise, before any data exists.
+///
+/// It is also the only screen a fresh install has, so it has to carry the one
+/// thing the user can actually do here. Recording happens on the watch — but
+/// the race, the heart-rate zones and the pacer defaults are the iPhone's, and
+/// they are worth setting *before* the first run rather than after it.
 struct FirstLaunchView: View {
+    @Environment(\.pushRoute) private var push
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Theme.bg.ignoresSafeArea()
@@ -29,12 +36,20 @@ struct FirstLaunchView: View {
                 Spacer()
 
                 VStack(spacing: 14) {
-                    Text("Start on your Apple Watch")
-                        .font(.sg(17, weight: .bold)).foregroundStyle(Theme.bg)
-                        .frame(maxWidth: .infinity, minHeight: 58)
-                        .background(Theme.signal, in: Capsule())
-                    Text("Race, zones and pacer defaults live in Settings.")
+                    // The primary action names something this screen can
+                    // actually do. It used to read "Start on your Apple Watch"
+                    // — an instruction dressed as a button, on a screen with
+                    // no way through to Settings at all.
+                    Button { push(.settings) } label: {
+                        Text("Set up race, zones and pacer")
+                            .font(.sg(17, weight: .bold)).foregroundStyle(Theme.bg)
+                            .frame(maxWidth: .infinity, minHeight: 58)
+                            .background(Theme.signal, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    Text("Then start your first run on the Apple Watch — the log fills itself.")
                         .font(.sg(13)).foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.center).lineSpacing(2)
                 }
             }
             .padding(.horizontal, 30)

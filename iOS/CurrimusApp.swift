@@ -39,7 +39,9 @@ struct RootView: View {
     var body: some View {
         Group {
             if store.runs.isEmpty || forceEmpty {
-                FirstLaunchView()
+                // In its own stack, so the first-launch screen can reach
+                // Settings — a fresh install has no tab bar to get there with.
+                TabRoot { FirstLaunchView() }
             } else {
                 // Native iOS 26 TabView → real Liquid Glass tab bar with the
                 // press-hold-and-drag-between-tabs interaction, using the
