@@ -100,13 +100,11 @@ struct RunDetailView: View {
     private var dateLine: some View {
         let stamp = run.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)).uppercased()
             + " · " + run.date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
-        return (
-            Text(stamp).foregroundStyle(Theme.bright)
-            + (run.isTrail
-               ? Text(" · TRAIL").foregroundStyle(Theme.signal).fontWeight(.semibold)
-               : Text(verbatim: ""))
-        )
-        .font(.sg(13, weight: .medium)).kerning(13 * 0.12)
+        let tag = run.isTrail
+            ? Text(" · TRAIL").foregroundStyle(Theme.signal).fontWeight(.semibold)
+            : Text(verbatim: "")
+        return Text("\(Text(stamp).foregroundStyle(Theme.bright))\(tag)")
+            .font(.sg(13, weight: .medium)).kerning(13 * 0.12)
         .lineLimit(1).minimumScaleFactor(0.8)
     }
 

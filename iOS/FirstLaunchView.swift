@@ -30,7 +30,7 @@ struct FirstLaunchView: View {
 
                 Spacer()
 
-                (Text("Simple.\nBeautiful.\n") + Text("Yours.").foregroundStyle(Theme.signal))
+                Text("Simple.\nBeautiful.\n\(Text("Yours.").foregroundStyle(Theme.signal))")
                     .font(.sg(56, weight: .semibold)).kerning(-1.9).lineSpacing(2)
                 VStack(alignment: .leading, spacing: 13) {
                     promise("No ads. No account. No feed.")

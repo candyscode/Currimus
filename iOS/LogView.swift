@@ -124,7 +124,7 @@ struct LogRow: View {
             Text("Trail · \(Format.clock(run.duration)) · +\(Int(run.climbMeters ?? 0)) m")
                 .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
         } else if let prTag, prTag != "Longest" {
-            (Text("\(Format.clock(run.duration)) · ") + Text(prTag).foregroundStyle(Theme.signal).fontWeight(.semibold))
+            Text("\(Format.clock(run.duration)) · \(Text(prTag).foregroundStyle(Theme.signal).fontWeight(.semibold))")
                 .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
         } else {
             Text("\(run.classification.label) · \(Format.clock(run.duration)) · Z\(run.dominantZone)")

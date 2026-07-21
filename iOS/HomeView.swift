@@ -57,7 +57,7 @@ struct HomeView: View {
         Button { push(.race) } label: {
             VStack(alignment: .leading, spacing: 0) {
                 Text("RACE DAY · \(race.name.uppercased())").kicker(13, color: Theme.bright, tracking: 0.12)
-                (Text("Today").foregroundStyle(Theme.ink) + Text(".").foregroundStyle(Theme.signal))
+                Text("Today\(Text(verbatim: ".").foregroundStyle(Theme.signal))")
                     .font(.stat(96)).kerning(-4.8)
                     .padding(.top, 6)
                 raceStats(race, planLabel: true).padding(.top, 24)

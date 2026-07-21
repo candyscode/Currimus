@@ -65,8 +65,7 @@ struct ProgressScreen: View {
             }
             Spacer()
             if let drift {
-                (Text("\(drift.avg) ") + Text(drift.delta <= 0 ? "\(drift.delta)" : "+\(drift.delta)")
-                    .font(.stat(14)).foregroundStyle(Theme.signal))
+                Text("\(drift.avg) \(Text(drift.delta <= 0 ? "\(drift.delta)" : "+\(drift.delta)").font(.stat(14)).foregroundStyle(Theme.signal))")
                     .font(.stat(26))
             } else {
                 Text("—").font(.stat(26)).foregroundStyle(Theme.muted)
@@ -122,8 +121,7 @@ struct ProgressScreen: View {
                 Text("Climbing costs you less").font(.sg(13)).foregroundStyle(Theme.muted)
             }
             Spacer()
-            (Text(Format.pace(gap) + " ") + Text(Format.paceDelta(gap - rawPace))
-                .font(.stat(14)).foregroundStyle(Theme.signal))
+            Text("\(Format.pace(gap)) \(Text(Format.paceDelta(gap - rawPace)).font(.stat(14)).foregroundStyle(Theme.signal))")
                 .font(.stat(26))
         }
     }

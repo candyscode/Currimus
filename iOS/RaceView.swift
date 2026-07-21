@@ -163,7 +163,7 @@ struct RaceSetupView: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("That is").font(.sg(14)).foregroundStyle(Theme.bright)
                     Spacer()
-                    (Text(Format.pace(requiredPace) + " ") + Text("/km").font(.sg(14)).foregroundStyle(Theme.bright))
+                    Text("\(Format.pace(requiredPace)) \(Text("/km").font(.sg(14)).foregroundStyle(Theme.bright))")
                         .font(.stat(26)).foregroundStyle(Theme.signal)
                 }
                 .padding(.top, 18)
