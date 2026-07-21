@@ -74,7 +74,7 @@ struct ProgressScreen: View {
     // MARK: - Road
 
     private var roadContent: some View {
-        let series = RunAnalytics.weeklyAvgPace(runs: store.runs, weeks: 12, roadOnly: true)
+        let series = RunAnalytics.weeklyAvgPace(runs: store.allRuns, weeks: 12, roadOnly: true)
         let present = series.compactMap { $0 }
         let road12 = last12WeekRoad
         let avg = road12.km > 0 ? road12.time / road12.km : 0
@@ -122,9 +122,9 @@ struct ProgressScreen: View {
     }
 
     private var driftRow: some View {
-        let reference = RunAnalytics.referencePace(runs: store.runs)
+        let reference = RunAnalytics.referencePace(runs: store.allRuns)
         let drift = reference.flatMap {
-            RunAnalytics.hrAtPace(runs: store.runs, referencePaceSec: $0)
+            RunAnalytics.hrAtPace(runs: store.allRuns, referencePaceSec: $0)
         }
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
@@ -153,7 +153,7 @@ struct ProgressScreen: View {
     // MARK: - Trail
 
     private var trailContent: some View {
-        let climbSeries = RunAnalytics.weeklyClimbRate(runs: store.runs, weeks: 12)
+        let climbSeries = RunAnalytics.weeklyClimbRate(runs: store.allRuns, weeks: 12)
         let present = climbSeries.compactMap { $0 }
         let avgRate = present.isEmpty ? 0 : present.reduce(0, +) / Double(present.count)
         let rateDelta = (present.last ?? 0) - (present.first ?? 0)
@@ -259,9 +259,12 @@ struct ProgressScreen: View {
 
     private func shortMonth(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated)) }
 
+    /// Every figure on this screen reads `allRuns`, like Home, the Log and
+    /// Records do. It used to read `runs`, so the one screen headed "Progress"
+    /// was the only one that ignored everything recorded in another app.
     private var last12WeekRoad: (km: Double, time: TimeInterval) {
         let cutoff = Calendar.current.date(byAdding: .weekOfYear, value: -12, to: .now) ?? .now
-        let runs = store.runs.filter { !$0.isTrail && $0.date >= cutoff }
+        let runs = store.allRuns.filter { !$0.isTrail && $0.date >= cutoff }
         return (runs.reduce(0) { $0 + $1.distanceKm }, runs.reduce(0) { $0 + $1.duration })
     }
 }
