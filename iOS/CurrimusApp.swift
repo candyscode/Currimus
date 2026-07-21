@@ -38,7 +38,11 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if store.runs.isEmpty || forceEmpty {
+            // `allRuns`, not `runs`: someone arriving with years of runs in
+            // Apple Health has a log to show from the first launch. Gating on
+            // the runs Currimus recorded itself kept them on the welcome
+            // screen until they happened to run with this app once.
+            if store.allRuns.isEmpty || forceEmpty {
                 // In its own stack, so the first-launch screen can reach
                 // Settings — a fresh install has no tab bar to get there with.
                 TabRoot { FirstLaunchView() }
