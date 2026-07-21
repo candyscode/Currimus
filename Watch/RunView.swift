@@ -196,6 +196,20 @@ struct PausedView: View {
     @ObservedObject var session: RunSession
     var onEnd: () -> Void
 
+    /// Debug read-out: did watchOS ever hand this run the always-on state, and
+    /// how many times did it wake us there? Lower the wrist, wait, raise it,
+    /// tap to pause — the answer is on this screen.
+    @ViewBuilder
+    private var alwaysOnProbe: some View {
+        #if DEBUG
+        Text(session.sawLuminanceReduced
+             ? "AOD ✓ ×\(session.reducedEntries)"
+             : "AOD never")
+            .font(.sg(9, weight: .medium))
+            .foregroundStyle(session.sawLuminanceReduced ? Theme.signal : Theme.muted)
+        #endif
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
@@ -237,5 +251,6 @@ struct PausedView: View {
         }
         .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PAUSED", color: Theme.signal) }
+        .overlay(alignment: .bottom) { alwaysOnProbe }
     }
 }

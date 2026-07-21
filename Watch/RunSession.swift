@@ -40,6 +40,19 @@ final class RunSession: NSObject, ObservableObject {
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var type: RunType = .quick
     @Published private(set) var elapsed: TimeInterval = 0
+    /// Whether watchOS has put this run into the always-on (wrist-down) state
+    /// at least once. The state is invisible while it is happening — you are
+    /// not looking at the watch — so it is recorded and shown afterwards.
+    @Published private(set) var sawLuminanceReduced = false
+    /// How often watchOS handed us that state — transitions, not frames.
+    @Published private(set) var reducedEntries = 0
+
+    func noteLuminance(reduced: Bool) {
+        guard reduced else { return }
+        sawLuminanceReduced = true
+        reducedEntries += 1
+    }
+
     /// Anchor for the always-on redraw schedule, so its 1 Hz ticks land on the
     /// same instants the run's own seconds change.
     var startedAt: Date { startDate ?? .now }

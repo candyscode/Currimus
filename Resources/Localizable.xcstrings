@@ -1,277 +1,597 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    " · TRAIL": {},
-    "%@ /km · %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ /km · %2$@"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    " · TRAIL" : {
+
+    },
+    "–" : {
+
+    },
+    "—" : {
+
+    },
+    "." : {
+
+    },
+    "/km" : {
+
+    },
+    "%@ · " : {
+
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
           }
         }
       }
     },
-    "%@ FAST · TARGET %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ FAST · TARGET %2$@"
+    "%@ · %@ · Z%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ · Z%3$lld"
           }
         }
       }
     },
-    "%@ SLOW · TARGET %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ SLOW · TARGET %2$@"
+    "%@ /km · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ /km · %2$@"
           }
         }
       }
     },
-    "%@ km": {},
-    "%@ per kilometre": {},
-    "%@ per kilometre, fastest": {},
-    "%@ since %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ since %2$@"
+    "%@ FAST · TARGET %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ FAST · TARGET %2$@"
           }
         }
       }
     },
-    "%@ vs avg": {},
-    "%@ · ": {},
-    "%@ · %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ · %2$@"
+    "%@ km" : {
+
+    },
+    "%@ per kilometre" : {
+
+    },
+    "%@ per kilometre, fastest" : {
+
+    },
+    "%@ since %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ since %2$@"
           }
         }
       }
     },
-    "%@ · %@ · Z%lld": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ · %2$@ · Z%3$lld"
+    "%@ SLOW · TARGET %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ SLOW · TARGET %2$@"
           }
         }
       }
     },
-    "%@%lld since %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@%2$lld since %3$@"
+    "%@ vs avg" : {
+
+    },
+    "%@%lld since %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$lld since %3$@"
           }
         }
       }
     },
-    "%lld": {},
-    "%lld ": {},
-    "%lld days": {},
-    "%lld km": {},
-    "%lld of 5, %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$lld of 5, %2$@"
+    "%lld" : {
+
+    },
+    "%lld " : {
+
+    },
+    "%lld bpm" : {
+
+    },
+    "%lld days" : {
+
+    },
+    "%lld km" : {
+
+    },
+    "%lld of 5, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of 5, %2$@"
           }
         }
       }
     },
-    "%lld%%": {},
-    "+%lld": {},
-    ".": {},
-    "/km": {},
-    "0 km": {},
-    "1 km": {},
-    "10 km": {},
-    "21.1": {},
-    "5 km": {},
-    "AVG PACE · LAST 12 WEEKS": {},
-    "Boundaries follow max HR automatically. Tap any zone to override — the watch shows zone position, never BPM.": {},
-    "C": {},
-    "C · %@ km this week": {},
-    "CLIMB RATE · LAST 12 WEEKS": {},
-    "CLIMBED": {},
-    "CURRIMUS": {},
-    "Climbing costs you less": {},
-    "Connected": {},
-    "Countdown before run": {},
-    "DAYS": {},
-    "DOWN": {},
-    "Done": {},
-    "ELEVATION": {},
-    "Easy": {},
-    "Edit race": {},
-    "Elevation profile": {},
-    "End": {},
-    "Evening Run": {},
-    "FAST": {},
-    "GET READY": {},
-    "GPX / CSV": {},
-    "Grade-adjusted pace": {},
-    "Half marathon": {},
-    "Health access off": {},
-    "Heart rate at 5:30 pace": {},
-    "Heart rate zone": {},
-    "Home": {},
-    "Intervals": {},
-    "KILOMETER": {},
-    "Kilometer alert": {},
-    "Kilometers": {},
-    "Kilometre %lld": {},
-    "Kilometres per day this week": {},
-    "LAST 4 WEEKS": {},
-    "Location off": {},
-    "Log": {},
-    "Long": {},
-    "Longest run": {},
-    "Lower bound": {},
-    "M CLIMBED": {},
-    "MAP": {},
-    "MAX HEART RATE": {},
-    "MONTHLY CLIMB · M": {},
-    "MONTHLY KM": {},
-    "Marathon": {},
-    "Max": {},
-    "Max %lld": {},
-    "Monthly totals": {},
-    "Morning Run": {},
-    "Most climb": {},
-    "NEW · %@": {},
-    "Next": {},
-    "No Health data": {},
-    "No account. No ads. No tracking.": {},
-    "No data sales, no marketing pushes. Currimus stays out of the way so your running stays in front. Runs sync to Apple Health — nothing else, nowhere else.": {},
-    "No race set.": {},
-    "OPTIONAL · TURN CROWN": {},
-    "Off": {},
-    "PACER · ON TARGET %@": {},
-    "PROFILE": {},
-    "Pacer": {},
-    "Pacer %@": {},
-    "Progress": {},
-    "RACE DAY · %@": {},
-    "RECENT": {},
-    "Race": {},
-    "Race name": {},
-    "Race, zones and pacer defaults live in Settings.": {},
-    "Raise bound": {},
-    "Recording problem: %@. %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Recording problem: %1$@. %2$@"
+    "%lld%%" : {
+
+    },
+    "+%lld" : {
+
+    },
+    "±%@" : {
+
+    },
+    "0 km" : {
+
+    },
+    "1 km" : {
+
+    },
+    "5 km" : {
+
+    },
+    "10 km" : {
+
+    },
+    "21.1" : {
+
+    },
+    "at %@ → finish " : {
+
+    },
+    "at this pace: 10 km in " : {
+
+    },
+    "AVG PACE · LAST 12 WEEKS" : {
+
+    },
+    "Back" : {
+
+    },
+    "Calculate from Apple Health" : {
+
+    },
+    "Checking Health…" : {
+
+    },
+    "CLIMB RATE · LAST 12 WEEKS" : {
+
+    },
+    "CLIMBED" : {
+
+    },
+    "Climbing costs you less" : {
+
+    },
+    "Connected" : {
+
+    },
+    "Countdown before run" : {
+
+    },
+    "CURRIMUS" : {
+
+    },
+    "Currimus records your run as an Apple Health workout. Distance and heart rate come from there, so without access there is nothing to record." : {
+
+    },
+    "DAYS" : {
+
+    },
+    "DEFAULT" : {
+
+    },
+    "Done" : {
+
+    },
+    "DOWN" : {
+
+    },
+    "Easy" : {
+
+    },
+    "Edit race" : {
+
+    },
+    "ELEVATION" : {
+
+    },
+    "Elevation profile" : {
+
+    },
+    "End" : {
+
+    },
+    "End the other workout, then try again." : {
+
+    },
+    "Evening Run" : {
+
+    },
+    "FAST" : {
+
+    },
+    "finish ~%@" : {
+
+    },
+    "GET READY" : {
+
+    },
+    "goal %lld km" : {
+
+    },
+    "GPX / CSV" : {
+
+    },
+    "Grade-adjusted pace" : {
+
+    },
+    "Half marathon" : {
+
+    },
+    "Health access needed" : {
+
+    },
+    "Health is not reporting distance for this run, so it cannot be saved. Check that Distance is allowed for Currimus." : {
+
+    },
+    "Heart rate at 5:30 pace" : {
+
+    },
+    "Heart rate zone" : {
+
+    },
+    "high point · %@ m" : {
+
+    },
+    "Home" : {
+
+    },
+    "Intervals" : {
+
+    },
+    "iPhone › Watch › Privacy › Health › Currimus" : {
+
+    },
+    "iPhone › Watch › Privacy › Location › Currimus" : {
+
+    },
+    "KILOMETER" : {
+
+    },
+    "Kilometer alert" : {
+
+    },
+    "Kilometers" : {
+
+    },
+    "Kilometre %lld" : {
+
+    },
+    "Kilometres per day this week" : {
+
+    },
+    "km" : {
+
+    },
+    "LAST 4 WEEKS" : {
+
+    },
+    "Location off" : {
+
+    },
+    "Log" : {
+
+    },
+    "Long" : {
+
+    },
+    "Longest run" : {
+
+    },
+    "Lower bound" : {
+
+    },
+    "m climb" : {
+
+    },
+    "M CLIMBED" : {
+
+    },
+    "m/h" : {
+
+    },
+    "MAP" : {
+
+    },
+    "Marathon" : {
+
+    },
+    "Max" : {
+
+    },
+    "Max %lld" : {
+
+    },
+    "MAX HEART RATE" : {
+
+    },
+    "MONTHLY CLIMB · M" : {
+
+    },
+    "MONTHLY KM" : {
+
+    },
+    "Monthly totals" : {
+
+    },
+    "Morning Run" : {
+
+    },
+    "Most climb" : {
+
+    },
+    "mostly %lld" : {
+
+    },
+    "NEW · %@" : {
+
+    },
+    "Next" : {
+
+    },
+    "No account. No ads. No tracking." : {
+
+    },
+    "No data sales, no marketing pushes. Currimus stays out of the way so your running stays in front. Runs sync to Apple Health — nothing else, nowhere else." : {
+
+    },
+    "No distance" : {
+
+    },
+    "No distance was recorded, so this run was not saved." : {
+
+    },
+    "No Health data" : {
+
+    },
+    "No race set." : {
+
+    },
+    "no reading yet" : {
+
+    },
+    "Off" : {
+
+    },
+    "on schedule" : {
+
+    },
+    "open-ended — just run" : {
+
+    },
+    "OPTIONAL · TURN CROWN" : {
+
+    },
+    "overall %@ ahead" : {
+
+    },
+    "overall %@ behind" : {
+
+    },
+    "Pacer" : {
+
+    },
+    "PACER · ON TARGET %@" : {
+
+    },
+    "Pacer %@" : {
+
+    },
+    "PROFILE" : {
+
+    },
+    "Progress" : {
+
+    },
+    "Race" : {
+
+    },
+    "RACE DAY · %@" : {
+
+    },
+    "race day in %lld days" : {
+
+    },
+    "Race name" : {
+
+    },
+    "Race, zones and pacer defaults live in Settings." : {
+
+    },
+    "Raise bound" : {
+
+    },
+    "Recalculate from Apple Health" : {
+
+    },
+    "RECENT" : {
+
+    },
+    "Recording problem: %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recording problem: %1$@. %2$@"
           }
         }
       }
     },
-    "Records come from your runs automatically. No badges, no confetti.": {},
-    "Recovery": {},
-    "Resume": {},
-    "Route map": {},
-    "Route map, no GPS track recorded": {},
-    "Run": {},
-    "Runs": {},
-    "SLOW": {},
-    "Same effort, less work": {},
-    "Save race": {},
-    "Simple.\nBeautiful.\n": {},
-    "Start": {},
-    "Start on your Apple Watch": {},
-    "Steady": {},
-    "TARGET /KM · TURN CROWN": {},
-    "THIS WEEK": {},
-    "TIME IN ZONES": {},
-    "TRAIL": {},
-    "Tempo": {},
-    "That is": {},
-    "The watch starts every Pacer setup with these values — change either with the crown before you run. Syncs instantly.": {},
-    "The workout session did not start. Time and GPS still record; heart rate does not.": {},
-    "This Week": {},
-    "This watch has no Health data. Time is recorded; heart rate and distance are not.": {},
-    "Threshold": {},
-    "Time in heart rate zones": {},
-    "Today": {},
-    "Trail": {},
-    "Trail run": {},
-    "Trail · %@ · +%lld m": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Trail · %1$@ · +%2$lld m"
+    "Records come from your runs automatically. No badges, no confetti." : {
+
+    },
+    "Recovery" : {
+
+    },
+    "Resting heart rate" : {
+
+    },
+    "Resume" : {
+
+    },
+    "Route map" : {
+
+    },
+    "Route map, no GPS track recorded" : {
+
+    },
+    "Run" : {
+
+    },
+    "Runs" : {
+
+    },
+    "Same effort, less work" : {
+
+    },
+    "Save race" : {
+
+    },
+    "Simple.\nBeautiful.\n" : {
+
+    },
+    "SLOW" : {
+
+    },
+    "Start" : {
+
+    },
+    "Start on your Apple Watch" : {
+
+    },
+    "Steady" : {
+
+    },
+    "TARGET /KM · TURN CROWN" : {
+
+    },
+    "Tempo" : {
+
+    },
+    "That is" : {
+
+    },
+    "The watch starts every Pacer setup with these values — change either with the crown before you run. Syncs instantly." : {
+
+    },
+    "The workout session did not start. Another app may be recording a workout already." : {
+
+    },
+    "This watch has no Health data, so a run cannot record heart rate or distance." : {
+
+    },
+    "THIS WEEK" : {
+
+    },
+    "Threshold" : {
+
+    },
+    "Time in heart rate zones" : {
+
+    },
+    "TIME IN ZONES" : {
+
+    },
+    "Today" : {
+
+    },
+    "trail" : {
+
+    },
+    "Trail" : {
+
+    },
+    "TRAIL" : {
+
+    },
+    "Trail · %@ · +%lld m" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Trail · %1$@ · +%2$lld m"
           }
         }
       }
     },
-    "Training toward a race? Set it up": {},
-    "Uphill, pace lies — climb rate and grade-adjusted pace tell the truth. Same rule as on the watch.": {},
-    "WEEK": {},
-    "Weekly kilometers against your goal.": {},
-    "Weekly volume, last four weeks": {},
-    "Without Health access there is no heart rate and no distance. Allow it in Settings › Privacy › Health.": {},
-    "Without location there is no route, climb or elevation. Allow it in Settings › Privacy › Location.": {},
-    "Workout not started": {},
-    "Yours.": {},
-    "Z%lld · %lldm": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Z%1$lld · %2$lldm"
+    "Trail run" : {
+
+    },
+    "Training toward a race? Set it up" : {
+
+    },
+    "Uphill, pace lies — climb rate and grade-adjusted pace tell the truth. Same rule as on the watch." : {
+
+    },
+    "Weekly volume, last four weeks" : {
+
+    },
+    "Without location there is no route, climb or elevation. Heart rate and distance still record." : {
+
+    },
+    "Workout not started" : {
+
+    },
+    "Yours." : {
+
+    },
+    "Z%lld · %lldm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Z%1$lld · %2$lldm"
           }
         }
       }
     },
-    "ZONE": {},
-    "ZONE ": {},
-    "ZONES": {},
-    "Zone %lld · %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Zone %1$lld · %2$@"
+    "ZONE" : {
+
+    },
+    "ZONE " : {
+
+    },
+    "Zone %lld · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zone %1$lld · %2$@"
           }
         }
       }
     },
-    "at %@ → finish ": {},
-    "at this pace: 10 km in ": {},
-    "finish ~%@": {},
-    "goal %lld km": {},
-    "high point · %@ m": {},
-    "km": {},
-    "last %@ /km": {},
-    "m climb": {},
-    "m/h": {},
-    "mostly %lld": {},
-    "no reading yet": {},
-    "of %lld km": {},
-    "on schedule": {},
-    "open-ended — just run": {},
-    "overall %@ ahead": {},
-    "overall %@ behind": {},
-    "race day in %lld days": {},
-    "trail": {},
-    "±%@": {},
-    "–": {},
-    "—": {}
+    "ZONES" : {
+
+    }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }
