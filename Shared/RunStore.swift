@@ -529,9 +529,10 @@ final class RunStore: ObservableObject {
         let candidates: [(km: Int, label: String)] = [(5, "5K"), (10, "10K")]
         // Freshest first: a 10K PR set last week leads over a 5K PR from May.
         let held = candidates.compactMap { candidate -> LatestBenchmark? in
-            guard let holder = RunAnalytics.fastestWindowHolder(km: candidate.km, runs: runs) else { return nil }
-            let previous = RunAnalytics.fastestWindow(
-                km: candidate.km, runs: runs.filter { $0.id != holder.run.id })
+            let km = Double(candidate.km)
+            guard let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) else { return nil }
+            let previous = RunAnalytics.bestEffortHolder(
+                km: km, runs: runs.filter { $0.id != holder.run.id })?.seconds
             return LatestBenchmark(
                 label: candidate.label,
                 value: Format.clock(holder.seconds),
@@ -548,8 +549,8 @@ final class RunStore: ObservableObject {
         if let cachedHolders { return cachedHolders }
         var map: [UUID: String] = [:]
         let runs = allRuns
-        for (km, label) in [(5, "5K PR"), (10, "10K PR")] {
-            if let holder = RunAnalytics.fastestWindowHolder(km: km, runs: runs) {
+        for (km, label) in [(5.0, "5K PR"), (10.0, "10K PR")] {
+            if let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) {
                 map[holder.run.id] = label
             }
         }
@@ -558,12 +559,9 @@ final class RunStore: ObservableObject {
         return map
     }
 
-    /// Attribute a PR to the run that holds the fastest window.
+    /// Attribute a PR to the run that holds it — the same lookup the record
+    /// itself came from, so the row's date always belongs to the row's time.
     private func recordDate(km: Double, in runs: [Run]) -> Date {
-        if km <= 10, let holder = RunAnalytics.fastestWindowHolder(km: Int(km), runs: runs) {
-            return holder.run.date
-        }
-        return runs.filter { $0.distanceKm >= km - 0.4 }
-            .min { $0.paceSecPerKm < $1.paceSecPerKm }?.date ?? .now
+        RunAnalytics.bestEffortHolder(km: km, runs: runs)?.run.date ?? .now
     }
 }

@@ -49,6 +49,50 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNil(RunAnalytics.fastestWindow(km: 12, runs: [run]))
     }
 
+    /// A run out of Apple Health has no splits, so the rolling window finds
+    /// nothing in it — it has to hold a record on its distance and time alone.
+    func testImportedRunWithoutSplitsStillHoldsARecord() {
+        let imported = Run(date: .now, name: "Strava", distanceKm: 10, duration: 2800,
+                           avgHR: 0, splits: [], imported: true)
+        XCTAssertNil(RunAnalytics.fastestWindow(km: 10, runs: [imported]))
+
+        let holder = RunAnalytics.bestEffortHolder(km: 10, runs: [imported])
+        XCTAssertEqual(holder?.run.id, imported.id)
+        XCTAssertEqual(try XCTUnwrap(holder?.seconds), 2800, accuracy: 1)
+    }
+
+    /// The scaled reading is a fallback, never a promotion: a genuine window
+    /// inside a run has to win when it is faster.
+    func testRealWindowBeatsScaledEstimate() {
+        let splits: [TimeInterval] = [340, 340, 280, 280, 280, 280, 280, 340, 340, 340]
+        let recorded = Run(date: .now, name: "own", distanceKm: 10,
+                           duration: splits.reduce(0, +), avgHR: 150, splits: splits)
+        let window = try? XCTUnwrap(RunAnalytics.fastestWindow(km: 5, runs: [recorded]))
+        let holder = RunAnalytics.bestEffortHolder(km: 5, runs: [recorded])
+        XCTAssertEqual(try XCTUnwrap(holder?.seconds), try XCTUnwrap(window), accuracy: 0.1)
+        XCTAssertLessThan(try XCTUnwrap(holder?.seconds), recorded.paceSecPerKm * 5)
+    }
+
+    /// Average pace over a marathon says something about a half and nothing
+    /// worth claiming about a kilometre.
+    func testLongRunDoesNotSetShortBenchmarks() {
+        let marathon = Run(date: .now, name: "M", distanceKm: 42.2, duration: 42.2 * 330,
+                           avgHR: 150, splits: [], imported: true)
+        let prs = RunAnalytics.personalBests(runs: [marathon])
+        XCTAssertNotNil(prs[42.195])
+        XCTAssertNotNil(prs[21.0975])
+        XCTAssertNil(prs[1])
+        XCTAssertNil(prs[5])
+        XCTAssertNil(prs[10])
+    }
+
+    /// A run that falls short of the benchmark must not be filed as one.
+    func testShortRunIsNotABenchmark() {
+        let short = Run(date: .now, name: "s", distanceKm: 4.6, duration: 4.6 * 300,
+                        avgHR: 150, splits: [], imported: true)
+        XCTAssertNil(RunAnalytics.bestEffortHolder(km: 5, runs: [short]))
+    }
+
     func testPersonalBestsIncludeHalfFromLongEffort() {
         let long = Run(date: .now, name: "long", distanceKm: 22, duration: 22 * 330,
                        avgHR: 150, splits: Array(repeating: 330, count: 22))
