@@ -17,6 +17,10 @@ settings:
     # (and String(localized:) call sites) show up in the catalogue.
     SWIFT_EMIT_LOC_STRINGS: YES
     GENERATE_INFOPLIST_FILE: YES
+    # The app uses no encryption beyond what iOS itself provides over HTTPS —
+    # in fact it makes no network calls at all. Declaring it here answers the
+    # export-compliance question once, instead of on every single upload.
+    INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
     CODE_SIGN_STYLE: Automatic
     # The project file is generated, so anything set by hand in Xcode's
     # Signing & Capabilities pane survives exactly until the next
