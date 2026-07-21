@@ -91,15 +91,20 @@ struct RecordingBlockedView: View {
                     .padding(.top, 7)
 
                 if let recovery = issue.recovery {
+                    // Order matters: the tile's own inset and its background
+                    // come first, and only then the gap to the paragraph
+                    // above. Putting `.padding(.top,)` before the background
+                    // folded that gap *inside* the tile — so it sat flush
+                    // against the text while carrying a lopsided interior.
                     Text(recovery)
                         .font(.sg(10, weight: .medium))
                         .foregroundStyle(Theme.signal)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 9)
-                        .padding(EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10))
+                        .padding(EdgeInsets(top: 9, leading: 11, bottom: 9, trailing: 11))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Theme.signal.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                        .padding(.top, 14)
                 }
 
                 Button(action: onBack) {
