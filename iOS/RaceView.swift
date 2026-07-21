@@ -16,7 +16,10 @@ struct RaceView: View {
 
     private func content(_ race: Race) -> some View {
         let longest = store.longestRun?.distanceKm ?? 0
-        let longestPct = Int((longest / race.distance.km * 100).rounded())
+        // Capped: the label reads "how much of race day you have covered", and
+        // an ultra runner training for a 10 K was told they were at 340 % of
+        // it, which reads as a broken percentage rather than a compliment.
+        let longestPct = min(Int((longest / race.distance.km * 100).rounded()), 100)
         return VStack(alignment: .leading, spacing: 0) {
             Text("\(race.name.uppercased()) · \(race.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).year()).uppercased())")
                 .kicker(13, color: Theme.bright, tracking: 0.12)
