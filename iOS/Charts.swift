@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 
 /// Weekday volume bars (Home). Rest days are a thin idle stub; the latest run
 /// day burns Signal.
@@ -214,70 +215,111 @@ struct SplitBars: View {
     }
 }
 
-/// Route map placeholder — grid paper with the run's path.
+/// The run's recorded GPS track on a real map.
+///
+/// This used to be grid paper with the word MAP in the corner — and when a
+/// run had no track at all it drew a decorative bézier loop, so a treadmill
+/// session came with an invented route through an imaginary park. A drawing
+/// of a run that did not happen is worse than no drawing.
 struct MapCard: View {
     var run: Run
     var height: CGFloat = 160
 
+    private var route: [CLLocationCoordinate2D] {
+        (run.route ?? []).map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) }
+    }
+
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            GridPattern().stroke(Color(hex: 0x1A1A1A), lineWidth: 1)
-            RoutePath(run: run)
-                .stroke(Theme.signal, style: .init(lineWidth: 3, lineCap: .round, lineJoin: .round))
-                .padding(20)
-            Text("MAP")
-                .font(.sg(10, weight: .medium)).kerning(1)
-                .foregroundStyle(Color(hex: 0x4A4A4A))
-                .padding([.bottom, .trailing], 14)
+        Group {
+            if route.count > 1 {
+                RouteMap(route: route, region: region)
+            } else {
+                empty
+            }
         }
         .frame(height: height)
-        .background(Color(hex: 0x111111))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.cardBorder, lineWidth: 1))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(run.route?.isEmpty == false ? "Route map" : "Route map, no GPS track recorded")
+        .accessibilityLabel(route.count > 1 ? "Route map" : "No GPS track recorded")
     }
-}
 
-struct GridPattern: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path(); let step: CGFloat = 34
-        var x = rect.minX
-        while x <= rect.maxX { p.move(to: .init(x: x, y: rect.minY)); p.addLine(to: .init(x: x, y: rect.maxY)); x += step }
-        var y = rect.minY
-        while y <= rect.maxY { p.move(to: .init(x: rect.minX, y: y)); p.addLine(to: .init(x: rect.maxX, y: y)); y += step }
-        return p
-    }
-}
-
-/// The recorded GPS track normalized into the card, or a pleasant default loop.
-struct RoutePath: Shape {
-    var run: Run
-
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        if let route = run.route, route.count > 2 {
-            let lats = route.map(\.lat), lons = route.map(\.lon)
-            let minLat = lats.min()!, maxLat = lats.max()!, minLon = lons.min()!, maxLon = lons.max()!
-            let spanLat = max(maxLat - minLat, 1e-5), spanLon = max(maxLon - minLon, 1e-5)
-            let mapped = route.map { c in
-                CGPoint(x: (c.lon - minLon) / spanLon * rect.width,
-                        y: (1 - (c.lat - minLat) / spanLat) * rect.height)
+    /// Said plainly, because it has a cause the user can act on: a run records
+    /// without location, it just loses the route.
+    private var empty: some View {
+        ZStack {
+            Theme.card
+            VStack(spacing: 6) {
+                Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                    .font(.system(size: 22)).foregroundStyle(Theme.faint)
+                Text("No GPS track for this run")
+                    .font(.sg(13)).foregroundStyle(Theme.muted)
             }
-            p.move(to: mapped[0]); mapped.dropFirst().forEach { p.addLine(to: $0) }
-        } else {
-            let w = rect.width, h = rect.height
-            p.move(to: .init(x: 0.06 * w, y: 0.78 * h))
-            p.addCurve(to: .init(x: 0.30 * w, y: 0.34 * h),
-                       control1: .init(x: 0.16 * w, y: 0.62 * h), control2: .init(x: 0.16 * w, y: 0.38 * h))
-            p.addCurve(to: .init(x: 0.58 * w, y: 0.56 * h),
-                       control1: .init(x: 0.44 * w, y: 0.30 * h), control2: .init(x: 0.46 * w, y: 0.58 * h))
-            p.addCurve(to: .init(x: 0.84 * w, y: 0.22 * h),
-                       control1: .init(x: 0.70 * w, y: 0.54 * h), control2: .init(x: 0.72 * w, y: 0.24 * h))
-            p.addCurve(to: .init(x: 0.95 * w, y: 0.40 * h),
-                       control1: .init(x: 0.90 * w, y: 0.21 * h), control2: .init(x: 0.95 * w, y: 0.30 * h))
         }
-        return p
+    }
+
+    /// The track's bounding box with a margin, so the line never runs into
+    /// the card's edge. The floor keeps a lap around a single block from
+    /// filling the frame with one street.
+    private var region: MKCoordinateRegion {
+        let lats = route.map(\.latitude), lons = route.map(\.longitude)
+        guard let minLat = lats.min(), let maxLat = lats.max(),
+              let minLon = lons.min(), let maxLon = lons.max() else {
+            return MKCoordinateRegion()
+        }
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2,
+                                           longitude: (minLon + maxLon) / 2),
+            span: MKCoordinateSpan(latitudeDelta: max((maxLat - minLat) * 1.35, 0.003),
+                                   longitudeDelta: max((maxLon - minLon) * 1.35, 0.003))
+        )
+    }
+}
+
+/// `MKMapView` rather than SwiftUI's `Map`.
+///
+/// The map has to be dark: everything around it is `#0A0A0A`, and a daylight
+/// map in the middle of a run detail reads as a different app. SwiftUI's `Map`
+/// has no way to say so — `mapColorScheme` does not exist on iOS, and MapKit
+/// ignores `\.colorScheme` because it is UIKit underneath. Even the root
+/// view's `preferredColorScheme(.dark)` does not reach it. `MKMapView` takes
+/// the instruction directly.
+private struct RouteMap: UIViewRepresentable {
+    var route: [CLLocationCoordinate2D]
+    var region: MKCoordinateRegion
+
+    func makeUIView(context: Context) -> MKMapView {
+        let view = MKMapView()
+        view.delegate = context.coordinator
+        view.overrideUserInterfaceStyle = .dark
+        view.pointOfInterestFilter = .excludingAll
+        view.showsCompass = false
+        view.showsScale = false
+        view.isRotateEnabled = false
+        view.isPitchEnabled = false
+        // A card, not a map view: panning inside a scrolling detail screen
+        // would fight the scroll, and there is nothing here to explore.
+        view.isScrollEnabled = false
+        view.isZoomEnabled = false
+        view.addOverlay(MKPolyline(coordinates: route, count: route.count))
+        view.setRegion(region, animated: false)
+        return view
+    }
+
+    func updateUIView(_ view: MKMapView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, MKMapViewDelegate {
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            guard let line = overlay as? MKPolyline else { return MKOverlayRenderer(overlay: overlay) }
+            let renderer = MKPolylineRenderer(polyline: line)
+            renderer.strokeColor = UIColor(Theme.signal)
+            renderer.lineWidth = 3
+            renderer.lineCap = .round
+            renderer.lineJoin = .round
+            return renderer
+        }
     }
 }
 

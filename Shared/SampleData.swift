@@ -120,8 +120,34 @@ enum SampleData {
             splits: splits,
             zoneSeconds: zones.map { $0 * duration },
             climbMeters: climb, descentMeters: descent, highPointMeters: high,
-            altitudeSamples: alt
+            altitudeSamples: alt,
+            route: route(km: km, duration: duration, altitudes: alt)
         )
+    }
+
+    /// A synthetic GPS track, so demo builds and screenshots exercise the real
+    /// map rather than its empty state. A loop out of Freiburg, scaled to the
+    /// run's distance — roughly a degree of latitude per 111 km.
+    private static func route(km: Double, duration: TimeInterval,
+                              altitudes: [Double]) -> [Coordinate] {
+        let origin = (lat: 47.9959, lon: 7.8522)
+        let radius = km / 111 / .pi / 2          // circumference ≈ the distance
+        let points = max(Int(km * 8), 24)
+        return (0..<points).map { i in
+            let t = Double(i) / Double(points - 1)
+            let angle = t * 2 * .pi
+            // A squashed, wandering loop reads as a route rather than a circle.
+            let wobble = 1 + sin(angle * 3) * 0.18
+            return Coordinate(
+                lat: origin.lat + sin(angle) * radius * wobble,
+                lon: origin.lon + cos(angle) * radius * 1.45 * wobble
+                    / cos(origin.lat * .pi / 180),
+                elevation: altitudes.isEmpty
+                    ? 260
+                    : altitudes[min(Int(t * Double(altitudes.count - 1)), altitudes.count - 1)],
+                t: t * duration
+            )
+        }
     }
 
     /// A synthetic elevation profile → climb/descent/high point + samples.
