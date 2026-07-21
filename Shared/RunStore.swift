@@ -30,6 +30,9 @@ final class RunStore: ObservableObject {
     @Published var gpsAccuracy: GPSAccuracy = .high { didSet { persistSettings(); pushSettings() } }
     /// Dim and simplify the run screen while the wrist is down.
     @Published var alwaysOnReduced = true { didSet { persistSettings(); pushSettings() } }
+    /// Whether there is a watch to record on. iPhone side only; the watch is
+    /// obviously its own answer.
+    @Published private(set) var watchState: WatchAvailability = .unknown
 
     /// Where this store reads and writes. Injected so tests get a scratch
     /// suite instead of scribbling on the real app group. `nonisolated(unsafe)`
@@ -67,6 +70,9 @@ final class RunStore: ObservableObject {
 
         RunSync.shared.onReceive = { [weak self] run in self?.add(run) }
         RunSync.shared.onSettings = { [weak self] settings in self?.apply(settings) }
+        #if os(iOS)
+        RunSync.shared.onWatchState = { [weak self] state in self?.watchState = state }
+        #endif
         RunSync.shared.activate()
         pushSettings()
     }

@@ -74,6 +74,13 @@ struct SettingsScreen: View {
                         Text("Connected").foregroundStyle(Theme.signal)
                     }
                     hairline
+                    // Recording lives on the watch, so whether there is one is
+                    // worth stating rather than leaving the user to infer it
+                    // from a log that never fills.
+                    ChevronRow(title: "Apple Watch", subtitle: watchSubtitle, showsChevron: false) {
+                        Text(watchLabel).foregroundStyle(watchTint)
+                    }
+                    hairline
                     Button(action: exportRuns) {
                         ChevronRow(title: "Export all runs", showsChevron: false) { Text("GPX / CSV") }
                     }.buttonStyle(.plain)
@@ -87,6 +94,27 @@ struct SettingsScreen: View {
 
     private var pacerDistanceLabel: String {
         store.pacerDefaultDistanceKm.map { $0 == 21.0975 ? "21.1 km" : "\(Int($0)) km" } ?? "Off"
+    }
+
+    private var watchLabel: String {
+        switch store.watchState {
+        case .ready: return "Ready"
+        case .appMissing: return "App missing"
+        case .noWatch: return "None paired"
+        case .unknown: return "—"
+        }
+    }
+
+    private var watchSubtitle: String? {
+        switch store.watchState {
+        case .appMissing: return "Install Currimus from the Watch app, under Available Apps."
+        case .noWatch: return "Without a watch, Currimus reads your Apple Health runs but cannot record."
+        case .ready, .unknown: return nil
+        }
+    }
+
+    private var watchTint: Color {
+        store.watchState == .ready ? Theme.signal : Theme.bright
     }
 
     private var raceLabel: String {

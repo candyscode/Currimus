@@ -81,10 +81,20 @@ struct FirstLaunchView: View {
         .foregroundStyle(Theme.ink)
     }
 
+    /// The closing line has to survive being read by someone with no watch —
+    /// "start your first run on the Apple Watch" is a dead end for them, and
+    /// the app knows perfectly well whether one is paired.
     private var caption: String {
-        healthAsk == .foundNothing
-            ? "No running workouts in Apple Health yet — or access was declined. Either way, your first run on the watch starts the log."
-            : "Then start your first run on the Apple Watch — the log fills itself."
+        switch store.watchState {
+        case .noWatch:
+            return "Currimus records on the Apple Watch — there is none paired with this iPhone yet. Everything here still reads your Apple Health runs."
+        case .appMissing:
+            return "Install Currimus on your Apple Watch to record — the Watch app, under Available Apps."
+        case .ready, .unknown:
+            return healthAsk == .foundNothing
+                ? "No running workouts in Apple Health yet — or access was declined. Either way, your first run on the watch starts the log."
+                : "Then start your first run on the Apple Watch — the log fills itself."
+        }
     }
 
     /// Raises the Health prompt and pulls in whatever other apps recorded. On
