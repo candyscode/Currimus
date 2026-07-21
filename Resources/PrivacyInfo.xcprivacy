@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- No tracking, no third-party SDKs, no network calls of any kind. The
+	     app's only data path off the device is Apple Health, which is the
+	     user's own store and is covered by its own permission. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<!-- Nothing leaves the device, so nothing is "collected" in the sense
+	     this key means. Runs, heart rate and routes are written to Apple
+	     Health and to the app's own container, and read back from there. -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- 1C8F.1 — the run log, the race and the settings live in
+				     the group.com.currimus.app suite, shared between the
+				     iPhone app, the watch app and the widget extension. -->
+				<string>1C8F.1</string>
+				<!-- CA92.1 — the app's own standard defaults: the one-time
+				     migration of a log written before the App Group existed. -->
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

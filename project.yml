@@ -38,6 +38,11 @@ targets:
         buildPhase: resources
       - path: Resources/Localizable.xcstrings
         buildPhase: resources
+      # Required since May 2024. Both apps and the widget read UserDefaults,
+      # which is a required-reason API; without a manifest declaring it the
+      # upload is answered with ITMS-91053.
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app
@@ -66,6 +71,11 @@ targets:
       - path: Fonts
         buildPhase: resources
       - path: Resources/Localizable.xcstrings
+        buildPhase: resources
+      # Required since May 2024. Both apps and the widget read UserDefaults,
+      # which is a required-reason API; without a manifest declaring it the
+      # upload is answered with ITMS-91053.
+      - path: Resources/PrivacyInfo.xcprivacy
         buildPhase: resources
     settings:
       base:
@@ -105,6 +115,8 @@ targets:
       - WatchWidgets
       - Shared
       - path: Fonts
+        buildPhase: resources
+      - path: Resources/PrivacyInfo.xcprivacy
         buildPhase: resources
     settings:
       base:

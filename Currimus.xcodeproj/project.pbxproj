@@ -54,6 +54,8 @@
 		5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
 		6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
+		6531B6F7EE07A875F176BC98 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
+		682DE7363C94109DF8D8A910 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
 		6841D02032CC9CDD2B2C09B3 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		68D6599A4AFBC9796959F88B /* TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485542A4B0D645CFCC648C51 /* TopBar.swift */; };
 		6905CDB7A68F0AF8003D5E95 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
@@ -128,6 +130,7 @@
 		D03CFF6F549424CF8B570758 /* RecordingPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CB59BCA4018F4C3EBBFD25 /* RecordingPolicyTests.swift */; };
 		D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752748C2C4376164266AC885 /* CurrimusApp.swift */; };
 		D47B33063F6CCE2BCC5A6DB3 /* DebugFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E09415889FE9881BBFFB33 /* DebugFlags.swift */; };
+		D529E10E8D2EF160F64C6D1D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
 		D687CD7AA9868B8B982FE26E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		DB7737B26FB59423A7ADD549 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55F4CF421595E439C843775 /* WatchApp.swift */; };
 		DC5F3F32B0274951D97B1959 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
@@ -209,6 +212,7 @@
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
 		5CD6D8198237FDA19530FD50 /* RunEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunEditView.swift; sourceTree = "<group>"; };
 		60332871CFEA2AFE9925CDAE /* RunPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunPalette.swift; sourceTree = "<group>"; };
+		611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		61423834EFBB80EBFAC112C9 /* CurrimusWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatchWidgets.entitlements; sourceTree = "<group>"; };
 		65AEBA896B9201B26676F060 /* Scaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scaffold.swift; sourceTree = "<group>"; };
 		65B6A62A4E92A05F4D05C253 /* RunStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStore.swift; sourceTree = "<group>"; };
@@ -380,6 +384,7 @@
 			isa = PBXGroup;
 			children = (
 				C025916FFE193709BFE79626 /* Localizable.xcstrings */,
+				611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -530,6 +535,7 @@
 				2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */,
 				B088041022A6EF3E28813E66 /* Localizable.xcstrings in Resources */,
 				B749CFE69D9A5A8A4D6D3A8D /* OFL.txt in Resources */,
+				682DE7363C94109DF8D8A910 /* PrivacyInfo.xcprivacy in Resources */,
 				6B518FFE68FA01C3ADD13FDD /* SpaceGrotesk-Bold.ttf in Resources */,
 				2CB91D71E6B6E6FA24F1C95F /* SpaceGrotesk-Light.ttf in Resources */,
 				830260335BDEAF3CD5BCBE7F /* SpaceGrotesk-Medium.ttf in Resources */,
@@ -545,6 +551,7 @@
 				A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */,
 				00B5BFA9AA8BAE87BBD70110 /* Localizable.xcstrings in Resources */,
 				5843214DF0F756E312673578 /* OFL.txt in Resources */,
+				6531B6F7EE07A875F176BC98 /* PrivacyInfo.xcprivacy in Resources */,
 				5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */,
 				B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */,
 				A28A4016C9EF471DC28C03A9 /* SpaceGrotesk-Medium.ttf in Resources */,
@@ -558,6 +565,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				487CD92918738997F3DB723F /* OFL.txt in Resources */,
+				D529E10E8D2EF160F64C6D1D /* PrivacyInfo.xcprivacy in Resources */,
 				AF8B59555800E52D952805DD /* SpaceGrotesk-Bold.ttf in Resources */,
 				6CDF6CAC52FFF686C46A9587 /* SpaceGrotesk-Light.ttf in Resources */,
 				046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */,
