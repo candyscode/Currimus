@@ -1,5 +1,52 @@
 import SwiftUI
 
+/// The month ticks under a trend chart, at the position of the first week
+/// that falls in each month.
+///
+/// This used to be the literal `["Apr", "May", "Jun", "Jul"]`, straight out
+/// of the design — correct in the month the design was drawn, and wrong in
+/// every month since. It sat under both charts, so the axis and the line
+/// above it described different periods.
+struct TrendMonthAxis: View {
+    var weeks: Int
+    /// Enough for an abbreviated month at 12 pt, in any locale that keeps
+    /// them to three or four characters.
+    private let labelWidth: CGFloat = 38
+
+    private var ticks: [(label: String, fraction: Double)] {
+        let calendar = Calendar.runWeek
+        var seenMonths: Set<Int> = []
+        var out: [(String, Double)] = []
+        for offset in (0..<weeks).reversed() {
+            guard let week = calendar.date(byAdding: .weekOfYear, value: -offset, to: .now)
+            else { continue }
+            let month = calendar.component(.month, from: week)
+            guard seenMonths.insert(month).inserted else { continue }
+            let index = weeks - 1 - offset
+            out.append((week.formatted(.dateTime.month(.abbreviated)),
+                        Double(index) / Double(max(weeks - 1, 1))))
+        }
+        return out
+    }
+
+    var body: some View {
+        let ticks = ticks
+        return GeometryReader { proxy in
+            // Offset rather than `position`, so the first and last labels stay
+            // inside the chart's width instead of hanging off both ends.
+            ForEach(Array(ticks.enumerated()), id: \.offset) { _, tick in
+                Text(tick.label)
+                    .font(.sg(12)).foregroundStyle(Theme.muted)
+                    .frame(width: labelWidth, alignment: .leading)
+                    .offset(x: tick.fraction * max(proxy.size.width - labelWidth, 0))
+            }
+        }
+        .frame(height: 16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Covering \(ticks.map(\.label).joined(separator: " to "))")
+    }
+}
+
 struct ProgressScreen: View {
     @EnvironmentObject private var store: RunStore
     @Environment(\.pushRoute) private var push
@@ -145,14 +192,7 @@ struct ProgressScreen: View {
 
     private var divider: some View { Divider().overlay(Theme.hairline).padding(.vertical, 24) }
 
-    private var monthAxis: some View {
-        HStack {
-            ForEach(["Apr", "May", "Jun", "Jul"], id: \.self) { m in
-                Text(m).font(.sg(12)).foregroundStyle(Theme.muted)
-                if m != "Jul" { Spacer() }
-            }
-        }
-    }
+    private var monthAxis: some View { TrendMonthAxis(weeks: 12) }
 
     private var sinceMonth: String {
         let d = Calendar.current.date(byAdding: .month, value: -3, to: .now) ?? .now
