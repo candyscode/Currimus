@@ -54,8 +54,11 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads your running workouts from Apple Health."
-        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Currimus saves your runs as workouts to Apple Health."
+        # Read only. The iPhone never writes to Health — the watch saves the
+        # workout, and this app reads runs other apps recorded. Declaring a
+        # write description it does not use invites a review question with no
+        # good answer.
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads your running workouts from Apple Health, so every total counts what you actually ran."
         TARGETED_DEVICE_FAMILY: "1"
     entitlements:
       path: iOS/Currimus.entitlements
