@@ -76,9 +76,13 @@ struct ProgressGlyph: Shape {
 }
 
 /// Imperative push for buttons that aren't NavigationLinks (settings, cards).
-struct PushRouteKey: EnvironmentKey { static let defaultValue: (Route) -> Void = { _ in } }
+/// Main-actor and `@Sendable`: it only ever runs from a view body, and saying
+/// so is what lets an environment value hold a closure under strict concurrency.
+struct PushRouteKey: EnvironmentKey {
+    static let defaultValue: @MainActor @Sendable (Route) -> Void = { _ in }
+}
 extension EnvironmentValues {
-    var pushRoute: (Route) -> Void {
+    var pushRoute: @MainActor @Sendable (Route) -> Void {
         get { self[PushRouteKey.self] }
         set { self[PushRouteKey.self] = newValue }
     }

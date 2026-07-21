@@ -16,6 +16,9 @@ struct CurrimusApp: App {
                 .environmentObject(store)
                 .preferredColorScheme(.dark)
                 .tint(Theme.signal)
+                // Small type scales (see Font.sg); this is the ceiling that
+                // keeps the fixed numeric grids intact at the top end.
+                .dynamicTypeSize(...DynamicTypeSize.accessibility2)
                 // Pick up runs other apps recorded on every foreground, so the
                 // totals never lag behind what the user actually ran.
                 .task { await store.refreshImportedRuns(requestingAccess: true) }

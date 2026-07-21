@@ -7,22 +7,28 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00B5BFA9AA8BAE87BBD70110 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C025916FFE193709BFE79626 /* Localizable.xcstrings */; };
 		045548523ED1B5719BF4BF25 /* RunScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81AF2D50A1295819CF2F665 /* RunScaffold.swift */; };
 		046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		07C5CEEF37DA02B813DDA920 /* CurrimusWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0AF2B49944699FB95A35180D /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		1036F046D58875E97CB5C429 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
+		10AAF1A5FFD45EB38E9620D8 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		1242EDB609907C5835F455E1 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
 		18D1C40B1D4614C0E2361BEE /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		190698F50C3CAC3A718B9688 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
 		29202736108BECE52768BC98 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		2981B3EADB4136CEB5C61AD3 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
+		29F109AB2C5C54FCA7053EE2 /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */; };
 		2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DD88986EEA97DE1411F9263F /* Assets.xcassets */; };
 		2CB91D71E6B6E6FA24F1C95F /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		2ECACF05656A544A071E091E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
 		2FBDE3651DB7F383C79F5873 /* RunStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F9B6C5CE55770CF0FED06C /* RunStoreTests.swift */; };
 		36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
+		3EDCB951E6A8420B6587553D /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		40D4E4DB344B503AAF1DF4B9 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
+		420A6A484F0DE550B615F0C8 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
+		449E3A09C2FB15F329217684 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		46B6E33C7D7A8381DA916D62 /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
 		46CDAB9D5A52183942BD873E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
 		47CE54F292D14E7AD6062FA0 /* CurrimusWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -35,28 +41,37 @@
 		4E9DC5F07B3CCE7B709E81C6 /* HealthImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E064E4F53870876EEA1602 /* HealthImport.swift */; };
 		4F5B2CED42029C3BED5B683E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
 		53B0ED35B918C95FCCCA4B07 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
+		53FBDEC2B58546052685A40C /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		5843214DF0F756E312673578 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D363B4FE9688A032EED38C4 /* OFL.txt */; };
 		5871CAE9414DFEAD955B7C4B /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
 		58D78360BAFF6BF5665AC772 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87DFFE92F35B99B3676E4629 /* FirstLaunchView.swift */; };
 		59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591C33FACB6B9A5D87A858BB /* RunSession.swift */; };
 		5DAB3C3134575691D9112096 /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
 		5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
+		6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
+		6841D02032CC9CDD2B2C09B3 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		68D6599A4AFBC9796959F88B /* TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485542A4B0D645CFCC648C51 /* TopBar.swift */; };
 		6905CDB7A68F0AF8003D5E95 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
 		69210F511F8BCE4784B38B3C /* WatchHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3F1A48729A6BD0B5FC67DE /* WatchHomeView.swift */; };
+		6924813CBAB2B1FE0D43B31E /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */; };
 		6B518FFE68FA01C3ADD13FDD /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
 		6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F243526819E3203BC8EC68 /* PacerViews.swift */; };
 		6CDF6CAC52FFF686C46A9587 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		6CEAFA77482B7929938A2DE1 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		6EB9B6945D9E649D58FC53D1 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		7106A2CF88A06C1A9832676F /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
+		7643EAA0E5005D421F7CA092 /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		7689C91808C6D09BB947694D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		76EC5DB3393322A4BE112ABE /* RunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1A0FA13132AED3D257C31B /* RunView.swift */; };
 		7772564C47ADC2DC7E2C838C /* Charts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7833EDFB1BA31C1B90CF2A5E /* Charts.swift */; };
+		782D299EA462322E9724CBA6 /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */; };
 		79F43D75C534282329132BD0 /* Scaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65AEBA896B9201B26676F060 /* Scaffold.swift */; };
+		7BCB1A4A803954AE36866C9E /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		7F84D2D9C84563F992B44A82 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
+		82ACFB09DDF6B7B2DCC420F1 /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		830260335BDEAF3CD5BCBE7F /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
+		861722063404981A6CD43987 /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */; };
 		868EC442098C4BD06E26115B /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		8911108B369D36350F47DAE3 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		898A0FE20D45DAF944B06D0A /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
@@ -67,9 +82,11 @@
 		921B31AB79D2FBF173A9B1C7 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		928FB6A679175338A1AB032B /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		95057FCF29C634615715C893 /* ProgressTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2093769E1832392AF743C8EC /* ProgressTabView.swift */; };
+		97FDBDF1A2B41336BA763A90 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		9B9424914A12A92D7CB3F61C /* RaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */; };
 		A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6CFB5CC07067218F2414163 /* Assets.xcassets */; };
+		A28544720DE563808062AEE6 /* RunMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776C9DC6EFBBC77654B2C197 /* RunMetricsTests.swift */; };
 		A28A4016C9EF471DC28C03A9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315BB07B29A7E2F717AFC457 /* SettingsView.swift */; };
 		A4E9CEEEFE94B2D7711201C3 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
@@ -78,21 +95,28 @@
 		AB3F9B670C35A7DF7524C002 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		AF7888360F4BF7DBD2E1BF2A /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		AF8B59555800E52D952805DD /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
+		B088041022A6EF3E28813E66 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C025916FFE193709BFE79626 /* Localizable.xcstrings */; };
 		B1750243611A3E10BDCD574D /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C9CB42153EFED5140123404 /* RecordsView.swift */; };
 		B1A27DE2B7F0E859A492023D /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		B749CFE69D9A5A8A4D6D3A8D /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D363B4FE9688A032EED38C4 /* OFL.txt */; };
 		B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		B9AB9B26A8F7D7B113454FE8 /* RunAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */; };
+		BBA33462F041B60D1F8C523E /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		BE8B9BE35F089EDE445C643B /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		C1BC79A4D874C952DAE8F3E1 /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		C2486B37815CA4713B1A972F /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
 		C402C57F16B22CD36FCDBC7E /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		CA1AED99715D51D64C75A9FB /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
+		CB051C7B414C753DA3945E3A /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752748C2C4376164266AC885 /* CurrimusApp.swift */; };
 		D687CD7AA9868B8B982FE26E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		DB7737B26FB59423A7ADD549 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55F4CF421595E439C843775 /* WatchApp.swift */; };
 		DC5F3F32B0274951D97B1959 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		E86BFECCF96440F2567693E0 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
+		EC55258A7F95B65787BEEDD2 /* RecordingIssueViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E3EEBDD46A2C2878930F10 /* RecordingIssueViews.swift */; };
+		F510560E3551F6D4F3842E46 /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		F7A7C35C3DF0D466D580D012 /* TrailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 093CE780E88BBF9DB0F19E1D /* TrailViews.swift */; };
 		F8AB414317BEB2FAAB2E3321 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		FCB58A150AA3CAC5971F86BB /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B6CDF2A60DB7B8C7B810C1A /* SummaryView.swift */; };
@@ -146,24 +170,30 @@
 		0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAnalyticsTests.swift; sourceTree = "<group>"; };
 		13D61C620B2F41C1B8C0B5B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2093769E1832392AF743C8EC /* ProgressTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressTabView.swift; sourceTree = "<group>"; };
+		2EA58C9AB36DB9CE81261E36 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		315BB07B29A7E2F717AFC457 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSampleStore.swift; sourceTree = "<group>"; };
 		367A4044965F5409D34C5401 /* CurrimusWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusWidgets.swift; sourceTree = "<group>"; };
 		3C9CB42153EFED5140123404 /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsView.swift; sourceTree = "<group>"; };
 		3DB6B5A2E80C367BEE291B1F /* Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass.swift; sourceTree = "<group>"; };
 		3E3F1A48729A6BD0B5FC67DE /* WatchHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHomeView.swift; sourceTree = "<group>"; };
+		42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekSnapshot.swift; sourceTree = "<group>"; };
 		46E064E4F53870876EEA1602 /* HealthImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthImport.swift; sourceTree = "<group>"; };
 		485542A4B0D645CFCC648C51 /* TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBar.swift; sourceTree = "<group>"; };
 		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
 		506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAnalytics.swift; sourceTree = "<group>"; };
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
 		61423834EFBB80EBFAC112C9 /* CurrimusWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatchWidgets.entitlements; sourceTree = "<group>"; };
 		65AEBA896B9201B26676F060 /* Scaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scaffold.swift; sourceTree = "<group>"; };
 		65B6A62A4E92A05F4D05C253 /* RunStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStore.swift; sourceTree = "<group>"; };
+		6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunMetrics.swift; sourceTree = "<group>"; };
 		7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontLoader.swift; sourceTree = "<group>"; };
 		70F243526819E3203BC8EC68 /* PacerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacerViews.swift; sourceTree = "<group>"; };
 		741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Medium.ttf"; sourceTree = "<group>"; };
 		742835D6D8B7C6204427A3C0 /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
 		752748C2C4376164266AC885 /* CurrimusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusApp.swift; sourceTree = "<group>"; };
+		776C9DC6EFBBC77654B2C197 /* RunMetricsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunMetricsTests.swift; sourceTree = "<group>"; };
 		7833EDFB1BA31C1B90CF2A5E /* Charts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Charts.swift; sourceTree = "<group>"; };
 		7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Regular.ttf"; sourceTree = "<group>"; };
 		7D363B4FE9688A032EED38C4 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
@@ -182,7 +212,9 @@
 		B81AF2D50A1295819CF2F665 /* RunScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunScaffold.swift; sourceTree = "<group>"; };
 		BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CurrimusWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB4A80647FF8D963E8F48FFA /* CurrimusWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatch.entitlements; sourceTree = "<group>"; };
+		C025916FFE193709BFE79626 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C4AE7EB972483756B1B4BD09 /* RunExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunExport.swift; sourceTree = "<group>"; };
+		C8E3EEBDD46A2C2878930F10 /* RecordingIssueViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIssueViews.swift; sourceTree = "<group>"; };
 		CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunDetailView.swift; sourceTree = "<group>"; };
 		CF3515C4DD609F7375C055AA /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurrimusWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -200,17 +232,22 @@
 		0955E5EB3EAD559243A19707 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */,
 				7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */,
 				46E064E4F53870876EEA1602 /* HealthImport.swift */,
 				A7FBB797F1648FC729833297 /* HeartRateProfile.swift */,
+				2EA58C9AB36DB9CE81261E36 /* Log.swift */,
 				CF3515C4DD609F7375C055AA /* Models.swift */,
 				506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */,
 				C4AE7EB972483756B1B4BD09 /* RunExport.swift */,
+				6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */,
+				35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */,
 				65B6A62A4E92A05F4D05C253 /* RunStore.swift */,
 				99659A5B888C4EF67485D477 /* RunSync.swift */,
 				9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */,
 				742835D6D8B7C6204427A3C0 /* SharedComponents.swift */,
 				E47BCF44600BC83F472F7AE0 /* Theme.swift */,
+				42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -220,6 +257,7 @@
 			children = (
 				43CCB28E418F22ACA597CA06 /* Fonts */,
 				5C62DF926D8D3642EBDDEFC5 /* iOS */,
+				B062C292B818DE4DFF9EAFF2 /* Resources */,
 				0955E5EB3EAD559243A19707 /* Shared */,
 				97D9648BC6D32F15DEF736BC /* Tests */,
 				64931F4C1BECC8078974DD90 /* Watch */,
@@ -279,6 +317,7 @@
 				BB4A80647FF8D963E8F48FFA /* CurrimusWatch.entitlements */,
 				FBF1B697133D1D045364B6E4 /* Info.plist */,
 				70F243526819E3203BC8EC68 /* PacerViews.swift */,
+				C8E3EEBDD46A2C2878930F10 /* RecordingIssueViews.swift */,
 				B81AF2D50A1295819CF2F665 /* RunScaffold.swift */,
 				591C33FACB6B9A5D87A858BB /* RunSession.swift */,
 				9F1A0FA13132AED3D257C31B /* RunView.swift */,
@@ -295,9 +334,18 @@
 			isa = PBXGroup;
 			children = (
 				0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */,
+				776C9DC6EFBBC77654B2C197 /* RunMetricsTests.swift */,
 				E7F9B6C5CE55770CF0FED06C /* RunStoreTests.swift */,
 			);
 			path = Tests;
+			sourceTree = "<group>";
+		};
+		B062C292B818DE4DFF9EAFF2 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C025916FFE193709BFE79626 /* Localizable.xcstrings */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		F82FB9F92023F70ED54D274A /* Products */ = {
@@ -440,6 +488,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */,
+				B088041022A6EF3E28813E66 /* Localizable.xcstrings in Resources */,
 				B749CFE69D9A5A8A4D6D3A8D /* OFL.txt in Resources */,
 				6B518FFE68FA01C3ADD13FDD /* SpaceGrotesk-Bold.ttf in Resources */,
 				2CB91D71E6B6E6FA24F1C95F /* SpaceGrotesk-Light.ttf in Resources */,
@@ -454,6 +503,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */,
+				00B5BFA9AA8BAE87BBD70110 /* Localizable.xcstrings in Resources */,
 				5843214DF0F756E312673578 /* OFL.txt in Resources */,
 				5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */,
 				B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */,
@@ -483,13 +533,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6924813CBAB2B1FE0D43B31E /* AppDefaults.swift in Sources */,
 				CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */,
 				4E9DC5F07B3CCE7B709E81C6 /* HealthImport.swift in Sources */,
 				C1BC79A4D874C952DAE8F3E1 /* HeartRateProfile.swift in Sources */,
+				449E3A09C2FB15F329217684 /* Log.swift in Sources */,
 				921B31AB79D2FBF173A9B1C7 /* Models.swift in Sources */,
 				6C559BD36B188D6EB8DD8BFF /* PacerViews.swift in Sources */,
+				EC55258A7F95B65787BEEDD2 /* RecordingIssueViews.swift in Sources */,
 				46B6E33C7D7A8381DA916D62 /* RunAnalytics.swift in Sources */,
 				1036F046D58875E97CB5C429 /* RunExport.swift in Sources */,
+				7643EAA0E5005D421F7CA092 /* RunMetrics.swift in Sources */,
+				420A6A484F0DE550B615F0C8 /* RunSampleStore.swift in Sources */,
 				045548523ED1B5719BF4BF25 /* RunScaffold.swift in Sources */,
 				59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */,
 				1242EDB609907C5835F455E1 /* RunStore.swift in Sources */,
@@ -503,6 +558,7 @@
 				F7A7C35C3DF0D466D580D012 /* TrailViews.swift in Sources */,
 				DB7737B26FB59423A7ADD549 /* WatchApp.swift in Sources */,
 				69210F511F8BCE4784B38B3C /* WatchHomeView.swift in Sources */,
+				7BCB1A4A803954AE36866C9E /* WeekSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -510,19 +566,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				861722063404981A6CD43987 /* AppDefaults.swift in Sources */,
 				4CBCD27EBAFE272144D57CC1 /* FontLoader.swift in Sources */,
 				47D3F5548C3FD6747232EAA3 /* HealthImport.swift in Sources */,
 				868EC442098C4BD06E26115B /* HeartRateProfile.swift in Sources */,
+				BBA33462F041B60D1F8C523E /* Log.swift in Sources */,
 				53B0ED35B918C95FCCCA4B07 /* Models.swift in Sources */,
 				651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */,
 				B9AB9B26A8F7D7B113454FE8 /* RunAnalyticsTests.swift in Sources */,
 				A4E9CEEEFE94B2D7711201C3 /* RunExport.swift in Sources */,
+				CB051C7B414C753DA3945E3A /* RunMetrics.swift in Sources */,
+				A28544720DE563808062AEE6 /* RunMetricsTests.swift in Sources */,
+				3EDCB951E6A8420B6587553D /* RunSampleStore.swift in Sources */,
 				C402C57F16B22CD36FCDBC7E /* RunStore.swift in Sources */,
 				2FBDE3651DB7F383C79F5873 /* RunStoreTests.swift in Sources */,
 				40D4E4DB344B503AAF1DF4B9 /* RunSync.swift in Sources */,
 				B1A27DE2B7F0E859A492023D /* SampleData.swift in Sources */,
 				E86BFECCF96440F2567693E0 /* SharedComponents.swift in Sources */,
 				F8AB414317BEB2FAAB2E3321 /* Theme.swift in Sources */,
+				BE8B9BE35F089EDE445C643B /* WeekSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -530,18 +592,23 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				29F109AB2C5C54FCA7053EE2 /* AppDefaults.swift in Sources */,
 				8B6414D964170CF94DE59755 /* CurrimusWidgets.swift in Sources */,
 				2981B3EADB4136CEB5C61AD3 /* FontLoader.swift in Sources */,
 				4C3178B122AD4A60DCDDA078 /* HealthImport.swift in Sources */,
 				AF7888360F4BF7DBD2E1BF2A /* HeartRateProfile.swift in Sources */,
+				CA1AED99715D51D64C75A9FB /* Log.swift in Sources */,
 				D687CD7AA9868B8B982FE26E /* Models.swift in Sources */,
 				C2486B37815CA4713B1A972F /* RunAnalytics.swift in Sources */,
 				190698F50C3CAC3A718B9688 /* RunExport.swift in Sources */,
+				82ACFB09DDF6B7B2DCC420F1 /* RunMetrics.swift in Sources */,
+				97FDBDF1A2B41336BA763A90 /* RunSampleStore.swift in Sources */,
 				4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */,
 				0AF2B49944699FB95A35180D /* RunSync.swift in Sources */,
 				36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */,
 				7F84D2D9C84563F992B44A82 /* SharedComponents.swift in Sources */,
 				8911108B369D36350F47DAE3 /* Theme.swift in Sources */,
+				F510560E3551F6D4F3842E46 /* WeekSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -549,6 +616,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				782D299EA462322E9724CBA6 /* AppDefaults.swift in Sources */,
 				7772564C47ADC2DC7E2C838C /* Charts.swift in Sources */,
 				D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */,
 				58D78360BAFF6BF5665AC772 /* FirstLaunchView.swift in Sources */,
@@ -557,6 +625,7 @@
 				FE5A5F0749AAABADF619C9F0 /* HealthImport.swift in Sources */,
 				928FB6A679175338A1AB032B /* HeartRateProfile.swift in Sources */,
 				4A93497D731DA4D66AE0ED2B /* HomeView.swift in Sources */,
+				10AAF1A5FFD45EB38E9620D8 /* Log.swift in Sources */,
 				A50593043F2F4E43C5CF7D98 /* LogView.swift in Sources */,
 				7689C91808C6D09BB947694D /* Models.swift in Sources */,
 				95057FCF29C634615715C893 /* ProgressTabView.swift in Sources */,
@@ -565,6 +634,8 @@
 				898A0FE20D45DAF944B06D0A /* RunAnalytics.swift in Sources */,
 				8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */,
 				6905CDB7A68F0AF8003D5E95 /* RunExport.swift in Sources */,
+				6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */,
+				6841D02032CC9CDD2B2C09B3 /* RunSampleStore.swift in Sources */,
 				BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */,
 				6EB9B6945D9E649D58FC53D1 /* RunSync.swift in Sources */,
 				9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */,
@@ -572,6 +643,7 @@
 				A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */,
 				A931CDE83BEE82558E4CE220 /* SharedComponents.swift in Sources */,
 				18D1C40B1D4614C0E2361BEE /* Theme.swift in Sources */,
+				53FBDEC2B58546052685A40C /* WeekSnapshot.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -653,8 +725,10 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.10;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
@@ -844,8 +918,10 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.10;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
 				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;

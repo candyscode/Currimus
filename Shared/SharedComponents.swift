@@ -53,6 +53,11 @@ struct ZoneBar: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: zone)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Heart rate zone")
+        .accessibilityValue(zone > 0
+            ? "\(zone) of 5, \(HRZones.zoneNames[zone - 1])"
+            : "no reading yet")
     }
 
     private func color(for segment: Int) -> Color {
@@ -87,6 +92,22 @@ struct ZoneHeatStrip: View {
             }
         }
         .frame(height: height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Time in heart rate zones")
+        .accessibilityValue(spokenSummary)
+    }
+
+    /// Proportions are the whole point of this strip, so say them — zones with
+    /// no time in them are noise and stay out.
+    private var spokenSummary: String {
+        let total = zoneSeconds.reduce(0, +)
+        guard total >= 1 else { return "No heart rate recorded" }
+        return zoneSeconds.enumerated()
+            .filter { $0.element >= 30 }
+            .map { index, seconds in
+                "zone \(index + 1) \(Int((seconds / total * 100).rounded()))%"
+            }
+            .joined(separator: ", ")
     }
 }
 

@@ -5,22 +5,10 @@ struct LogView: View {
     @Environment(\.pushRoute) private var push
     @State private var filter: RunStore.LogFilter = .all
 
-    /// Runs that currently hold a benchmark, for the inline PR tag.
-    private var prHolders: [UUID: String] {
-        var map: [UUID: String] = [:]
-        for (km, label) in [(5, "5K PR"), (10, "10K PR")] {
-            let holder = store.runs
-                .filter { $0.splits.count >= km }
-                .min { (RunAnalytics.fastestWindow(km: km, runs: [$0]) ?? .infinity)
-                     < (RunAnalytics.fastestWindow(km: km, runs: [$1]) ?? .infinity) }
-            if let holder { map[holder.id] = label }
-        }
-        if let longest = store.longestRun { map[longest.id, default: ""] = "Longest" }
-        return map
-    }
-
     var body: some View {
-        let holders = prHolders
+        // Cached in the store — this used to recompute the fastest 5 K and
+        // 10 K window across the whole log on every body pass.
+        let holders = store.benchmarkHolders
         return TabScreen(topInset: 8) { EmptyView() } content: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {

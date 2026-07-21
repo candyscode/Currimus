@@ -102,6 +102,7 @@ struct TrailSummaryView: View {
 /// Summary page — content flows naturally, Done follows right after
 /// (crown scrolls when it doesn't fit). The caption rides the top bar.
 struct SummaryScroller<Content: View>: View {
+    @Environment(\.recordingIssue) private var issue
     var onDone: () -> Void
     var caption: TopBarCaption
     @ViewBuilder var content: Content
@@ -110,6 +111,12 @@ struct SummaryScroller<Content: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 content
+
+                // Said again at the end, where there is room to say what to
+                // change — mid-run the user could only read four words.
+                if let issue {
+                    RecordingIssueCard(issue: issue).padding(.top, 16)
+                }
 
                 Button(action: onDone) {
                     Text("Done")

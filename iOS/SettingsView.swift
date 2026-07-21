@@ -19,11 +19,11 @@ struct SettingsScreen: View {
                 section("RUN")
                 group {
                     ChevronRow(title: "Countdown before run", subtitle: "3 seconds, on the watch", showsChevron: false) {
-                        Toggle("", isOn: $store.countdownEnabled).toggleStyle(SignalToggleStyle())
+                        Toggle("Countdown before run", isOn: $store.countdownEnabled).toggleStyle(SignalToggleStyle())
                     }
                     hairline
                     ChevronRow(title: "Kilometer alert", showsChevron: false) {
-                        Toggle("", isOn: $store.kilometerAlert).toggleStyle(SignalToggleStyle())
+                        Toggle("Kilometer alert", isOn: $store.kilometerAlert).toggleStyle(SignalToggleStyle())
                     }
                     hairline
                     Button { push(.pacerDefaults) } label: {
@@ -85,7 +85,13 @@ struct SettingsScreen: View {
     }
 
     private func exportRuns() {
-        exportURLs = try? RunExport.exportFiles(store.runs)
+        do {
+            // GPX needs the tracks, which live outside the log.
+            exportURLs = try RunExport.exportFiles(store.runs.map(store.hydrated))
+        } catch {
+            Log.store.error("export failed: \(error.localizedDescription, privacy: .public)")
+            exportURLs = nil
+        }
     }
 
     private func section(_ t: String) -> some View {

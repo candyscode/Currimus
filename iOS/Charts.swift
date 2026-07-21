@@ -7,6 +7,17 @@ struct WeekBars: View {
     private let labels = ["M", "T", "W", "T", "F", "S", "S"]
     private var latest: Int? { kmPerDay.lastIndex { $0 > 0 } }
 
+    /// Monday-first weekday names for VoiceOver — the visible labels are
+    /// single letters, which read as nonsense out loud.
+    private var spokenSummary: String {
+        let symbols = Calendar.current.weekdaySymbols
+        let mondayFirst = Array(symbols[1...]) + [symbols[0]]
+        let days = zip(mondayFirst, kmPerDay).map { name, km in
+            km > 0 ? "\(name) \(Format.km(km, decimals: 1)) km" : "\(name) rest"
+        }
+        return days.joined(separator: ", ")
+    }
+
     var body: some View {
         let maxKm = max(kmPerDay.max() ?? 1, 1)
         HStack(alignment: .bottom, spacing: 8) {
@@ -26,12 +37,18 @@ struct WeekBars: View {
             }
         }
         .frame(height: 96)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Kilometres per day this week")
+        .accessibilityValue(spokenSummary)
     }
 }
 
 /// Labelled monthly bars (Progress · km or climb). Current month burns Signal.
 struct MonthBars: View {
     var items: [(label: String, value: Double)]
+    /// What the numbers are, for VoiceOver ("kilometres", "metres of climb").
+    /// Declared before `format` so the formatter stays a trailing closure.
+    var unit: String = ""
     var format: (Double) -> String
 
     var body: some View {
@@ -54,6 +71,10 @@ struct MonthBars: View {
             }
         }
         .frame(height: 96, alignment: .bottom)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Monthly totals")
+        .accessibilityValue(items.map { "\($0.label) \(format($0.value)) \(unit)" }
+            .joined(separator: ", "))
     }
 }
 
@@ -81,6 +102,9 @@ struct WeekVolumeBars: View {
             }
         }
         .frame(height: 110, alignment: .bottom)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Weekly volume, last four weeks")
+        .accessibilityValue(items.map { "\($0.label) \(Int($0.km)) km" }.joined(separator: ", "))
     }
 }
 
@@ -92,6 +116,20 @@ struct TrendChart: View {
     var bottomLabel: String
     /// When true, lower value = higher on screen (pace: faster is better).
     var invert: Bool = true
+    /// What the line is, and how to say one of its values, for VoiceOver.
+    var accessibilityTitle: String = "Trend"
+    var describe: (TimeInterval) -> String = { Format.pace($0) }
+
+    /// Oldest and newest point plus the direction between them — the shape a
+    /// sighted reader takes from the line at a glance.
+    private var spokenSummary: String {
+        let present = values.compactMap { $0 }
+        guard let first = present.first, let last = present.last else {
+            return "No data yet"
+        }
+        let direction = last == first ? "unchanged" : (last < first ? "improving" : "slipping")
+        return "\(present.count) weeks, from \(describe(first)) to \(describe(last)), \(direction)"
+    }
 
     var body: some View {
         let present = values.compactMap { $0 }
@@ -131,6 +169,9 @@ struct TrendChart: View {
             }
         }
         .frame(height: 100)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityTitle)
+        .accessibilityValue(spokenSummary)
     }
 }
 
@@ -161,6 +202,13 @@ struct SplitBars: View {
                         .font(.stat(14, weight: .regular))
                         .foregroundStyle(isFastest ? Theme.signal : Theme.ink)
                 }
+                // One element per kilometre: swiping through the splits is
+                // how this chart is read, so keep the rows navigable.
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Kilometre \(index + 1)")
+                .accessibilityValue(isFastest
+                    ? "\(Format.pace(split)) per kilometre, fastest"
+                    : "\(Format.pace(split)) per kilometre")
             }
         }
     }
@@ -186,6 +234,8 @@ struct MapCard: View {
         .background(Color(hex: 0x111111))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.cardBorder, lineWidth: 1))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(run.route?.isEmpty == false ? "Route map" : "Route map, no GPS track recorded")
     }
 }
 
@@ -243,5 +293,16 @@ struct ElevationProfile: View {
                 .stroke(Theme.signal, style: .init(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
         }
         .frame(height: height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Elevation profile")
+        .accessibilityValue(spokenSummary)
+    }
+
+    private var spokenSummary: String {
+        guard let low = samples.min(), let high = samples.max(), samples.count > 1 else {
+            return "No elevation recorded"
+        }
+        return "From \(Format.elevation(samples[0])) to \(Format.elevation(samples[samples.count - 1])), "
+            + "low \(Format.elevation(low)), high \(Format.elevation(high))"
     }
 }

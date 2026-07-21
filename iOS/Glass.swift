@@ -169,5 +169,11 @@ struct SignalToggleStyle: ToggleStyle {
             }
         }
         .buttonStyle(.plain)
+        // The switch draws no text of its own, so without this VoiceOver
+        // announced an unnamed button and read the row title as unrelated
+        // static text. Hand back a real toggle carrying the label.
+        .accessibilityRepresentation {
+            Toggle(isOn: .constant(configuration.isOn)) { configuration.label }
+        }
     }
 }

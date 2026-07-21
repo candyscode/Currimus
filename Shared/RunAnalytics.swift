@@ -65,6 +65,18 @@ enum RunAnalytics {
         return best
     }
 
+    /// The run holding the fastest `km`-window, with that window's time.
+    ///
+    /// Callers used to find this by sorting runs with `fastestWindow` *inside*
+    /// the comparator, which recomputes the window O(n log n) times. One pass
+    /// is enough.
+    static func fastestWindowHolder(km: Int, runs: [Run]) -> (run: Run, seconds: TimeInterval)? {
+        runs.compactMap { run in
+            fastestWindow(km: km, runs: [run]).map { (run: run, seconds: $0) }
+        }
+        .min { $0.seconds < $1.seconds }
+    }
+
     /// Fastest continuous `km`-kilometer window across all runs, using per-km
     /// splits (min sum of `km` consecutive splits).
     static func fastestWindow(km: Int, runs: [Run]) -> TimeInterval? {

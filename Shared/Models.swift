@@ -64,12 +64,12 @@ enum RunClass: String, Codable, CaseIterable {
 
     var label: String {
         switch self {
-        case .easy: return "Easy"
-        case .tempo: return "Tempo"
-        case .intervals: return "Intervals"
-        case .long: return "Long"
-        case .trail: return "Trail"
-        case .race: return "Race"
+        case .easy: return String(localized: "Easy")
+        case .tempo: return String(localized: "Tempo")
+        case .intervals: return String(localized: "Intervals")
+        case .long: return String(localized: "Long")
+        case .trail: return String(localized: "Trail")
+        case .race: return String(localized: "Race")
         }
     }
 }
@@ -197,12 +197,49 @@ struct Race: Codable, Equatable {
 }
 
 struct RecordEntry: Identifiable {
-    var id: String { label }
-    var label: String
+    /// Identity is the kind, not the label. The label is display text and
+    /// therefore translated; keying rows off it meant every lookup broke in
+    /// any language but English.
+    enum Kind: String, CaseIterable {
+        case oneK, fiveK, tenK, half, marathon, longest, mostClimb
+
+        var label: String {
+            switch self {
+            case .oneK: return String(localized: "1 km")
+            case .fiveK: return String(localized: "5 km")
+            case .tenK: return String(localized: "10 km")
+            case .half: return String(localized: "Half marathon")
+            case .marathon: return String(localized: "Marathon")
+            case .longest: return String(localized: "Longest run")
+            case .mostClimb: return String(localized: "Most climb")
+            }
+        }
+
+        /// The benchmark distance this row is a personal best over.
+        var km: Double? {
+            switch self {
+            case .oneK: return 1
+            case .fiveK: return 5
+            case .tenK: return 10
+            case .half: return 21.0975
+            case .marathon: return 42.195
+            case .longest, .mostClimb: return nil
+            }
+        }
+    }
+
+    var kind: Kind
+    var id: String { kind.rawValue }
+    var label: String { kind.label }
     var value: String
     var date: Date
-    var isNew = false
+    /// Secondary line: how much a PR beat the previous best, or why there is
+    /// no time yet. `nil` falls back to the date.
     var delta: String?
+    /// The delta is a countdown to the target race, so it burns Signal. A flag
+    /// rather than sniffing the delta text for "race day", which stopped being
+    /// true the moment that text could be translated.
+    var isRaceCountdown = false
 }
 
 struct HRZones: Codable, Equatable {
@@ -236,7 +273,11 @@ struct HRZones: Codable, Equatable {
 
     var usesReserve: Bool { overrides == nil && restingHR != nil }
 
-    static let zoneNames = ["Recovery", "Easy", "Steady", "Threshold", "Max"]
+    static let zoneNames = [
+        String(localized: "Recovery"), String(localized: "Easy"),
+        String(localized: "Steady"), String(localized: "Threshold"),
+        String(localized: "Max"),
+    ]
 
     func zone(for hr: Int) -> Int {
         for (index, bound) in bounds.enumerated() where hr <= bound { return index + 1 }
