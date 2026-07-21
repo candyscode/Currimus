@@ -117,7 +117,7 @@ enum RunAnalytics {
     /// nil weeks (no runs) are dropped from the polyline but reserve their slot.
     static func weeklyAvgPace(runs: [Run], weeks: Int, roadOnly: Bool = true,
                               now: Date = .now) -> [TimeInterval?] {
-        let cal = Calendar.current
+        let cal = Calendar.runWeek
         let source = roadOnly ? runs.filter { !$0.isTrail } : runs
         return (0..<weeks).reversed().map { offset -> TimeInterval? in
             guard let weekDate = cal.date(byAdding: .weekOfYear, value: -offset, to: now) else { return nil }
@@ -131,7 +131,7 @@ enum RunAnalytics {
 
     /// Average climb rate (m/h) per week for the last `weeks`, trail only.
     static func weeklyClimbRate(runs: [Run], weeks: Int, now: Date = .now) -> [Double?] {
-        let cal = Calendar.current
+        let cal = Calendar.runWeek
         let trail = runs.filter { $0.isTrail }
         return (0..<weeks).reversed().map { offset -> Double? in
             guard let weekDate = cal.date(byAdding: .weekOfYear, value: -offset, to: now) else { return nil }

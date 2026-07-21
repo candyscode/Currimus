@@ -19,7 +19,10 @@ struct WeekSnapshot: Equatable {
                         now: Date = .now) -> WeekSnapshot {
         let runs = decode(AppDefaults.runsKey, from: defaults)
             + decode(AppDefaults.importedKey, from: defaults)
-        let calendar = Calendar.current
+        // Monday-first, like every other weekly total in the app — a
+        // complication disagreeing with the app it belongs to is worse than
+        // either number on its own.
+        let calendar = Calendar.runWeek
         let thisWeek = runs.filter {
             calendar.isDate($0.date, equalTo: now, toGranularity: .weekOfYear)
         }

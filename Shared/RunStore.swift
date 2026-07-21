@@ -366,9 +366,11 @@ final class RunStore: ObservableObject {
     // MARK: - Aggregates
 
     private var calendar: Calendar { Calendar.current }
+    /// Weeks are Monday-first everywhere, whatever the device's locale says.
+    private var weekCalendar: Calendar { .runWeek }
 
     func runs(inWeekOf date: Date = .now) -> [Run] {
-        allRuns.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .weekOfYear) }
+        allRuns.filter { weekCalendar.isDate($0.date, equalTo: date, toGranularity: .weekOfYear) }
     }
 
     func runs(inMonthOf date: Date) -> [Run] {
@@ -380,8 +382,8 @@ final class RunStore: ObservableObject {
     var weekGoalFraction: Double { weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0 }
 
     var lastWeekKmToDate: Double {
-        guard let lastWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: .now),
-              let cutoff = calendar.date(byAdding: .day, value: -7, to: .now) else { return 0 }
+        guard let lastWeek = weekCalendar.date(byAdding: .weekOfYear, value: -1, to: .now),
+              let cutoff = weekCalendar.date(byAdding: .day, value: -7, to: .now) else { return 0 }
         return runs(inWeekOf: lastWeek).filter { $0.date <= cutoff }.reduce(0) { $0 + $1.distanceKm }
     }
 
@@ -391,7 +393,9 @@ final class RunStore: ObservableObject {
     var weekByDay: [Double] {
         var days = [Double](repeating: 0, count: 7)
         for run in runs(inWeekOf: .now) {
-            let weekday = calendar.component(.weekday, from: run.date) // 1 = Sun
+            // Weekday numbering is fixed (1 = Sun) whatever the week starts on;
+            // this maps it onto the M…S slots the bars are labelled with.
+            let weekday = weekCalendar.component(.weekday, from: run.date)
             days[(weekday + 5) % 7] += run.distanceKm
         }
         return days
@@ -438,7 +442,7 @@ final class RunStore: ObservableObject {
     /// (week label, km) for the last 4 weeks (race readiness), oldest first.
     func last4Weeks() -> [(label: String, km: Double)] {
         (0..<4).reversed().compactMap { offset in
-            guard let weekDate = calendar.date(byAdding: .weekOfYear, value: -offset, to: .now) else { return nil }
+            guard let weekDate = weekCalendar.date(byAdding: .weekOfYear, value: -offset, to: .now) else { return nil }
             let km = runs(inWeekOf: weekDate).reduce(0) { $0 + $1.distanceKm }
             return (offset == 0 ? "now" : "W\(4 - offset)", km)
         }
