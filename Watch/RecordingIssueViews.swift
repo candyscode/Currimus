@@ -52,18 +52,16 @@ struct RecordingIssueNote: View {
     var issue: RecordingIssue
 
     var body: some View {
-        HStack(spacing: 4) {
-            TriangleMark()
-                .fill(Theme.signal)
-                .frame(width: 6, height: 5.5)
-            Text(issue.headline)
-                .font(.sg(9, weight: .medium))
-                .foregroundStyle(Theme.signal)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Recording problem: \(issue.headline). \(issue.detail)")
+        // No glyph: the triangle belongs to trail and climb, and borrowing it
+        // for a warning would give one mark two meanings. Signal on its own
+        // already reads as "look here".
+        Text(issue.headline)
+            .font(.sg(9, weight: .medium))
+            .foregroundStyle(Theme.signal)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Recording problem: \(issue.headline). \(issue.detail)")
     }
 }
 
@@ -79,15 +77,10 @@ struct RecordingBlockedView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 5) {
-                    TriangleMark()
-                        .fill(Theme.signal)
-                        .frame(width: 9, height: 8)
-                    Text(issue.headline)
-                        .font(.sg(15, weight: .bold))
-                        .foregroundStyle(Theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text(issue.headline)
+                    .font(.sg(15, weight: .bold))
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(issue.detail)
                     .font(.sg(11))
@@ -131,14 +124,10 @@ struct RecordingIssueCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 4) {
-                TriangleMark()
-                    .fill(Theme.signal)
-                    .frame(width: 7, height: 6)
-                Text(issue.headline)
-                    .font(.sg(11, weight: .semibold))
-                    .foregroundStyle(Theme.signal)
-            }
+            Text(issue.headline)
+                .font(.sg(11, weight: .semibold))
+                .foregroundStyle(Theme.signal)
+                .fixedSize(horizontal: false, vertical: true)
             Text(issue.detail)
                 .font(.sg(9))
                 .foregroundStyle(Theme.bright)
