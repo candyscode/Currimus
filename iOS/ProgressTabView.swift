@@ -88,9 +88,9 @@ struct ProgressScreen: View {
                 }
             }
             .padding(.top, 8)
-            TrendChart(values: series, topLabel: Format.pace((present.max() ?? 0) + 8),
-                       bottomLabel: Format.pace((present.min() ?? 0) - 8), invert: true,
+            TrendChart(values: series, headroom: 8, lowerIsBetter: true,
                        accessibilityTitle: "Average pace per week, last 12 weeks",
+                       format: { Format.pace($0) },
                        describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 18)
             monthAxis.padding(.top, 4)
@@ -152,9 +152,9 @@ struct ProgressScreen: View {
                 }
             }
             .padding(.top, 8)
-            TrendChart(values: climbSeries, topLabel: "\(Int((present.max() ?? 0)))",
-                       bottomLabel: "\(Int((present.min() ?? 0)))", invert: false,
+            TrendChart(values: climbSeries, headroom: 40, lowerIsBetter: false,
                        accessibilityTitle: "Climb rate per week, last 12 weeks",
+                       format: { "\(Int($0))" },
                        describe: { "\(Int($0)) metres per hour" })
                 .padding(.top, 18)
             monthAxis.padding(.top, 4)

@@ -109,17 +109,34 @@ struct WeekVolumeBars: View {
     }
 }
 
-/// A trend polyline over three gridlines with top/bottom value labels and an
-/// end dot. `values` oldest→newest; nil gaps are bridged.
+/// A trend polyline over three gridlines, with the band it is drawn into
+/// written at the edges. `values` oldest→newest; nil gaps are bridged.
+///
+/// The axis labels are derived here rather than passed in. They used to be
+/// the caller's own `min - 8` / `max + 8` while the line was normalised to
+/// exactly min…max, so the curve grazed both edges of a band the labels said
+/// it should not reach. One source for both is the only way they stay true to
+/// each other.
 struct TrendChart: View {
     var values: [TimeInterval?]
-    var topLabel: String
-    var bottomLabel: String
-    /// When true, lower value = higher on screen (pace: faster is better).
-    var invert: Bool = true
-    /// What the line is, and how to say one of its values, for VoiceOver.
+    /// Headroom above and below the data, in the values' own unit, so the
+    /// line never rides the frame's edge.
+    var headroom: Double = 8
+    /// Whether a falling line is the improvement (pace) or a rising one
+    /// (climb rate). Only affects what VoiceOver calls the direction.
+    var lowerIsBetter = true
     var accessibilityTitle: String = "Trend"
-    var describe: (TimeInterval) -> String = { Format.pace($0) }
+    /// An axis bound, written for the edge label.
+    var format: (Double) -> String = { Format.pace($0) }
+    /// One value, spoken as a phrase.
+    var describe: (TimeInterval) -> String = { "\(Format.pace($0)) per kilometre" }
+
+    /// The band the line is scaled into: the data plus its headroom.
+    private var band: (low: Double, high: Double) {
+        let present = values.compactMap { $0 }
+        guard let low = present.min(), let high = present.max() else { return (0, 1) }
+        return (low - headroom, high + headroom)
+    }
 
     /// Oldest and newest point plus the direction between them — the shape a
     /// sighted reader takes from the line at a glance.
@@ -128,21 +145,21 @@ struct TrendChart: View {
         guard let first = present.first, let last = present.last else {
             return "No data yet"
         }
-        let direction = last == first ? "unchanged" : (last < first ? "improving" : "slipping")
+        let improved = lowerIsBetter ? last < first : last > first
+        let direction = last == first ? "unchanged" : (improved ? "improving" : "slipping")
         return "\(present.count) weeks, from \(describe(first)) to \(describe(last)), \(direction)"
     }
 
     var body: some View {
-        let present = values.compactMap { $0 }
-        let hi = (present.max() ?? 1)
-        let lo = (present.min() ?? 0)
-        let span = max(hi - lo, 1)
+        let band = band
+        let span = max(band.high - band.low, 1)
+        // The larger value is always the higher one on screen. The trail chart
+        // used to pass `invert: false`, which drew its biggest climb week at
+        // the bottom while the label at the top claimed that number.
         let pts: [CGPoint] = values.enumerated().compactMap { i, v in
             guard let v else { return nil }
-            let x = Double(i) / Double(max(values.count - 1, 1))
-            let norm = (v - lo) / span            // 0 = lo, 1 = hi
-            let y = invert ? norm : 1 - norm       // pace: hi(slow) drawn low
-            return CGPoint(x: x, y: y)
+            return CGPoint(x: Double(i) / Double(max(values.count - 1, 1)),
+                           y: (v - band.low) / span)
         }
         return ZStack(alignment: .topLeading) {
             VStack(spacing: 0) {
@@ -163,9 +180,9 @@ struct TrendChart: View {
                     Circle().fill(Theme.signal).frame(width: 9, height: 9)
                         .position(last)
                 }
-                Text(topLabel).font(.stat(10, weight: .regular)).foregroundStyle(Theme.faint)
+                Text(format(band.high)).font(.stat(10, weight: .regular)).foregroundStyle(Theme.faint)
                     .position(x: 14, y: 6)
-                Text(bottomLabel).font(.stat(10, weight: .regular)).foregroundStyle(Theme.faint)
+                Text(format(band.low)).font(.stat(10, weight: .regular)).foregroundStyle(Theme.faint)
                     .position(x: 14, y: proxy.size.height - 6)
             }
         }
