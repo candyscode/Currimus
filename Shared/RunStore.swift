@@ -43,7 +43,7 @@ final class RunStore: ObservableObject {
     /// the main thread on every single mutation. It is off the main thread now.
     private static let ioQueue = DispatchQueue(label: "com.currimus.app.store-io", qos: .utility)
 
-    init(seeded: Bool = UserDefaults.standard.bool(forKey: "demo"),
+    init(seeded: Bool = DebugFlags.seedsDemoContent,
          defaults: UserDefaults = AppDefaults.shared,
          isDemo: Bool? = nil) {
         self.defaults = defaults

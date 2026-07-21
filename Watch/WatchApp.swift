@@ -138,7 +138,7 @@ struct WatchRootView: View {
         #if DEBUG
         session.zones = store.zones
         session.pacerTarget = store.pacerTargetSecPerKm
-        switch UserDefaults.standard.string(forKey: "screen") {
+        switch DebugFlags.screen {
         case "run": session.debugFastForward(.quick, seconds: 2537)
         // Long run: five-glyph KM value ("16.xx") — the grid's width edge.
         case "run-long": session.debugFastForward(.quick, seconds: 5537)

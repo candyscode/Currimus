@@ -4,15 +4,23 @@ import Foundation
 /// Types, climb and altitude are shaped so the auto-classifier, records,
 /// prediction and grade-adjusted pace all have realistic inputs.
 enum SampleData {
+    #if DEBUG
     static let runs: [Run] = generate()
 
-    static let race = Race(
+    static let race: Race? = Race(
         name: "Freiburg Marathon",
         distance: .marathon,
         date: Calendar.current.date(byAdding: .day, value: 42, to: Calendar.current.startOfDay(for: .now))!,
         goalTime: 3 * 3600 + 59 * 60   // 3:59:00
     )
+    #else
+    /// A shipped app cannot reach the flag that seeds this, so the generator
+    /// and its whole marathon build-up stay out of the release binary.
+    static let runs: [Run] = []
+    static let race: Race? = nil
+    #endif
 
+    #if DEBUG
     private enum Kind { case easy, tempo, intervals, long, trail }
 
     private struct Slot {
@@ -151,4 +159,5 @@ enum SampleData {
             altitudeSamples: (0..<60).map { 260 + sin(Double($0) / 6) * 6 }
         )
     }
+    #endif
 }

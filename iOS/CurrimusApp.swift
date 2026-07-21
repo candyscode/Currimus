@@ -33,7 +33,7 @@ struct CurrimusApp: App {
 struct RootView: View {
     @EnvironmentObject private var store: RunStore
     @State private var tab: AppTab = RootView.initialTab
-    @State private var forceEmpty = UserDefaults.standard.bool(forKey: "empty")
+    @State private var forceEmpty = DebugFlags.forcesEmptyState
     @State private var icons = TabIconSet()
 
     var body: some View {
@@ -77,20 +77,15 @@ struct RootView: View {
     // MARK: - DEBUG screenshot / demo routing (release ignores it)
 
     private static var initialTab: AppTab {
-        #if DEBUG
-        switch UserDefaults.standard.string(forKey: "tab") {
+        switch DebugFlags.tab {
         case "log": return .log
         case "progress": return .progress
         default: return .home
         }
-        #else
-        return .home
-        #endif
     }
 
     private static func debugHomePath(_ store: RunStore) -> [Route] {
-        #if DEBUG
-        switch UserDefaults.standard.string(forKey: "push") {
+        switch DebugFlags.push {
         case "race": return [.race]
         case "raceSetup": return [.raceSetup]
         case "records": return [.records]
@@ -102,16 +97,12 @@ struct RootView: View {
         case "detailTrail": return store.runs.first { $0.isTrail }.map { [.runDetail($0)] } ?? []
         default: return []
         }
-        #else
-        return []
-        #endif
     }
 
     private func applyDemoStateOverrides() {
-        #if DEBUG
         // Health has no data in the simulator, so the derived zone state can
         // only be seen by injecting one.
-        if UserDefaults.standard.string(forKey: "zones") == "derived" {
+        if DebugFlags.zones == "derived" {
             store.zones = HRZones(
                 maxHR: 187, overrides: nil, restingHR: 48,
                 derivation: HRDerivation(
@@ -121,7 +112,7 @@ struct RootView: View {
                 )
             )
         }
-        switch UserDefaults.standard.string(forKey: "home") {
+        switch DebugFlags.home {
         case "norace": store.race = nil
         case "raceday":
             if var race = store.race {
@@ -129,7 +120,6 @@ struct RootView: View {
             }
         default: break
         }
-        #endif
     }
 }
 
