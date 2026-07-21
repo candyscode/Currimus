@@ -90,6 +90,11 @@ targets:
     info:
       path: Watch/Info.plist
       properties:
+        # Both were literals here, so the watch app stayed on 1.0/1 while the
+        # iPhone app followed MARKETING_VERSION. App Store Connect rejects a
+        # bundle whose embedded watch app disagrees with it.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.currimus.app
         # `location` alongside the workout mode: the workout session keeps the
