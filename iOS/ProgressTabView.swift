@@ -57,11 +57,16 @@ struct ProgressScreen: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Progress").font(.sg(38, weight: .semibold)).kerning(-0.8).padding(.top, 6)
 
-                SegmentChips(options: [(.road, "Road"), (.trail, "Trail")], selection: $view)
-                    .frame(maxWidth: 180, alignment: .leading)
-                    .padding(.top, 18)
+                // No trail runs means the Trail half of this screen is a set
+                // of empty charts and a 0 m/h headline. Offering the tab at
+                // all invites the user to go and find that out.
+                if hasTrailRuns {
+                    SegmentChips(options: [(.road, "Road"), (.trail, "Trail")], selection: $view)
+                        .frame(maxWidth: 180, alignment: .leading)
+                        .padding(.top, 18)
+                }
 
-                if view == .road { roadContent } else { trailContent }
+                if view == .road || !hasTrailRuns { roadContent } else { trailContent }
             }
         }
     }
@@ -103,8 +108,17 @@ struct ProgressScreen: View {
             MonthBars(items: store.monthlyTotals(count: 6).map { (shortMonth($0.month), $0.km) },
                       unit: "km") { "\(Int($0))" }
 
-            recordsCard(title: "Records", value: "\(store.record(.fiveK)?.value ?? "—") 5K")
+            recordsCard(title: "Records", value: fiveKSummary)
         }
+    }
+
+    /// The card teases the 5 K record; without one it must not read "— 5K",
+    /// which looks like a rendering fault rather than an empty log.
+    private var fiveKSummary: String {
+        guard let record = store.record(.fiveK), !record.isUnset else {
+            return String(localized: "Nothing set yet")
+        }
+        return "\(record.value) 5K"
     }
 
     private var driftRow: some View {
@@ -119,14 +133,19 @@ struct ProgressScreen: View {
                 Text(reference.map { "Heart rate at \(Format.pace($0)) pace" }
                      ?? "Heart rate at your steady pace")
                     .font(.sg(16))
-                Text("Same effort, less work").font(.sg(13)).foregroundStyle(Theme.muted)
+                // The subtitle carries the empty state: a heading with a lone
+                // em dash beside it reads as a fault, not as a log that has
+                // not filled up yet.
+                Text(drift == nil
+                     ? "Appears once a few easy runs sit at a similar pace"
+                     : "Same effort, less work")
+                    .font(.sg(13)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             if let drift {
                 Text("\(drift.avg) \(Text(drift.delta <= 0 ? "\(drift.delta)" : "+\(drift.delta)").font(.stat(14)).foregroundStyle(Theme.signal))")
                     .font(.stat(26))
-            } else {
-                Text("—").font(.stat(26)).foregroundStyle(Theme.muted)
             }
         }
     }
@@ -169,7 +188,9 @@ struct ProgressScreen: View {
                 climb >= 1000 ? String(format: "%.1fk", climb / 1000) : "\(Int(climb))"
             }
 
-            recordsCard(title: "Most climb", value: "\(Int(store.mostClimbRun?.climbMeters ?? 0)) m")
+            recordsCard(title: "Most climb", value: (store.mostClimbRun?.climbMeters).map {
+                $0 > 0 ? "\(Int($0)) m" : String(localized: "Nothing set yet")
+            } ?? String(localized: "Nothing set yet"))
         }
     }
 
@@ -178,15 +199,16 @@ struct ProgressScreen: View {
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Grade-adjusted pace").font(.sg(16))
-                Text("What your trail pace is worth on the flat")
+                Text(summary == nil
+                     ? "Appears after a trail run that recorded elevation"
+                     : "What your trail pace is worth on the flat")
                     .font(.sg(13)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             if let summary {
                 Text("\(Format.pace(summary.adjusted)) \(Text(Format.paceDelta(summary.adjusted - summary.raw)).font(.stat(14)).foregroundStyle(Theme.signal))")
                     .font(.stat(26))
-            } else {
-                Text("—").font(.stat(26)).foregroundStyle(Theme.muted)
             }
         }
     }
@@ -207,6 +229,8 @@ struct ProgressScreen: View {
         .buttonStyle(.plain)
         .padding(.top, 26)
     }
+
+    private var hasTrailRuns: Bool { store.allRuns.contains(where: \.isTrail) }
 
     private var divider: some View { Divider().overlay(Theme.hairline).padding(.vertical, 24) }
 

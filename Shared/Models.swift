@@ -226,6 +226,20 @@ struct RecordEntry: Identifiable {
             }
         }
 
+        /// What is still missing, for a row that has no time yet. An em dash
+        /// says "broken" as readily as "empty"; this says which.
+        var emptyHint: String {
+            switch self {
+            case .oneK: return String(localized: "no 1 km effort yet")
+            case .fiveK: return String(localized: "no 5 km effort yet")
+            case .tenK: return String(localized: "no 10 km effort yet")
+            case .half: return String(localized: "no half marathon yet")
+            case .marathon: return String(localized: "no marathon yet")
+            case .longest: return String(localized: "no runs yet")
+            case .mostClimb: return String(localized: "no trail runs yet")
+            }
+        }
+
         /// The benchmark distance this row is a personal best over.
         var km: Double? {
             switch self {
@@ -243,6 +257,10 @@ struct RecordEntry: Identifiable {
     var id: String { kind.rawValue }
     var label: String { kind.label }
     var value: String
+    /// No time set over this distance yet. A flag rather than checking the
+    /// value for a placeholder string, which stops being recognisable the
+    /// moment it is translated.
+    var isUnset = false
     var date: Date
     /// Secondary line: how much a PR beat the previous best, or why there is
     /// no time yet. `nil` falls back to the date.

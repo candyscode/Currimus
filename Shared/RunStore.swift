@@ -485,11 +485,14 @@ final class RunStore: ObservableObject {
                 return RecordEntry(kind: kind, value: Format.clock(time),
                                    date: recordDate(km: km, in: runs))
             }
+            // Nothing set over this distance yet. Say which distance is
+            // missing rather than printing an em dash that reads as a fault.
             let isTarget = race?.distance.km == km
             let note = isTarget
                 ? String(localized: "race day in \(race?.daysUntil() ?? 0) days")
-                : "—"
-            return RecordEntry(kind: kind, value: "—", date: .now,
+                : kind.emptyHint
+            return RecordEntry(kind: kind, value: String(localized: "Not yet"),
+                               isUnset: true, date: .now,
                                delta: note, isRaceCountdown: isTarget)
         }
         if let longest = longestRun {
