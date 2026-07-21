@@ -116,6 +116,7 @@
 		B9AB9B26A8F7D7B113454FE8 /* RunAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */; };
 		BBA33462F041B60D1F8C523E /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		BD8AD29F820387287BC04619 /* RunExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E024589EC7343ED3809D8F41 /* RunExportTests.swift */; };
 		BE8B9BE35F089EDE445C643B /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		C1BC79A4D874C952DAE8F3E1 /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		C2486B37815CA4713B1A972F /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
@@ -244,6 +245,7 @@
 		D2A0A8C374CC2DF912776427 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
 		DCBE840AF1F7A6789D2DADA0 /* Currimus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Currimus.entitlements; sourceTree = "<group>"; };
 		DD88986EEA97DE1411F9263F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E024589EC7343ED3809D8F41 /* RunExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunExportTests.swift; sourceTree = "<group>"; };
 		E47BCF44600BC83F472F7AE0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		E4A703AB6859F2CA4B35CC46 /* AlwaysOn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlwaysOn.swift; sourceTree = "<group>"; };
 		E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -364,6 +366,7 @@
 			children = (
 				A2CB59BCA4018F4C3EBBFD25 /* RecordingPolicyTests.swift */,
 				0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */,
+				E024589EC7343ED3809D8F41 /* RunExportTests.swift */,
 				776C9DC6EFBBC77654B2C197 /* RunMetricsTests.swift */,
 				E7F9B6C5CE55770CF0FED06C /* RunStoreTests.swift */,
 			);
@@ -617,6 +620,7 @@
 				651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */,
 				B9AB9B26A8F7D7B113454FE8 /* RunAnalyticsTests.swift in Sources */,
 				A4E9CEEEFE94B2D7711201C3 /* RunExport.swift in Sources */,
+				BD8AD29F820387287BC04619 /* RunExportTests.swift in Sources */,
 				CB051C7B414C753DA3945E3A /* RunMetrics.swift in Sources */,
 				A28544720DE563808062AEE6 /* RunMetricsTests.swift in Sources */,
 				C3408FCD4D821DCB249C039C /* RunPalette.swift in Sources */,

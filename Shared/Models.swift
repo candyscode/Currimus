@@ -54,7 +54,9 @@ struct Coordinate: Codable, Equatable, Hashable {
     var lat: Double
     var lon: Double
     var elevation: Double
-    var t: TimeInterval   // seconds since run start
+    /// Wall-clock seconds since the run started — pauses included, so the GPX
+    /// timestamps derived from it stay true to when the run actually happened.
+    var t: TimeInterval
 }
 
 /// How the Log/Home present a run. Road runs are auto-classified from their

@@ -475,9 +475,23 @@ final class RunSession: NSObject, ObservableObject {
     fileprivate func integrate(_ location: CLLocation) {
         guard phase == .running else { return }
 
+        // Wall-clock offset from the start of the run, not `elapsed`.
+        //
+        // `elapsed` excludes paused time, so a track stamped with it claims
+        // the whole run happened without the pauses: every point after a stop
+        // is dated earlier than it occurred, and a five-minute break shows up
+        // in the exported GPX as five minutes of teleportation. The gap a
+        // pause leaves is real, and every tool that reads a GPX — Strava
+        // included — uses those stamps to derive moving time and speed.
+        //
+        // The fix's own timestamp rather than `now`: CoreLocation can deliver
+        // one a little late, and occasionally replays a cached fix from
+        // before the run, which the clamp catches.
+        let offset = max(location.timestamp.timeIntervalSince(startDate ?? .now), 0)
+
         metrics.ingestAltitude(location.altitude,
                                verticalAccuracy: location.verticalAccuracy,
-                               at: elapsed)
+                               at: offset)
 
         if location.horizontalAccuracy >= 0,
            location.horizontalAccuracy < RunMetrics.usableHorizontalAccuracy {
@@ -493,7 +507,7 @@ final class RunSession: NSObject, ObservableObject {
                                  longitude: location.coordinate.longitude,
                                  altitude: location.altitude,
                                  horizontalAccuracy: location.horizontalAccuracy,
-                                 at: elapsed)
+                                 at: offset)
     }
 
     // MARK: - Simulation (DEBUG screenshots / simulator demos only)
