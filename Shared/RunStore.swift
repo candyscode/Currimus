@@ -206,6 +206,28 @@ final class RunStore: ObservableObject {
     }
     #endif
 
+    /// What can honestly be said about the Apple Health connection.
+    ///
+    /// Not whether access was granted — Health hides read authorization by
+    /// design, returning an empty result for a denied type rather than an
+    /// error, precisely so that a refusal cannot be used to infer a medical
+    /// condition. "Connected" is therefore not a question this app can ask.
+    /// What it can report is evidence: whether anything actually came back.
+    enum HealthAccess: Equatable {
+        case unavailable
+        case reading(runs: Int)
+        case nothingRead
+    }
+
+    var healthAccess: HealthAccess {
+        #if canImport(HealthKit)
+        guard HealthImport.isAvailable else { return .unavailable }
+        return importedRuns.isEmpty ? .nothingRead : .reading(runs: importedRuns.count)
+        #else
+        return .unavailable
+        #endif
+    }
+
     // MARK: - Persistence
 
     private static func loadRuns(from defaults: UserDefaults) -> [Run] {

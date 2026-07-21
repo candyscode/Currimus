@@ -68,9 +68,14 @@ struct SettingsScreen: View {
                         ChevronRow(title: "GPS accuracy") { Text(store.gpsAccuracy.label) }
                     }.buttonStyle(.plain)
                     hairline
-                    ChevronRow(title: "Apple Health", showsChevron: false) {
-                        Text("Connected").foregroundStyle(Theme.signal)
+                    Button { Task { await store.refreshImportedRuns(requestingAccess: true) } } label: {
+                        ChevronRow(title: "Apple Health", subtitle: healthSubtitle,
+                                   showsChevron: false) {
+                            Text(healthLabel).foregroundStyle(healthTint)
+                        }
                     }
+                    .buttonStyle(.plain)
+                    .disabled(store.healthAccess == .unavailable)
                     hairline
                     // Recording lives on the watch, so whether there is one is
                     // worth stating rather than leaving the user to infer it
@@ -92,6 +97,30 @@ struct SettingsScreen: View {
 
     private var pacerDistanceLabel: String {
         store.pacerDefaultDistanceKm.map { $0 == 21.0975 ? "21.1 km" : "\(Int($0)) km" } ?? "Off"
+    }
+
+    private var healthLabel: String {
+        switch store.healthAccess {
+        case .unavailable: return "Unavailable"
+        case .reading(let runs): return "\(runs) runs read"
+        case .nothingRead: return "Nothing read"
+        }
+    }
+
+    /// It used to say "Connected", in Signal, always — including for someone
+    /// who had declined the prompt outright. Health never reveals whether a
+    /// read was allowed, so the honest thing to report is what came back.
+    private var healthSubtitle: String? {
+        switch store.healthAccess {
+        case .unavailable: return "This device has no Health data."
+        case .reading: return "Runs other apps recorded, counted in every total."
+        case .nothingRead: return "No runs from other apps. Tap to allow access, or there may be none to read — Health does not say which."
+        }
+    }
+
+    private var healthTint: Color {
+        if case .reading = store.healthAccess { return Theme.signal }
+        return Theme.bright
     }
 
     private var watchLabel: String {
