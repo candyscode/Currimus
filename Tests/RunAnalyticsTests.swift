@@ -102,6 +102,39 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNil(prs[42.195]) // no marathon-length effort
     }
 
+    // MARK: Cardiac drift
+
+    private func easyRun(_ pace: TimeInterval, hr: Int, daysAgo: Int) -> Run {
+        Run(date: Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now)!,
+            name: "easy", distanceKm: 10, duration: 10 * pace, avgHR: hr,
+            splits: Array(repeating: pace, count: 10),
+            zoneSeconds: [60, 3000, 300, 0, 0])
+    }
+
+    func testReferencePaceIsTheRunnersOwnMedian() {
+        let runs = [330.0, 350, 360, 370, 380].enumerated().map {
+            easyRun($0.element, hr: 150, daysAgo: $0.offset * 7)
+        }
+        // Median of the five is 360, and it snaps to the nearest five seconds.
+        XCTAssertEqual(try XCTUnwrap(RunAnalytics.referencePace(runs: runs)), 360, accuracy: 0.1)
+    }
+
+    func testReferencePaceNeedsEnoughSteadyRuns() {
+        let runs = [easyRun(330, hr: 150, daysAgo: 0), easyRun(340, hr: 150, daysAgo: 7)]
+        XCTAssertNil(RunAnalytics.referencePace(runs: runs))
+    }
+
+    /// A slow runner used to see nothing here at all: the reference was
+    /// pinned at 5:30 and none of their runs came within twenty seconds.
+    func testDriftIsFoundForARunnerNowhereNearFiveThirty() {
+        let runs = (0..<6).map { easyRun(420 + Double($0 % 2) * 5, hr: 160 - $0, daysAgo: $0 * 7) }
+        let reference = try? XCTUnwrap(RunAnalytics.referencePace(runs: runs))
+        XCTAssertEqual(try XCTUnwrap(reference), 425, accuracy: 5)
+        XCTAssertNil(RunAnalytics.hrAtPace(runs: runs, referencePaceSec: 330))
+        XCTAssertNotNil(RunAnalytics.hrAtPace(runs: runs,
+                                              referencePaceSec: try XCTUnwrap(reference)))
+    }
+
     // MARK: Classification
 
     func testClassificationCoversEachType() {

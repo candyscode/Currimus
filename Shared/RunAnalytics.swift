@@ -169,6 +169,30 @@ enum RunAnalytics {
         }
     }
 
+    /// The pace to measure cardiac drift at — the runner's own steady pace,
+    /// rather than a number chosen in advance.
+    ///
+    /// The median of their easy and long runs: the efforts they repeat most,
+    /// which is the only condition under which "same pace, lower heart rate"
+    /// means anything. The reference used to be a fixed 5:30, so anyone who
+    /// does not happen to run 5:30 read "—" under the heading "Same effort,
+    /// less work" forever, with no way to tell whether that was their data or
+    /// a broken screen.
+    ///
+    /// Rounded to five seconds so the label names a pace a runner would say
+    /// out loud, and so the band the runs are matched against is the same one
+    /// the label advertises.
+    static func referencePace(runs: [Run]) -> TimeInterval? {
+        let steady = runs
+            .filter { !$0.isTrail && $0.avgHR > 0 && $0.paceSecPerKm > 0 }
+            .filter { $0.classification == .easy || $0.classification == .long }
+            .map(\.paceSecPerKm)
+            .sorted()
+        // Four is the point where a median stops being one arbitrary run.
+        guard steady.count >= 4 else { return nil }
+        return (steady[steady.count / 2] / 5).rounded() * 5
+    }
+
     /// Cardiac drift: average HR near a reference pace, and the change between
     /// the older and the more recent half of those runs. Heuristic — needs a
     /// handful of runs near the pace to be meaningful.

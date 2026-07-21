@@ -108,10 +108,17 @@ struct ProgressScreen: View {
     }
 
     private var driftRow: some View {
-        let drift = RunAnalytics.hrAtPace(runs: store.runs, referencePaceSec: 330)
+        let reference = RunAnalytics.referencePace(runs: store.runs)
+        let drift = reference.flatMap {
+            RunAnalytics.hrAtPace(runs: store.runs, referencePaceSec: $0)
+        }
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Heart rate at 5:30 pace").font(.sg(16))
+                // The pace comes from the runner's own easy runs, so the
+                // heading names theirs instead of a number this app picked.
+                Text(reference.map { "Heart rate at \(Format.pace($0)) pace" }
+                     ?? "Heart rate at your steady pace")
+                    .font(.sg(16))
                 Text("Same effort, less work").font(.sg(13)).foregroundStyle(Theme.muted)
             }
             Spacer()
