@@ -18,6 +18,11 @@ settings:
     SWIFT_EMIT_LOC_STRINGS: YES
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_STYLE: Automatic
+    # The project file is generated, so anything set by hand in Xcode's
+    # Signing & Capabilities pane survives exactly until the next
+    # `xcodegen generate`. The team belongs here or it does not persist —
+    # and HealthKit cannot be built onto a device without it.
+    DEVELOPMENT_TEAM: 88U4UH4ASG
     CURRENT_PROJECT_VERSION: 1
     MARKETING_VERSION: "1.0"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

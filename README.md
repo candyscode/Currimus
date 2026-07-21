@@ -87,9 +87,14 @@ Project file is generated: `xcodegen generate` (config in `project.yml`).
 The project builds in the **Swift 6 language mode** with complete strict
 concurrency; `RunStore` and `RunSession` are `@MainActor`.
 Watch target carries the HealthKit entitlement, usage descriptions and the
-`workout-processing` background mode. **For device builds / App Store**: set
-your development team in Signing & Capabilities (HealthKit needs a real
-provisioning profile).
+`workout-processing` background mode.
+
+Because the project file is generated, **nothing set by hand in Xcode's
+Signing & Capabilities pane survives** — `xcodegen generate` overwrites it.
+The development team therefore lives in `project.yml` (`DEVELOPMENT_TEAM`
+under `settings.base`), which every target inherits. Signing stays automatic;
+HealthKit still needs a real provisioning profile, so device builds only work
+with a team that has the capability enabled.
 
 ## Demo / screenshot routing (DEBUG builds only)
 

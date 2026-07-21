@@ -191,7 +191,7 @@
 		42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekSnapshot.swift; sourceTree = "<group>"; };
 		46E064E4F53870876EEA1602 /* HealthImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthImport.swift; sourceTree = "<group>"; };
 		485542A4B0D645CFCC648C51 /* TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBar.swift; sourceTree = "<group>"; };
-		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
 		506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAnalytics.swift; sourceTree = "<group>"; };
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
@@ -465,15 +465,19 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					02321DE45E155EE5C1C4F746 = {
+						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
 					CA2C3F29B285D1403A3E2C2F = {
+						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
 					DC4EB7F9010256AAE8FB5ED9 = {
+						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
 					F7FBDF38598250E3CB3341E4 = {
+						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -729,6 +733,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -767,7 +772,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iOS/Currimus.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads your running workouts from Apple Health.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
@@ -805,7 +809,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Watch/CurrimusWatch.entitlements;
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = Watch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads heart rate and distance to show live pace and zones during your run.";
@@ -822,7 +825,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = WatchWidgets/CurrimusWatchWidgets.entitlements;
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = WatchWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -842,7 +844,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Watch/CurrimusWatch.entitlements;
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = Watch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads heart rate and distance to show live pace and zones during your run.";
@@ -859,7 +860,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = WatchWidgets/CurrimusWatchWidgets.entitlements;
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = WatchWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -880,7 +880,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iOS/Currimus.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads your running workouts from Apple Health.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
@@ -935,6 +934,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
