@@ -7,7 +7,14 @@ import SwiftUI
 /// the race, the heart-rate zones and the pacer defaults are the iPhone's, and
 /// they are worth setting *before* the first run rather than after it.
 struct FirstLaunchView: View {
+    @EnvironmentObject private var store: RunStore
     @Environment(\.pushRoute) private var push
+    @State private var healthAsk: HealthAsk = .idle
+
+    /// The Health import is the one action here that can visibly fail — the
+    /// prompt can be declined, and there may simply be nothing to import.
+    /// Health never reveals which, so the wording covers both.
+    private enum HealthAsk { case idle, working, foundNothing }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -47,7 +54,23 @@ struct FirstLaunchView: View {
                             .background(Theme.signal, in: Capsule())
                     }
                     .buttonStyle(.plain)
-                    Text("Then start your first run on the Apple Watch — the log fills itself.")
+
+                    // Asked here rather than at launch: someone who has been
+                    // running for years already has a log, and this is the
+                    // screen with room to say what the permission is for.
+                    Button(action: importFromHealth) {
+                        Text(healthAsk == .working
+                             ? "Reading Apple Health…"
+                             : "Already have runs? Bring them in")
+                            .font(.sg(15, weight: .semibold)).foregroundStyle(Theme.bright)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .background(Theme.chipFill, in: Capsule())
+                            .overlay(Capsule().stroke(Theme.chipStroke, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(healthAsk == .working)
+
+                    Text(caption)
                         .font(.sg(13)).foregroundStyle(Theme.muted)
                         .multilineTextAlignment(.center).lineSpacing(2)
                 }
@@ -56,6 +79,22 @@ struct FirstLaunchView: View {
             .padding(.vertical, 40)
         }
         .foregroundStyle(Theme.ink)
+    }
+
+    private var caption: String {
+        healthAsk == .foundNothing
+            ? "No running workouts in Apple Health yet — or access was declined. Either way, your first run on the watch starts the log."
+            : "Then start your first run on the Apple Watch — the log fills itself."
+    }
+
+    /// Raises the Health prompt and pulls in whatever other apps recorded. On
+    /// success this screen disappears on its own: the log stops being empty.
+    private func importFromHealth() {
+        healthAsk = .working
+        Task {
+            await store.refreshImportedRuns(requestingAccess: true)
+            healthAsk = store.allRuns.isEmpty ? .foundNothing : .idle
+        }
     }
 
     private func promise(_ text: String) -> some View {

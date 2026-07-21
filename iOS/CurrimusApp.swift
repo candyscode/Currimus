@@ -20,8 +20,12 @@ struct CurrimusApp: App {
                 // keeps the fixed numeric grids intact at the top end.
                 .dynamicTypeSize(...DynamicTypeSize.accessibility2)
                 // Pick up runs other apps recorded on every foreground, so the
-                // totals never lag behind what the user actually ran.
-                .task { await store.refreshImportedRuns(requestingAccess: true) }
+                // totals never lag behind what the user actually ran. Silent:
+                // the permission sheet is asked for on the first-launch
+                // screen, where there is room to say what it is for. Raising
+                // it here meant a cold start opened onto a Health dialog
+                // before the app had shown a single word about itself.
+                .task { await store.refreshImportedRuns() }
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
                     Task { await store.refreshImportedRuns() }
