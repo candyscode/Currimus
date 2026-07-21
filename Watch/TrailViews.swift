@@ -83,18 +83,16 @@ struct TrailRunPager: View {
                      verticalSpacing: LineBox.gap(10, cropping: 17)) {
                     GridRow {
                         BigStat(value: Format.km(session.distanceKm), label: "KM",
-                                valueColor: palette.stat,
+                                valueColor: palette.hero,
                                 size: 17, labelGap: 2.5, labelOutsideLayout: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
-                                valueColor: palette.stat,
+                                valueColor: palette.hero,
                                 size: 17, labelGap: 2.5, labelOutsideLayout: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     GridRow {
                         VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 17)) {
-                            // Metres climbed is the honest trail-progress
-                            // number, so it keeps the read when dimmed.
                             ClimbStat(value: "\(Int(session.climbMeters))", size: 17, color: palette.hero)
                             Text(verbatim: " ").kicker(8, tracking: 0.1)
                                 .overlay(alignment: .leading) {
@@ -106,7 +104,7 @@ struct TrailRunPager: View {
                         BigStat(
                             value: "\(Int(session.climbRatePerHour))",
                             label: "M/H · LAST 10 MIN",
-                            valueColor: dimmed ? palette.stat : Theme.signal,
+                            valueColor: dimmed ? palette.hero : Theme.signal,
                             size: 17, labelGap: 2.5, labelOutsideLayout: true
                         )
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -178,7 +176,7 @@ struct ElevationChart: View {
                 if showsDot, let last = progressMapped.last {
                     // Parks with the wrist down: at 1 Hz it would only nudge
                     // once a second anyway, so it reads as still either way.
-                    Circle().fill(palette.dimmed ? palette.stat : Theme.ink)
+                    Circle().fill(palette.secondary)
                         .frame(width: 7, height: 7).position(last)
                 }
 
@@ -239,21 +237,20 @@ struct TrailElevationView: View {
             // is the number you came for; climbed and down are the ledger.
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                    // Metres climbed stays the brightest — the honest number.
                     ClimbStat(value: "\(Int(session.climbMeters))", size: 15, color: palette.hero)
                     Text("CLIMBED").kicker(8, color: palette.label, tracking: 0.1)
                 }
                 VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
                     Text(Format.elevation(session.altitudeMeters, unit: false))
                         .font(.stat(15))
-                        .foregroundStyle(dimmed ? palette.stat : Theme.signal)
+                        .foregroundStyle(dimmed ? palette.hero : Theme.signal)
                         .lineLimit(1)
                     Text("ELEVATION").kicker(8, color: palette.label, tracking: 0.1)
                         .lineLimit(1).fixedSize()
                 }
                 VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
                     ClimbStat(value: "\(Int(session.descentMeters))", size: 15,
-                              color: palette.stat, pointingDown: true)
+                              color: palette.hero, pointingDown: true)
                     Text("DOWN").kicker(8, color: palette.label, tracking: 0.1)
                 }
             }

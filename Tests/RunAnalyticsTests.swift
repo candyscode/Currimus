@@ -254,7 +254,7 @@ final class RunAnalyticsTests: XCTestCase {
         #endif
     }
 
-    func testReducedScreenKeepsTheHeroAtFullContrast() {
+    func testReducedScreenKeepsEveryNumberAtFullContrast() {
         // The system already dims the panel; dimming the largest number again
         // would cost the readable glance the mode exists for.
         XCTAssertEqual(rgba(RunPalette(dimmed: true).hero), rgba(Theme.ink))
@@ -265,7 +265,7 @@ final class RunAnalyticsTests: XCTestCase {
         let live = RunPalette(dimmed: false)
         let dim = RunPalette(dimmed: true)
         // Every supporting colour must get darker, never brighter.
-        for (a, b) in [(live.stat, dim.stat), (live.label, dim.label), (live.track, dim.track)] {
+        for (a, b) in [(live.secondary, dim.secondary), (live.label, dim.label), (live.track, dim.track)] {
             let (bright, dark) = (rgba(a), rgba(b))
             XCTAssertGreaterThan(bright[0], dark[0], "reduced colour must be darker")
         }

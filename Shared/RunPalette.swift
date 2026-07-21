@@ -9,10 +9,13 @@ import SwiftUI
 struct RunPalette {
     var dimmed: Bool
 
-    /// The one number that must stay readable.
+    /// Every number on the screen. The values *are* the read, so none of them
+    /// steps back — the frame around them does. The system has already dimmed
+    /// the panel; dimming the figures a second time would cost exactly the
+    /// glance this mode exists for.
     var hero: Color { Theme.ink }
-    /// Supporting metrics — pace, distance, climb.
-    var stat: Color { dimmed ? Color(hex: 0x5A5A5A) : Theme.ink }
+    /// Marks that are not the read — the elevation chart's parked dot.
+    var secondary: Color { dimmed ? Color(hex: 0x5A5A5A) : Theme.ink }
     /// Kickers and captions.
     var label: Color { dimmed ? Color(hex: 0x454545) : Theme.bright }
     /// The single accent left on a reduced screen.

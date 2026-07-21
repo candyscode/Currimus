@@ -205,7 +205,7 @@ struct PacerRunView: View {
                             .padding(.top, 5)
                         (Text("ZONE ").foregroundStyle(palette.label)
                             + Text(session.currentZone > 0 ? "\(session.currentZone)" : "–")
-                                .foregroundStyle(palette.stat).fontWeight(.semibold))
+                                .foregroundStyle(palette.hero).fontWeight(.semibold))
                             .font(.sg(8))
                             .kerning(8 * 0.1)
                             .padding(.top, 2)

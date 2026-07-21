@@ -57,7 +57,7 @@ struct ZoneFooter: View {
                     .font(.stat(7.5))
                     // Signal is reserved for zone 5 — the number turning red
                     // means max effort, nothing else.
-                    .foregroundStyle(zone == 5 ? palette.signal : (palette.dimmed ? palette.stat : Theme.ink))
+                    .foregroundStyle(zone == 5 ? palette.signal : palette.hero)
             }
             .padding(.top, 4.5)   // design 9 px
         }

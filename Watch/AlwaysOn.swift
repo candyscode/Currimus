@@ -43,8 +43,6 @@ struct RunTimeline<Content: View>: View {
         TimelineView(RunMetricsSchedule(start: session.startedAt)) { _ in
             content(session.displayElapsed)
                 .environment(\.runPalette, RunPalette(dimmed: dimmed))
-                .onAppear { session.noteLuminance(reduced: systemDimmed) }
-                .onChange(of: systemDimmed) { _, now in session.noteLuminance(reduced: now) }
         }
     }
 }

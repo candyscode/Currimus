@@ -83,14 +83,15 @@ struct RunView: View {
                 // CSS grid — never scaled, baselines locked.
                 HStack(alignment: .top, spacing: 18) {
                     BigStat(value: Format.km(session.distanceKm), label: "KM",
-                            valueColor: palette.stat,
+                            valueColor: palette.hero,
                             size: 30, labelSize: 11, labelGap: 4,
                             valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     // Pace gives up its orange when dimmed — the reduced screen
-                    // keeps exactly one accent, and it belongs to the zone.
+                    // keeps exactly one accent, and it belongs to the zone —
+                    // but not its brightness: it is still a number you read.
                     BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
-                            valueColor: dimmed ? palette.stat : Theme.signal,
+                            valueColor: dimmed ? palette.hero : Theme.signal,
                             size: 30, labelSize: 11, labelGap: 4,
                             valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -196,20 +197,6 @@ struct PausedView: View {
     @ObservedObject var session: RunSession
     var onEnd: () -> Void
 
-    /// Debug read-out: did watchOS ever hand this run the always-on state, and
-    /// how many times did it wake us there? Lower the wrist, wait, raise it,
-    /// tap to pause — the answer is on this screen.
-    @ViewBuilder
-    private var alwaysOnProbe: some View {
-        #if DEBUG
-        Text(session.sawLuminanceReduced
-             ? "AOD ✓ ×\(session.reducedEntries)"
-             : "AOD never")
-            .font(.sg(9, weight: .medium))
-            .foregroundStyle(session.sawLuminanceReduced ? Theme.signal : Theme.muted)
-        #endif
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 0) {
@@ -251,6 +238,5 @@ struct PausedView: View {
         }
         .padding(EdgeInsets(top: 6, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PAUSED", color: Theme.signal) }
-        .overlay(alignment: .bottom) { alwaysOnProbe }
     }
 }
