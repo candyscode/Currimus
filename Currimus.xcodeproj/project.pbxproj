@@ -135,6 +135,7 @@
 		E7AD9B70C6E27CE0D4CB116D /* RecordingIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC5D9A0957780EACF963837 /* RecordingIssue.swift */; };
 		E86BFECCF96440F2567693E0 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		EC55258A7F95B65787BEEDD2 /* RecordingIssueViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E3EEBDD46A2C2878930F10 /* RecordingIssueViews.swift */; };
+		F207E95C76E6E6A33A9B4859 /* RunEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD6D8198237FDA19530FD50 /* RunEditView.swift */; };
 		F510560E3551F6D4F3842E46 /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		F7A7C35C3DF0D466D580D012 /* TrailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 093CE780E88BBF9DB0F19E1D /* TrailViews.swift */; };
 		F8AB414317BEB2FAAB2E3321 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
@@ -206,6 +207,7 @@
 		506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAnalytics.swift; sourceTree = "<group>"; };
 		56F5464BE0196BC03E8F0255 /* RunWeek.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunWeek.swift; sourceTree = "<group>"; };
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
+		5CD6D8198237FDA19530FD50 /* RunEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunEditView.swift; sourceTree = "<group>"; };
 		60332871CFEA2AFE9925CDAE /* RunPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunPalette.swift; sourceTree = "<group>"; };
 		61423834EFBB80EBFAC112C9 /* CurrimusWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatchWidgets.entitlements; sourceTree = "<group>"; };
 		65AEBA896B9201B26676F060 /* Scaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scaffold.swift; sourceTree = "<group>"; };
@@ -334,6 +336,7 @@
 				EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */,
 				3C9CB42153EFED5140123404 /* RecordsView.swift */,
 				CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */,
+				5CD6D8198237FDA19530FD50 /* RunEditView.swift */,
 				65AEBA896B9201B26676F060 /* Scaffold.swift */,
 				315BB07B29A7E2F717AFC457 /* SettingsView.swift */,
 			);
@@ -687,6 +690,7 @@
 				B1750243611A3E10BDCD574D /* RecordsView.swift in Sources */,
 				898A0FE20D45DAF944B06D0A /* RunAnalytics.swift in Sources */,
 				8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */,
+				F207E95C76E6E6A33A9B4859 /* RunEditView.swift in Sources */,
 				6905CDB7A68F0AF8003D5E95 /* RunExport.swift in Sources */,
 				6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */,
 				B22739DB9864EA01A42319F5 /* RunPalette.swift in Sources */,

@@ -101,6 +101,12 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// persisted before it existed — i.e. wipe the log. New fields stay
     /// optional; read it through `isImported`.
     var imported: Bool?
+    /// Set when the runner disagrees with the auto-classification, which is a
+    /// heuristic over splits and zones and is wrong often enough to be worth
+    /// correcting — it is the label every log row leads with. Optional for the
+    /// same reason as `imported`: a non-optional field would fail to decode
+    /// every run already in the log.
+    var classificationOverride: RunClass?
 
     var paceSecPerKm: TimeInterval { distanceKm > 0.05 ? duration / distanceKm : 0 }
 
@@ -136,7 +142,9 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// Auto-derived training type. Heuristic — good for the common cases,
     /// approximate at the edges (a hard tempo vs. a threshold interval set).
     var classification: RunClass {
+        // Trail is a recording mode, not a guess, so it outranks both.
         if type == .trail { return .trail }
+        if let classificationOverride { return classificationOverride }
         if distanceKm >= 18 { return .long }
         // Intervals: repeated hard efforts → wide split spread with Z4/Z5 work.
         if splits.count >= 4, splitSpread >= 18, zoneSeconds[3] + zoneSeconds[4] >= duration * 0.20 {

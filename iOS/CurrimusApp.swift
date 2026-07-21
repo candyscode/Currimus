@@ -99,6 +99,7 @@ struct RootView: View {
         case "gpsAccuracy": return [.gpsAccuracy]
         case "detailRoad": return store.runs.first { !$0.isTrail }.map { [.runDetail($0)] } ?? []
         case "detailTrail": return store.runs.first { $0.isTrail }.map { [.runDetail($0)] } ?? []
+        case "editRun": return store.runs.first { !$0.isTrail }.map { [.runEdit($0)] } ?? []
         default: return []
         }
     }
@@ -158,6 +159,7 @@ func routeDestination(_ route: Route) -> some View {
     case .race: RaceView()
     case .raceSetup: RaceSetupView()
     case .runDetail(let run): RunDetailView(run: run)
+    case .runEdit(let run): RunEditView(run: run)
     case .records: RecordsView()
     case .settings: SettingsScreen()
     case .pacerDefaults: PacerDefaultsView()

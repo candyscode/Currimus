@@ -123,6 +123,14 @@ final class RunStore: ObservableObject {
     /// screen is a hand-built scroll view and has no `IndexSet` to offer.
     func delete(_ run: Run) { remove([run]) }
 
+    /// Writes back an edited run. Imported runs are Health's, not ours.
+    func update(_ run: Run) {
+        guard !run.isImported,
+              let index = runs.firstIndex(where: { $0.id == run.id }) else { return }
+        // The log holds metadata only — an edit must not put the track back in.
+        runs[index] = run.strippingSamples
+    }
+
     private func remove(_ candidates: [Run]) {
         // Imported runs live in Health, not here — deleting one locally would
         // only make it come back on the next refresh.

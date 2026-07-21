@@ -6,6 +6,7 @@ enum Route: Hashable {
     case race
     case raceSetup
     case runDetail(Run)
+    case runEdit(Run)
     case records
     case settings
     case pacerDefaults

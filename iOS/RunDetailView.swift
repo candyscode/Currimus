@@ -2,18 +2,42 @@ import SwiftUI
 
 struct RunDetailView: View {
     @EnvironmentObject private var store: RunStore
+    @Environment(\.pushRoute) private var push
     private let storedRun: Run
 
     init(run: Run) { storedRun = run }
 
-    /// The log carries metadata only — the elevation series and the GPS track
-    /// come out of the store's sidecar files, cached after the first ask.
-    private var run: Run { store.hydrated(storedRun) }
+    /// Looked up by id rather than held from the push, so an edit made one
+    /// screen further in is reflected on the way back out. The log carries
+    /// metadata only, so the track and elevation series come from the store's
+    /// sidecar files, cached after the first ask.
+    private var run: Run {
+        store.hydrated(store.runs.first { $0.id == storedRun.id } ?? storedRun)
+    }
 
     var body: some View {
         PushedScreen(title: run.isTrail ? "Trail run" : "Run") {
-            if run.isTrail { trail } else { road }
+            VStack(alignment: .leading, spacing: 0) {
+                if run.isTrail { trail } else { road }
+                editCard
+            }
         }
+    }
+
+    private var editCard: some View {
+        Button { push(.runEdit(storedRun)) } label: {
+            GlassCard(cornerRadius: 20, padding: EdgeInsets(top: 18, leading: 22, bottom: 18, trailing: 22)) {
+                HStack {
+                    Text("Edit run").font(.sg(16, weight: .semibold))
+                    Spacer()
+                    Text(run.isImported ? "Imported" : run.classification.label)
+                        .font(.sg(15)).foregroundStyle(Theme.bright)
+                    Chevron()
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 30)
     }
 
     // MARK: - Road
