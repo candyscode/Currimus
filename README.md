@@ -64,10 +64,24 @@ it is unit-tested; `RunSession` is the HealthKit and CoreLocation lifecycle
 around it. When a sample buffer fills it halves its resolution rather than
 dropping from the front, so a four-hour run keeps its start.
 
-Anything the recording cannot do — a declined Health prompt, location off, a
-workout session that would not start — surfaces as a `RunSession.RecordingIssue`:
-a line above the footer while running, a card on the summary. Nothing fails
-silently; the rest goes to `os.Logger` under the `com.currimus.app` subsystem.
+### When recording cannot work
+
+Distance and heart rate both come out of the workout builder, so **a run needs
+Apple Health**. If the workout write is denied, the run does not start: a
+screen names the problem and spells out the Settings path (watchOS has no URL
+that opens Settings). Location is different — without it a run loses its route,
+climb and elevation but keeps distance, pace and zones, so it only degrades and
+never blocks. `RecordingIssue.blocksRecording` is where that line is drawn.
+
+One denial cannot be caught at the door. Health hides *read* authorization by
+design, so someone can allow "save workouts" — all the gate can observe — and
+refuse Distance separately. That shows up only once the run is moving and the
+number stays at zero, which `checkDistanceIsArriving` reports as a live banner
+after two minutes. A run that ends without distance is shown on the summary and
+then dropped rather than filed as a 0.00 km entry.
+
+Everything else that used to be swallowed goes to `os.Logger` under the
+`com.currimus.app` subsystem.
 
 Project file is generated: `xcodegen generate` (config in `project.yml`).
 The project builds in the **Swift 6 language mode** with complete strict
@@ -83,8 +97,9 @@ provisioning profile).
 
 - watchOS: `run | kmalert | paused | summary | pacer-set | pacer-distance |
   pacer-run | pacer-run-nodist | pacer-summary | trail | elevation |
-  elevation-noroute | trail-summary | issue-health | issue-location |
-  issue-summary`
+  elevation-noroute | trail-summary | blocked-health | blocked-workout |
+  blocked-unavailable | issue-nodistance | issue-location | issue-summary |
+  summary-empty`
 - iOS: `-tab log|progress`, `-push detail|settings|pacer|records`, `-empty 1`
 
 Release builds contain none of this — the engine always records for real.
@@ -96,6 +111,6 @@ Release builds contain none of this — the engine always records for real.
 - Translations: the catalogue is wired up and extracts, but English is the
   only language in it. Xcode repopulates it on build; from the command line,
   `xcrun xcstringstool sync Resources/Localizable.xcstrings --stringsdata …`.
-- A distance fallback for a run recorded without Health access: GPS is
-  running and the route is kept, but distance still comes from the workout
-  builder alone, so a declined prompt means the run has no distance.
+- Nothing for a run without Health access: recording it from GPS alone was
+  considered and rejected — it would mean a second distance pipeline with its
+  own noise filtering and calibration, for a mode the app does not offer.

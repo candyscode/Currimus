@@ -21,46 +21,12 @@ final class RunSession: NSObject, ObservableObject {
         case idle
         case pacerPace          // step 1 · target pace (required)
         case pacerDistance      // step 2 · distance (optional, Off = just run)
+        case preparing          // asking Health, before the clock starts
+        case blocked(RecordingIssue)
         case countdown(Int)
         case running
         case paused
         case finished
-    }
-
-    /// Something the recording cannot do, in the user's terms.
-    ///
-    /// These used to be silent `return`s. A denied Health prompt left the
-    /// clock ticking over a distance frozen at 0.00 with nothing on screen to
-    /// explain it — the worst failure this app has, because a run cannot be
-    /// run again.
-    enum RecordingIssue: Equatable, Hashable {
-        case healthUnavailable
-        case healthDenied
-        case workoutFailed
-        case locationDenied
-
-        var headline: String {
-            switch self {
-            case .healthUnavailable: return String(localized: "No Health data")
-            case .healthDenied: return String(localized: "Health access off")
-            case .workoutFailed: return String(localized: "Workout not started")
-            case .locationDenied: return String(localized: "Location off")
-            }
-        }
-
-        /// What is actually lost, so carrying on is an informed choice.
-        var detail: String {
-            switch self {
-            case .healthUnavailable:
-                return String(localized: "This watch has no Health data. Time is recorded; heart rate and distance are not.")
-            case .healthDenied:
-                return String(localized: "Without Health access there is no heart rate and no distance. Allow it in Settings › Privacy › Health.")
-            case .workoutFailed:
-                return String(localized: "The workout session did not start. Time and GPS still record; heart rate does not.")
-            case .locationDenied:
-                return String(localized: "Without location there is no route, climb or elevation. Allow it in Settings › Privacy › Location.")
-            }
-        }
     }
 
     struct KilometerAlert: Equatable {
@@ -146,18 +112,37 @@ final class RunSession: NSObject, ObservableObject {
     func begin(_ type: RunType) {
         self.type = type
         resetMetrics()
+
+        guard !isSimulated else { return startRun() }
+        // Settle Health before the clock starts. Distance and heart rate both
+        // come out of the workout builder, so a run without it records nothing
+        // but elapsed time — three seconds of countdown followed by an empty
+        // log entry is a worse answer than saying so at the door.
+        phase = .preparing
+        Task {
+            guard await prepareRecording() else { return }
+            startRun()
+        }
+    }
+
+    private func startRun() {
         startDate = .now
         phase = countdownEnabled ? .countdown(3) : .running
         haptic(.start)
         startTimer()
 
         guard !isSimulated else { return }
-        // GPS first, and independently of Health: location needs no HealthKit
-        // grant, and a run with a route but no heart rate beats one with
-        // neither. Starting it inside the authorization callback meant a
-        // declined Health prompt silently killed GPS too.
+        // The session object exists by now; the activity begins with the run,
+        // so the builder's elapsed time does not count the countdown.
+        workoutSession?.startActivity(with: .now)
+        workoutBuilder?.beginCollection(withStart: .now) { started, error in
+            if !started {
+                Log.session.error("collection did not begin: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+            }
+        }
+        // Location is independent of Health and only ever degrades a run, so
+        // it never blocks: a run without a route still has distance and pace.
         startLocationUpdates()
-        Task { await requestAuthorizationThenPrepare() }
     }
 
     /// Tap-to-skip: jump straight from the countdown into the run.
@@ -252,11 +237,11 @@ final class RunSession: NSObject, ObservableObject {
 
     // MARK: - HealthKit
 
-    private func requestAuthorizationThenPrepare() async {
-        guard HKHealthStore.isHealthDataAvailable() else {
-            note(.healthUnavailable)
-            return
-        }
+    /// Everything that has to be true before a run may start. Returns false
+    /// having already moved the session to `.blocked`.
+    private func prepareRecording() async -> Bool {
+        guard HKHealthStore.isHealthDataAvailable() else { return block(.healthUnavailable) }
+
         let share: Set<HKSampleType> = [
             HKObjectType.workoutType(),
             HKSeriesType.workoutRoute(),
@@ -271,19 +256,36 @@ final class RunSession: NSObject, ObservableObject {
             try await healthStore.requestAuthorization(toShare: share, read: read)
         } catch {
             Log.session.error("health authorization failed: \(error.localizedDescription, privacy: .public)")
-            note(.healthDenied)
-            return
+            return block(.healthDenied)
         }
-        // Read authorization is never knowable (Health hides it deliberately),
-        // but a workout we may not save is a denial we can actually detect —
-        // and it is the one that costs the user their heart rate.
+
+        // Read authorization is never knowable — Health hides it deliberately,
+        // so that a refusal cannot be used to infer a condition. Write access
+        // to the workout type is the one denial that *is* observable, and it
+        // is the one people actually pick when they decline the sheet.
+        //
+        // The gap this leaves: someone can allow "save workouts" and refuse
+        // heart rate and distance individually. Nothing detects that up front;
+        // it shows up at run time as a distance that never moves, which is
+        // what the live issue banner is for.
         if healthStore.authorizationStatus(for: HKObjectType.workoutType()) == .sharingDenied {
-            note(.healthDenied)
+            return block(.healthDenied)
         }
-        startWorkoutSession()
+
+        guard makeWorkoutSession() else { return block(.workoutFailed) }
+        return true
     }
 
-    private func startWorkoutSession() {
+    @discardableResult
+    private func block(_ issue: RecordingIssue) -> Bool {
+        Log.session.error("run refused: \(issue.headline, privacy: .public)")
+        phase = .blocked(issue)
+        return false
+    }
+
+    /// Builds the workout session and its builders. Creation is the throwing
+    /// part — the activity itself begins with the run, in `startRun`.
+    private func makeWorkoutSession() -> Bool {
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = .running
         configuration.locationType = .outdoor
@@ -297,18 +299,12 @@ final class RunSession: NSObject, ObservableObject {
             workoutSession = session
             workoutBuilder = builder
             routeBuilder = HKWorkoutRouteBuilder(healthStore: healthStore, device: nil)
-
-            session.startActivity(with: .now)
-            builder.beginCollection(withStart: .now) { started, error in
-                if !started {
-                    Log.session.error("collection did not begin: \(error?.localizedDescription ?? "unknown", privacy: .public)")
-                }
-            }
+            return true
         } catch {
             Log.session.error("workout session failed: \(error.localizedDescription, privacy: .public)")
             workoutSession = nil
             workoutBuilder = nil
-            note(.workoutFailed)
+            return false
         }
     }
 
@@ -390,6 +386,16 @@ final class RunSession: NSObject, ObservableObject {
         let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
                                  heartRate: heartRate, zone: currentZone)
         if let split { raiseKilometerAlert(split) }
+        checkDistanceIsArriving()
+    }
+
+    /// Catches the denial the gate structurally cannot see: Health grants the
+    /// workout but withholds the distance read, so the run records a clock and
+    /// nothing else. Two minutes is long enough that a runner waiting at a
+    /// crossing is not accused of it.
+    private func checkDistanceIsArriving() {
+        guard elapsed > 120, distanceKm <= 0 else { return }
+        note(.noDistance)
     }
 
     private func raiseKilometerAlert(_ split: RunMetrics.KilometerSplit) {
@@ -452,6 +458,11 @@ final class RunSession: NSObject, ObservableObject {
     /// Screenshot helper: render an issue banner without a real failure.
     func debugRaiseIssue(_ issue: RecordingIssue) {
         issues = [issue]
+    }
+
+    /// Screenshot helper: show the refusal screen without revoking permissions.
+    func debugBlock(_ issue: RecordingIssue) {
+        phase = .blocked(issue)
     }
 
     /// Screenshot / demo helper: jump straight into a simulated run N seconds in.

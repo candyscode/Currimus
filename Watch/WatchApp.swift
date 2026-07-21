@@ -42,6 +42,7 @@ struct WatchRootView: View {
         // The run scaffold and the summary scroller pick this up, so a
         // degraded recording shows on every screen without each one wiring it.
         .environment(\.recordingIssue, session.issues.first)
+        .environment(\.runNotSaved, finishedRun.map { !$0.hasUsableDistance } ?? false)
         .onAppear(perform: handleLaunchRoute)
     }
 
@@ -68,6 +69,10 @@ struct WatchRootView: View {
             PacerDistanceView(session: session) {
                 start(.pacer)
             }
+        case .preparing:
+            PreparingView()
+        case .blocked(let issue):
+            RecordingBlockedView(issue: issue) { session.reset() }
         case .countdown(let n):
             CountdownView(count: n) { session.skipCountdown() }
         case .running:
@@ -114,7 +119,10 @@ struct WatchRootView: View {
     private func finish() {
         let run = session.end()
         finishedRun = run
-        store.add(run)
+        // A recording that never measured a distance is a failed recording,
+        // not a run. Showing the user what happened is honest; filing a
+        // 0.00 km "Easy run" in the log is not.
+        if run.hasUsableDistance { store.add(run) }
     }
 
     private func done() {
@@ -168,25 +176,35 @@ struct WatchRootView: View {
         case "trail-early":
             session.debugFastForward(.trail, seconds: 10)
         case "summary-empty":
-            // The degenerate case a real recording can produce: ended after
-            // seconds, before HR/GPS delivered anything.
+            // The degenerate case a real recording can still produce once the
+            // gate is passed: Health allowed the workout but refused the
+            // distance read, so nothing ever moved. Not filed in the log.
             finishedRun = Run(
                 date: .now, type: .quick, name: "Run",
-                distanceKm: 0.01, duration: 19, avgHR: 0,
+                distanceKm: 0, duration: 19, avgHR: 0,
                 splits: [], zoneSeconds: [0, 0, 0, 0, 0]
             )
             session.debugShowSummary()
+        // The refusal screen — a run that never starts.
+        case "blocked-health":
+            session.debugBlock(.healthDenied)
+        case "blocked-workout":
+            session.debugBlock(.workoutFailed)
+        case "blocked-unavailable":
+            session.debugBlock(.healthUnavailable)
         // Degraded-recording banners, live and on the summary.
-        case "issue-health":
+        // Health allowed the workout but withheld the distance read — the one
+        // failure the gate cannot catch up front.
+        case "issue-nodistance":
             session.debugFastForward(.quick, seconds: 2537)
-            session.debugRaiseIssue(.healthDenied)
+            session.debugRaiseIssue(.noDistance)
         case "issue-location":
             session.debugFastForward(.trail, seconds: 4500)
             session.debugRaiseIssue(.locationDenied)
         case "issue-summary":
             session.debugFastForward(.quick, seconds: 2537)
             finishedRun = session.end()
-            session.debugRaiseIssue(.healthDenied)
+            session.debugRaiseIssue(.noDistance)
         case "kmalert": session.debugFastForward(.quick, seconds: 2593, keepAlert: true)
         case "paused": session.debugFastForward(.quick, seconds: 2537, paused: true)
         case "summary":

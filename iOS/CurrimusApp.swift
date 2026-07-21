@@ -151,6 +151,7 @@ struct TabRoot<Root: View>: View {
     }
 }
 
+@MainActor
 @ViewBuilder
 func routeDestination(_ route: Route) -> some View {
     switch route {

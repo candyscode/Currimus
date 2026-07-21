@@ -235,9 +235,12 @@ final class RunStore: ObservableObject {
         }
     }
 
-    private func write<T: Encodable>(_ value: T, forKey key: String) {
+    /// `Sendable` is the honest constraint: the value really does leave the
+    /// main actor for the encoder. Every caller already qualifies — `[Run]`,
+    /// `Race` and `WatchSettings` are all value types of value types.
+    private func write<T: Encodable & Sendable>(_ value: T, forKey key: String) {
         guard !isLoading, !isDemo else { return }
-        let defaults = self.defaults
+        nonisolated(unsafe) let defaults = self.defaults
         Self.ioQueue.async {
             do {
                 defaults.set(try JSONEncoder().encode(value), forKey: key)

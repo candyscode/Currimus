@@ -103,6 +103,7 @@ struct TrailSummaryView: View {
 /// (crown scrolls when it doesn't fit). The caption rides the top bar.
 struct SummaryScroller<Content: View>: View {
     @Environment(\.recordingIssue) private var issue
+    @Environment(\.runNotSaved) private var notSaved
     var onDone: () -> Void
     var caption: TopBarCaption
     @ViewBuilder var content: Content
@@ -116,6 +117,17 @@ struct SummaryScroller<Content: View>: View {
                 // change — mid-run the user could only read four words.
                 if let issue {
                     RecordingIssueCard(issue: issue).padding(.top, 16)
+                }
+
+                // Never let the log and the summary disagree: if the run was
+                // dropped, the screen that shows its numbers says so.
+                if notSaved {
+                    Text("No distance was recorded, so this run was not saved.")
+                        .font(.sg(10))
+                        .foregroundStyle(Theme.muted)
+                        .lineSpacing(1.5)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 12)
                 }
 
                 Button(action: onDone) {

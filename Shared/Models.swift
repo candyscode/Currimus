@@ -108,6 +108,15 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
 
     var isTrail: Bool { type == .trail }
 
+    /// Whether this is a run at all, or a recording that measured nothing.
+    ///
+    /// Distance comes from the workout builder; if it never delivered, every
+    /// derived number is zero or meaningless — pace, splits, zones, the
+    /// classification. Such an entry is a failed recording, and filing it in
+    /// the log as a 0.00 km "Easy run" claims something that did not happen.
+    /// The threshold is deliberately tiny: it rejects nothing, not short runs.
+    var hasUsableDistance: Bool { distanceKm >= 0.01 }
+
     var dominantZone: Int {
         guard let maxValue = zoneSeconds.max(), maxValue > 0,
               let index = zoneSeconds.firstIndex(of: maxValue) else { return 0 }
