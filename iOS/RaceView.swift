@@ -188,14 +188,22 @@ struct RaceSetupView: View {
         }
     }
 
+    /// Sanity-checks the goal against the fastest sustained effort on record.
+    ///
+    /// The number here is `min` — the *best* tempo run, not the average one.
+    /// The sentence used to call it the average, so it named one statistic and
+    /// showed another, and the two differ by exactly the amount that decides
+    /// whether a goal is ambitious.
     private var realismNote: String {
-        let tempo = store.runs.filter { $0.classification == .tempo }
-        guard let avg = tempo.map(\.paceSecPerKm).min() else {
+        let tempoPaces = store.allRuns
+            .filter { !$0.isTrail && $0.classification == .tempo }
+            .map(\.paceSecPerKm)
+        guard let best = tempoPaces.min() else {
             return "Set a goal and see the pace it needs."
         }
-        return requiredPace >= avg
-            ? "Your tempo runs average \(Format.pace(avg)) — the goal is realistic."
-            : "Faster than your best tempo (\(Format.pace(avg))) — ambitious, but that is the point."
+        return requiredPace >= best
+            ? "Your best tempo run is \(Format.pace(best)) /km, so the goal sits inside what you have already held."
+            : "Faster than your best tempo (\(Format.pace(best)) /km) — ambitious, but that is the point."
     }
 
     private func fieldLabel(_ t: String) -> some View { Text(t).kicker(13, color: Theme.bright, tracking: 0.12) }
