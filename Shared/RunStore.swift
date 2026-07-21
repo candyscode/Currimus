@@ -110,9 +110,18 @@ final class RunStore: ObservableObject {
     }
 
     func deleteRuns(at offsets: IndexSet, in subset: [Run]) {
+        remove(offsets.map { subset[$0] })
+    }
+
+    /// Deletes one run — what the log's own delete action calls, since the
+    /// screen is a hand-built scroll view and has no `IndexSet` to offer.
+    func delete(_ run: Run) { remove([run]) }
+
+    private func remove(_ candidates: [Run]) {
         // Imported runs live in Health, not here — deleting one locally would
         // only make it come back on the next refresh.
-        let ids = offsets.map { subset[$0] }.filter { !$0.isImported }.map(\.id)
+        let ids = candidates.filter { !$0.isImported }.map(\.id)
+        guard !ids.isEmpty else { return }
         runs.removeAll { ids.contains($0.id) }
         for id in ids {
             sampleCache[id] = nil
