@@ -73,15 +73,19 @@ struct ProgressScreen: View {
         let present = series.compactMap { $0 }
         let road12 = last12WeekRoad
         let avg = road12.km > 0 ? road12.time / road12.km : 0
-        let delta = (present.first ?? 0) - (present.last ?? 0)
+        // Newest minus oldest, so a negative number means faster. It used to
+        // be `-abs(delta)`: the sign was forced, and the screen claimed an
+        // improvement no matter which way the runner had actually gone.
+        let change = (present.last ?? 0) - (present.first ?? 0)
         return VStack(alignment: .leading, spacing: 0) {
             Text("AVG PACE · LAST 12 WEEKS").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 24)
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(Format.pace(avg)).font(.stat(64)).kerning(-2.6)
                 Text("/km").font(.sg(16)).foregroundStyle(Theme.bright)
                 Spacer()
-                Text("\(Format.paceDelta(-abs(delta))) since \(sinceMonth)")
-                    .font(.stat(14)).foregroundStyle(Theme.signal)
+                if present.count >= 2 {
+                    trendDelta(Format.paceDelta(change), improved: change <= 0)
+                }
             }
             .padding(.top, 8)
             TrendChart(values: series, topLabel: Format.pace((present.max() ?? 0) + 8),
@@ -133,8 +137,12 @@ struct ProgressScreen: View {
                 Text("\(Int(avgRate))").font(.stat(64)).kerning(-2.6)
                 Text("m/h").font(.sg(16)).foregroundStyle(Theme.bright)
                 Spacer()
-                Text("\(rateDelta >= 0 ? "+" : "−")\(Int(abs(rateDelta))) since \(sinceMonth)")
-                    .font(.stat(14)).foregroundStyle(Theme.signal)
+                if present.count >= 2 {
+                    // More metres per hour is the improvement here, so the
+                    // sense of "better" is the opposite way round to pace.
+                    trendDelta("\(rateDelta >= 0 ? "+" : "−")\(Int(abs(rateDelta)))",
+                               improved: rateDelta >= 0)
+                }
             }
             .padding(.top, 8)
             TrendChart(values: climbSeries, topLabel: "\(Int((present.max() ?? 0)))",
@@ -194,9 +202,25 @@ struct ProgressScreen: View {
 
     private var monthAxis: some View { TrendMonthAxis(weeks: 12) }
 
-    private var sinceMonth: String {
-        let d = Calendar.current.date(byAdding: .month, value: -3, to: .now) ?? .now
-        return d.formatted(.dateTime.month(.abbreviated))
+    /// The signed change across the chart above it.
+    ///
+    /// Signal is this app's "this is the number you came for" colour, so it
+    /// marks an improvement and nothing else — a regression is stated plainly
+    /// rather than dressed in the same accent. Which direction counts as an
+    /// improvement differs per metric, hence the parameter.
+    private func trendDelta(_ text: String, improved: Bool) -> some View {
+        Text("\(text) since \(windowStartMonth)")
+            .font(.stat(14))
+            .foregroundStyle(improved ? Theme.signal : Theme.bright)
+    }
+
+    /// The month the twelve-week window actually starts in. This used to be
+    /// "three months ago", which is a different month from the one the chart
+    /// and its axis begin at.
+    private var windowStartMonth: String {
+        let calendar = Calendar.runWeek
+        let start = calendar.date(byAdding: .weekOfYear, value: -11, to: .now) ?? .now
+        return start.formatted(.dateTime.month(.abbreviated))
     }
 
     private func shortMonth(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated)) }
