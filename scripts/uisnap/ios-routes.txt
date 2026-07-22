@@ -1,0 +1,30 @@
+# iOS snapshot routes:  name | tier | launch-arguments
+#
+# tier drives the diff budget (see ui-snapshot.sh):
+#   strict — pixel-stable screen; guards every detail
+#   loose  — content is relative to today's date (countdown, week bars,
+#            relative timestamps), so only gross/structural breakage is gated
+#
+# The status bar is pinned (9:41, full battery) before capture, so the clock is
+# never the thing that moves.
+
+# — date-stable screens (full-fidelity guard) —
+first-launch     | strict | -empty 1
+settings         | loose  | -demo 1 -push settings
+pacer-defaults   | strict | -demo 1 -push pacerDefaults
+hr-zones         | strict | -demo 1 -push hrZones
+gps-accuracy     | strict | -demo 1 -push gpsAccuracy
+acknowledgements | strict | -demo 1 -push acknowledgements
+edit-run         | strict | -demo 1 -push editRun
+
+# — date-relative screens (structural guard only) —
+home-race        | loose  | -demo 1
+home-norace      | loose  | -demo 1 -home norace
+home-raceday     | loose  | -demo 1 -home raceday
+log              | loose  | -demo 1 -tab log
+progress-road    | loose  | -demo 1 -tab progress
+race             | loose  | -demo 1 -push race
+race-setup       | loose  | -demo 1 -push raceSetup
+records          | loose  | -demo 1 -push records
+detail-road      | loose  | -demo 1 -push detailRoad
+detail-trail     | loose  | -demo 1 -push detailTrail
