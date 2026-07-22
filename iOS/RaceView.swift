@@ -120,6 +120,7 @@ struct RaceSetupView: View {
     @State private var date: Date = Calendar.current.date(byAdding: .day, value: 42, to: .now)!
     @State private var goalTime: TimeInterval = 3 * 3600 + 59 * 60
     @State private var loaded = false
+    @State private var confirmRemove = false
 
     private var requiredPace: TimeInterval { goalTime / distance.km }
     private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
@@ -185,7 +186,29 @@ struct RaceSetupView: View {
                 // one the button refuses.
                 .disabled(trimmedName.isEmpty)
                 .opacity(trimmedName.isEmpty ? 0.4 : 1)
+
+                // Setting a race was one-way: once it existed it took over
+                // Home's headline and could only be edited, never cleared —
+                // so a race that had passed, or plans that had changed, stayed
+                // on the screen with no way off it.
+                if store.race != nil {
+                    Button(role: .destructive) { confirmRemove = true } label: {
+                        Text("Remove race").font(.sg(16, weight: .semibold))
+                            .foregroundStyle(Theme.signal)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                    }
+                    .buttonStyle(.plain).padding(.top, 6)
+                }
             }
+        }
+        .confirmationDialog("Remove this race?", isPresented: $confirmRemove, titleVisibility: .visible) {
+            Button("Remove race", role: .destructive) {
+                store.race = nil
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Home goes back to your weekly volume. Your runs and records are untouched.")
         }
         .onAppear {
             guard !loaded else { return }
