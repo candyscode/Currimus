@@ -149,7 +149,13 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - Tests
+      # UISnapshots holds the UI-regression harness's golden PNGs and its
+      # scratch output — data for scripts/ui-snapshot.sh, not the XCTest bundle.
+      # Without this exclude xcodegen copies them in as resources, and the
+      # ios/watch/_work copies collide on basename ("multiple commands produce").
+      - path: Tests
+        excludes:
+          - "UISnapshots/**"
       - Shared
     settings:
       base:
