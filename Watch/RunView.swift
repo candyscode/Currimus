@@ -135,9 +135,11 @@ struct BigStat: View {
                 .foregroundStyle(valueColor)
                 .lineLimit(1)
                 .fixedSize(horizontal: valueOutsideLayout, vertical: false)
-                // Compress rather than truncate when the value must stay in
-                // its column (summaries' three-across rows).
-                .minimumScaleFactor(valueOutsideLayout ? 1 : 0.85)
+                // Compress rather than truncate when the value must stay in its
+                // column (summaries' three-across rows). 0.7, not 0.85: a
+                // six-hour ultra's "5:55:01" TIME truncated to "5:55…" in a
+                // third of a 40 mm case at the higher floor.
+                .minimumScaleFactor(valueOutsideLayout ? 1 : 0.7)
             if labelOutsideLayout {
                 Text(verbatim: " ")
                     .kicker(labelSize, tracking: 0.1)
