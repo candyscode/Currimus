@@ -27,7 +27,10 @@ The library is that test set:
 | `treadmill` | distance from pace, no GPS at all |
 | `dropout` | GPS lost between km 3 and 5 |
 | `hrgap` | the heart-rate strap drops for two minutes |
-| `stopgo` | a real standstill at a crossing |
+| `stopgo` | a real standstill at a crossing (clock runs, pace blanks) |
+| `walkrun` | a 4:1 run/walk session — big pace steps, folded into steady km |
+| `paused` | a long run paused five minutes (clock stops, track keeps the gap) |
+| `saver` | battery-saver GPS — sparse, coarse fixes, distance still whole |
 
 Add one by extending `RunScenario` with another static factory and listing it in
 `.all`.
@@ -91,3 +94,21 @@ at ultra distances, both since fixed.
 
 A bug found in one is reproducible in the other, because both consume the same
 `RunScenario`.
+
+## Pre-push gate
+
+`.githooks/pre-push` runs the unit + simulation tests and then the UI snapshot
+regression check on every `git push`, blocking it if either fails. Enable it
+once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+- Bypass a single push: `git push --no-verify`
+- Skip only the slow UI check: `SKIP_UI_SNAPSHOTS=1 git push`
+- Override the simulator: `IOS_SIM="iPhone 16 Pro" git push`
+
+The simulation tests are part of `CurrimusTests`, so they run in that first
+(fast, headless) step; the UI snapshots — see [UI-SNAPSHOTS.md](UI-SNAPSHOTS.md)
+— are the second step.

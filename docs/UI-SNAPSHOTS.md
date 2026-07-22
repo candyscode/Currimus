@@ -15,7 +15,9 @@ scripts/ui-snapshot.sh verify all --no-build   # reuse the last build
 ```
 
 Exit code is `0` when everything matches and non-zero when anything changed, so
-it drops straight into a pre-push hook or CI step.
+it drops straight into a pre-push hook or CI step — and it already does: see the
+pre-push gate in [RUN-SIMULATION.md](RUN-SIMULATION.md#pre-push-gate)
+(`git config core.hooksPath .githooks`).
 
 ## Why screenshots, not view snapshots
 

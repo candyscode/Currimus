@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Pre-push gate for Currimus: the unit + run-simulation tests, then the UI
+# snapshot regression check. If either fails, the push is blocked.
+#
+#   Enable once per clone:   git config core.hooksPath .githooks
+#   Bypass a single push:    git push --no-verify
+#   Skip the slow UI check:  SKIP_UI_SNAPSHOTS=1 git push
+#
+# bash 3.2-safe (no `set -u`, no associative arrays).
+set -o pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT" || exit 1
+IOS_SIM="${IOS_SIM:-iPhone 17 Pro}"
+
+fail() {
+  echo "" >&2
+  echo "✗ pre-push blocked: $1" >&2
+  echo "  bypass this push with:  git push --no-verify" >&2
+  exit 1
+}
+
+# 1 · Unit + simulation tests (fast, headless — includes RunSimulationTests).
+echo "▶ pre-push · unit + simulation tests…"
+if ! xcodebuild test -project Currimus.xcodeproj -scheme CurrimusTests -configuration Debug \
+       -destination "platform=iOS Simulator,name=$IOS_SIM" -derivedDataPath build -quiet \
+       >/tmp/currimus-prepush-tests.log 2>&1; then
+  tail -30 /tmp/currimus-prepush-tests.log >&2
+  fail "tests failed (full log: /tmp/currimus-prepush-tests.log)"
+fi
+echo "  ✓ tests passed"
+
+# 2 · UI snapshot regression (heavier: builds both apps, drives the simulators).
+if [ "${SKIP_UI_SNAPSHOTS:-0}" = "1" ]; then
+  echo "▶ pre-push · UI snapshots skipped (SKIP_UI_SNAPSHOTS=1)"
+else
+  echo "▶ pre-push · UI snapshot regression…"
+  if ! ./scripts/ui-snapshot.sh verify all >/tmp/currimus-prepush-ui.log 2>&1; then
+    tail -40 /tmp/currimus-prepush-ui.log >&2
+    fail "UI snapshots changed — see /tmp/currimus-prepush-ui.log and Tests/UISnapshots/_work/diff/
+  (intentional? re-record with: scripts/ui-snapshot.sh record <ios|watch|all>)"
+  fi
+  echo "  ✓ UI snapshots match"
+fi
+
+echo "✓ pre-push · all checks passed"
