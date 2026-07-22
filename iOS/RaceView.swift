@@ -122,6 +122,7 @@ struct RaceSetupView: View {
     @State private var loaded = false
 
     private var requiredPace: TimeInterval { goalTime / distance.km }
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
     private var daysUntil: Int {
         Race(name: name, distance: distance, date: date, goalTime: goalTime).daysUntil()
     }
@@ -178,6 +179,12 @@ struct RaceSetupView: View {
                         .background(Theme.signal, in: Capsule())
                 }
                 .buttonStyle(.plain).padding(.top, 24)
+                // An empty name saves a race that renders as "RACE DAY · " with
+                // nothing after it on Home. Blank is the one value this form
+                // can be left in that produces a broken screen, so it is the
+                // one the button refuses.
+                .disabled(trimmedName.isEmpty)
+                .opacity(trimmedName.isEmpty ? 0.4 : 1)
             }
         }
         .onAppear {
@@ -213,7 +220,7 @@ struct RaceSetupView: View {
 
     private func save() {
         var race = store.race ?? Race(name: name, distance: distance, date: date, goalTime: goalTime)
-        race.name = name; race.distance = distance; race.date = date; race.goalTime = goalTime
+        race.name = trimmedName; race.distance = distance; race.date = date; race.goalTime = goalTime
         store.race = race
         dismiss()
     }
