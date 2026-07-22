@@ -89,6 +89,9 @@ final class RunSession: NSObject, ObservableObject {
     private let locationManager = CLLocationManager()
 
     private var timer: AnyCancellable?
+    /// Seconds between ticks: 1 for a real or fast-forwarded run, smaller for
+    /// accelerated scenario playback (`beginScenario`).
+    private var tickInterval: TimeInterval = 1
     private var alertDismiss: Task<Void, Never>?
     /// Wall-clock start, so a paused run still reports when it actually began.
     private var startDate: Date?
@@ -241,7 +244,7 @@ final class RunSession: NSObject, ObservableObject {
     }
 
     private func startTimer() {
-        timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+        timer = Timer.publish(every: tickInterval, on: .main, in: .common).autoconnect()
             .sink { [weak self] _ in self?.tick() }
     }
 
@@ -427,6 +430,9 @@ final class RunSession: NSObject, ObservableObject {
                 haptic(.start)
             }
         case .running:
+            #if DEBUG
+            if let simScenario { scenarioSecond(simScenario); return }
+            #endif
             if isSimulated {
                 simulateOneSecond()
             } else {
@@ -548,6 +554,81 @@ final class RunSession: NSObject, ObservableObject {
         alertDismiss?.cancel()
         if !keepAlert { kilometerAlert = nil }
         if paused { phase = .paused }
+    }
+
+    // MARK: - Layer 2 · scenario playback (interactive bug-finding)
+
+    /// The scenario currently driving the run, if any. Set means `tick` pulls
+    /// each second from the scenario instead of the built-in demo model.
+    private var simScenario: RunScenario?
+    private var simDistanceKm = 0.0
+
+    /// Plays a `RunScenario` through the live UI at `speed`× real time, so a
+    /// whole marathon or trail run can be watched (and screenshotted) unfolding
+    /// on the watch. The same scenarios the headless `RunSimulator` asserts on.
+    func beginScenario(_ scenario: RunScenario, speed: Double = 30) {
+        prepareScenario(scenario)
+        tickInterval = 1 / max(speed, 0.1)
+        haptic(.start)
+        startTimer()
+    }
+
+    /// Instantly fast-forwards a scenario to a distance (km), or to its own end
+    /// when `toKm` is nil — for a screenshot of a long run's live screen deep in
+    /// (42 splits, five-glyph distance) or, via `end()`, its finished summary.
+    func debugJumpScenario(_ scenario: RunScenario, toKm: Double? = nil) {
+        prepareScenario(scenario)
+        while elapsed < Double(scenario.maxSeconds) {
+            if let toKm, simDistanceKm >= toKm { break }
+            if toKm == nil, scenario.stop.reached(elapsed: elapsed, distanceKm: simDistanceKm) { break }
+            scenarioSecond(scenario)
+        }
+        alertDismiss?.cancel()
+        kilometerAlert = nil
+    }
+
+    private func prepareScenario(_ scenario: RunScenario) {
+        isSimulated = true
+        type = scenario.type
+        resetMetrics()
+        simScenario = scenario
+        simDistanceKm = 0
+        elapsed = 0
+        startDate = .now
+        // A pacer scenario needs a target for its gauge and summary; take it
+        // from the pace it opens on, and its distance from the stop condition.
+        if scenario.type == .pacer {
+            pacerTarget = scenario.paceSecPerKm(0)
+            if case .afterDistance(let km) = scenario.stop { pacerDistanceKm = km }
+        }
+        phase = .running
+    }
+
+    /// One second driven by the scenario — the live-UI twin of `RunSimulator`'s
+    /// loop, updating the published state the screens read.
+    private func scenarioSecond(_ scenario: RunScenario) {
+        elapsed += 1
+        let pace = scenario.paceSecPerKm(elapsed)
+        if pace.isFinite, pace > 0 { simDistanceKm += 1 / pace }
+        distanceKm = simDistanceKm
+        heartRate = scenario.heartRate(elapsed)
+        if let altitude = scenario.altitude(elapsed) {
+            metrics.ingestAltitude(altitude, verticalAccuracy: scenario.verticalAccuracy, at: elapsed)
+        }
+        if scenario.hasGPS(elapsed) {
+            let c = scenario.coordinate(distanceKm: simDistanceKm)
+            metrics.ingestCoordinate(latitude: c.lat, longitude: c.lon,
+                                     altitude: scenario.altitude(elapsed) ?? 0,
+                                     horizontalAccuracy: scenario.horizontalAccuracy, at: elapsed)
+        }
+        if let split = metrics.tick(elapsed: elapsed, distanceKm: simDistanceKm,
+                                    heartRate: heartRate, zone: currentZone) {
+            raiseKilometerAlert(split)
+        }
+        // Live playback freezes at the finish line rather than running past it.
+        if tickInterval < 1, scenario.stop.reached(elapsed: elapsed, distanceKm: simDistanceKm) {
+            timer?.cancel()
+        }
     }
     #endif
 

@@ -33,6 +33,15 @@ enum DebugFlags {
 
     /// watchOS: which run screen to jump into.
     static var screen: String? { string("screen") }
+
+    /// watchOS: play a named `RunScenario` (`-simulate marathon`). With `-at N`
+    /// it jumps to km N; with `-finish 1` it jumps to the end and shows the
+    /// summary; with `-speed N` it plays live at N× real time; bare, it plays
+    /// live at the default speed.
+    static var simulate: String? { string("simulate") }
+    static var simAtKm: Double? { string("at").flatMap(Double.init) }
+    static var simSpeed: Double? { string("speed").flatMap(Double.init) }
+    static var simFinish: Bool { string("finish") == "1" }
     /// iOS: which tab to open, which screen to push, which state to inject.
     static var tab: String? { string("tab") }
     static var push: String? { string("push") }
