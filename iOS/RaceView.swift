@@ -219,11 +219,19 @@ struct RaceSetupView: View {
     }
 }
 
-/// A three-row goal-time wheel, 5-minute steps. Drag or tap the neighbours.
+/// A three-row goal-time wheel, one minute per step. Drag, or tap a neighbour.
 struct GoalTimeWheel: View {
     @Binding var seconds: TimeInterval
-    private let step: TimeInterval = 300
-    @State private var drag: CGFloat = 0
+    // One minute, not five. At five, the reachable times were 4:25, 4:30, …
+    // and 4:26 simply did not exist — the whole complaint.
+    private let step: TimeInterval = 60
+    // How far the finger travels for one step. The old wheel fired a step
+    // every time the delta since the last one crossed 20 pt and then reset its
+    // baseline, so a single slow slide rattled through several steps at once;
+    // a light flick jumped minutes. This maps total travel to an absolute
+    // offset from where the drag began, so the number tracks the finger.
+    private let pointsPerStep: CGFloat = 16
+    @State private var anchor: TimeInterval?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -237,12 +245,30 @@ struct GoalTimeWheel: View {
                 .overlay(alignment: .bottom) { Theme.buttonBorder.frame(height: 1) }
             neighbour(seconds - step)
         }
-        .gesture(DragGesture()
+        .contentShape(Rectangle())
+        .gesture(DragGesture(minimumDistance: 1)
             .onChanged { v in
-                let d = v.translation.height - drag
-                if abs(d) > 20 { shift(d > 0 ? 1 : -1); drag = v.translation.height }
+                let base = anchor ?? seconds
+                anchor = base
+                // Larger values sit above centre, so dragging down brings them
+                // in — a positive translation raises the time.
+                let steps = (v.translation.height / pointsPerStep).rounded()
+                seconds = clamp(base + steps * step)
             }
-            .onEnded { _ in drag = 0 })
+            .onEnded { _ in anchor = nil })
+        // The neighbour buttons are the visual affordance; for VoiceOver the
+        // whole thing is one adjustable value, which is how a time field should
+        // read out loud.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Goal time")
+        .accessibilityValue(Format.clock(seconds))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: seconds = clamp(seconds + step)
+            case .decrement: seconds = clamp(seconds - step)
+            @unknown default: break
+            }
+        }
     }
 
     private func neighbour(_ value: TimeInterval) -> some View {
@@ -253,6 +279,5 @@ struct GoalTimeWheel: View {
         .buttonStyle(.plain)
     }
 
-    private func shift(_ dir: Int) { withAnimation(.snappy(duration: 0.18)) { seconds = clamp(seconds + Double(dir) * step) } }
     private func clamp(_ v: TimeInterval) -> TimeInterval { min(max(v, 900), 6 * 3600) }
 }

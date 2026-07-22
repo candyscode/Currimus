@@ -260,7 +260,10 @@ struct PacerDefaultsView: View {
 struct PaceDefaultWheel: View {
     @Binding var seconds: TimeInterval
     private let step: TimeInterval = 5
-    @State private var drag: CGFloat = 0
+    // The same absolute-offset drag as the goal-time wheel: the old delta-and-
+    // reset logic rattled through several 5-second steps on one slow slide.
+    private let pointsPerStep: CGFloat = 16
+    @State private var anchor: TimeInterval?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -279,12 +282,24 @@ struct PaceDefaultWheel: View {
             ghost(seconds - 2 * step, 20, 0x3d3d3d)
         }
         .contentShape(Rectangle())
-        .gesture(DragGesture()
+        .gesture(DragGesture(minimumDistance: 1)
             .onChanged { v in
-                let d = v.translation.height - drag
-                if abs(d) > 18 { shift(d > 0 ? 1 : -1); drag = v.translation.height }
+                let base = anchor ?? seconds
+                anchor = base
+                let steps = (v.translation.height / pointsPerStep).rounded()
+                seconds = clamp(base + steps * step)
             }
-            .onEnded { _ in drag = 0 })
+            .onEnded { _ in anchor = nil })
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Default pace per kilometre")
+        .accessibilityValue(Format.pace(seconds))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: seconds = clamp(seconds + step)
+            case .decrement: seconds = clamp(seconds - step)
+            @unknown default: break
+            }
+        }
     }
 
     private func ghost(_ v: TimeInterval, _ size: CGFloat, _ hex: UInt32) -> some View {
@@ -293,7 +308,6 @@ struct PaceDefaultWheel: View {
                 .frame(maxWidth: .infinity).padding(.vertical, 8)
         }.buttonStyle(.plain)
     }
-    private func shift(_ dir: Int) { withAnimation(.snappy(duration: 0.18)) { seconds = clamp(seconds + Double(dir) * step) } }
     private func clamp(_ v: TimeInterval) -> TimeInterval { min(max(v, 180), 600) }
 }
 
