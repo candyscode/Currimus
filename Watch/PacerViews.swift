@@ -385,10 +385,13 @@ struct PacerSummaryView: View {
         let targetTime = targetDistanceKm * target
         let delta = run.duration - targetTime
         guard abs(delta) >= 1 else { return ("Finished ", "right on", " the \(Format.clock(targetTime)) target.") }
+        // "ahead of the target", but "behind the target" — the "of" belongs to
+        // "ahead" alone, so it rides with the direction word rather than the
+        // trailing clause (which read "behind of the target" otherwise).
         return (
             "Finished ",
-            "\(Format.clock(abs(delta))) \(delta < 0 ? "ahead" : "behind")",
-            " of the \(Format.clock(targetTime)) target."
+            "\(Format.clock(abs(delta))) \(delta < 0 ? "ahead of" : "behind")",
+            " the \(Format.clock(targetTime)) target."
         )
     }
 
