@@ -3,6 +3,7 @@ import SwiftUI
 /// Step 1 · Target pace (required) — the crown scrolls the wheel.
 struct PacerPaceView: View {
     @ObservedObject var session: RunSession
+    var onCancel: () -> Void
     var onNext: () -> Void
     @State private var crownValue: Double = 315
 
@@ -34,17 +35,20 @@ struct PacerPaceView: View {
 
             Spacer(minLength: 14)
 
-            Button(action: {
-                session.pacerTarget = target
-                onNext()
-            }) {
-                Text("Next")
-                    .font(.sg(15, weight: .bold))
-                    .foregroundStyle(Theme.bg)
-                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
-                    .background(Theme.signal, in: Capsule())
+            HStack(spacing: 8) {
+                PacerSecondaryButton(system: "xmark", action: onCancel)
+                Button(action: {
+                    session.pacerTarget = target
+                    onNext()
+                }) {
+                    Text("Next")
+                        .font(.sg(15, weight: .bold))
+                        .foregroundStyle(Theme.bg)
+                        .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
+                        .background(Theme.signal, in: Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(EdgeInsets(top: 12, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PACER") }
@@ -57,10 +61,31 @@ struct PacerPaceView: View {
     }
 }
 
+/// The quiet leading button that pairs with a pacer step's primary action —
+/// cancel on the pace step, back on the distance step. Circular so it stays
+/// out of the way of the wide Signal button beside it.
+struct PacerSecondaryButton: View {
+    var system: String
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: system)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .frame(width: 50, height: 50)
+                .background(Theme.button, in: Circle())
+                .overlay(Circle().stroke(Theme.buttonBorder, lineWidth: 0.75))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 /// Step 2 · Distance (optional) — scroll up to Off and the pacer runs
 /// open-ended: gauge and cumulative delta only, no finish forecast.
 struct PacerDistanceView: View {
     @ObservedObject var session: RunSession
+    var onBack: () -> Void
     var onStart: () -> Void
     /// Index into `options`; 0 = Off, then every kilometre, then the two race
     /// distances. Starts on 10 km, which onAppear overrides with the default.
@@ -140,17 +165,20 @@ struct PacerDistanceView: View {
 
             Spacer(minLength: 14)
 
-            Button(action: {
-                session.pacerDistanceKm = selection
-                onStart()
-            }) {
-                Text("Start")
-                    .font(.sg(15, weight: .bold))
-                    .foregroundStyle(Theme.bg)
-                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
-                    .background(Theme.signal, in: Capsule())
+            HStack(spacing: 8) {
+                PacerSecondaryButton(system: "chevron.left", action: onBack)
+                Button(action: {
+                    session.pacerDistanceKm = selection
+                    onStart()
+                }) {
+                    Text("Start")
+                        .font(.sg(15, weight: .bold))
+                        .foregroundStyle(Theme.bg)
+                        .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
+                        .background(Theme.signal, in: Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(EdgeInsets(top: 12, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PACER · DISTANCE") }

@@ -64,12 +64,15 @@ struct WatchRootView: View {
                 }
             )
         case .pacerPace:
-            PacerPaceView(session: session) {
+            // Cancel from the first step drops back to Home — there was no way
+            // out of pacer setup before except to start a run and end it.
+            PacerPaceView(session: session, onCancel: { session.reset() }) {
                 store.pacerTargetSecPerKm = session.pacerTarget
                 session.confirmPacerPace()
             }
         case .pacerDistance:
-            PacerDistanceView(session: session) {
+            // Back returns to the pace step with the chosen pace intact.
+            PacerDistanceView(session: session, onBack: { session.setupPacer() }) {
                 start(.pacer)
             }
         case .preparing:
