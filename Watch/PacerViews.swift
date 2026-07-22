@@ -62,17 +62,36 @@ struct PacerPaceView: View {
 struct PacerDistanceView: View {
     @ObservedObject var session: RunSession
     var onStart: () -> Void
-    /// Index into `options`; 0 = Off, then 5 km steps.
-    @State private var crownValue = 2.0
+    /// Index into `options`; 0 = Off, then every kilometre, then the two race
+    /// distances. Starts on 10 km, which onAppear overrides with the default.
+    @State private var crownValue = 10.0
 
-    private let options: [Double?] = [nil] + stride(from: 5.0, through: 50.0, by: 5.0).map { $0 }
+    /// Off, then 1 km at a time — the old wheel only offered multiples of five,
+    /// so 7 km or 12 km could not be paced — then the half and the full, which
+    /// are the two distances people actually pace and are not whole numbers.
+    private let options: [Double?] = {
+        var opts: [Double?] = [nil]
+        opts.append(contentsOf: (1...50).map { Double($0) as Double? })
+        opts.append(contentsOf: [RaceDistance.half.km, RaceDistance.marathon.km] as [Double?])
+        return opts
+    }()
 
     private var index: Int { min(max(Int(crownValue.rounded()), 0), options.count - 1) }
     private var selection: Double? { options[index] }
 
+    /// The half and full are stored as 21.0975 / 42.195, so they show a decimal
+    /// where whole kilometres show none.
+    private func isRace(_ value: Double) -> Bool {
+        value == RaceDistance.half.km || value == RaceDistance.marathon.km
+    }
+
+    private func number(_ value: Double) -> String {
+        isRace(value) ? String(format: "%.1f", value) : "\(Int(value))"
+    }
+
     private func label(_ value: Double?) -> String {
         guard let value else { return "Off" }
-        return "\(Int(value)) km"
+        return "\(number(value)) km"
     }
 
     var body: some View {
@@ -83,9 +102,13 @@ struct PacerDistanceView: View {
                 Group {
                     if let selection {
                         HStack(alignment: .firstTextBaseline, spacing: 5) {
-                            Text("\(Int(selection))")
+                            Text(number(selection))
                                 .font(.stat(37))
                                 .kerning(-1.5)
+                                // "42.2" is wider than the old two-digit
+                                // maximum; keep it on one line on a 40 mm case.
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                             Text("km")
                                 .font(.sg(15))
                                 .foregroundStyle(Theme.bright)
@@ -132,9 +155,12 @@ struct PacerDistanceView: View {
         .padding(EdgeInsets(top: 12, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PACER · DISTANCE") }
         .focusable()
+        // Medium, not low: there are 53 stops now (Off, 50 kilometres, half,
+        // full), and low made reaching the longer distances a long turn. The
+        // `by: 1` still snaps to one kilometre at a time, so precision is kept.
         .digitalCrownRotation(
             $crownValue, from: 0, through: Double(options.count - 1), by: 1,
-            sensitivity: .low, isContinuous: false, isHapticFeedbackEnabled: true
+            sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: true
         )
         .onAppear {
             if let existing = session.pacerDistanceKm,
