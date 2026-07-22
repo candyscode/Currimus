@@ -99,9 +99,7 @@ struct SettingsScreen: View {
         }
     }
 
-    private var pacerDistanceLabel: String {
-        store.pacerDefaultDistanceKm.map { $0 == 21.0975 ? "21.1 km" : "\(Int($0)) km" } ?? "Off"
-    }
+    private var pacerDistanceLabel: String { Format.pacerDistance(store.pacerDefaultDistanceKm) }
 
     /// Version and build, where a support email can be asked for it.
     private var appVersion: String {
@@ -201,7 +199,24 @@ struct ActivityView: UIViewControllerRepresentable {
 struct PacerDefaultsView: View {
     @EnvironmentObject private var store: RunStore
 
-    private let distances: [Double?] = [nil, 5, 10, 15, 21.0975]
+    /// Off, then every kilometre 1–50, then the two race distances — the same
+    /// set the watch offers, so a default set here means the same thing there.
+    /// A fixed chip row could hold five of these; fifty needs a wheel.
+    private let distances: [Double?] = {
+        var opts: [Double?] = [nil]
+        opts.append(contentsOf: (1...50).map { Double($0) as Double? })
+        opts.append(contentsOf: [RaceDistance.half.km, RaceDistance.marathon.km] as [Double?])
+        return opts
+    }()
+
+    /// The wheel has room for a name, so the race distances say what they are
+    /// rather than only their length.
+    private func distanceRow(_ value: Double?) -> String {
+        guard let value else { return String(localized: "Off — open-ended") }
+        if value == RaceDistance.half.km { return String(localized: "Half marathon · 21.1 km") }
+        if value == RaceDistance.marathon.km { return String(localized: "Marathon · 42.2 km") }
+        return "\(Int(value)) km"
+    }
 
     var body: some View {
         PushedScreen(title: "Pacer defaults") {
@@ -210,24 +225,19 @@ struct PacerDefaultsView: View {
                 PaceDefaultWheel(seconds: $store.pacerTargetSecPerKm).padding(.top, 10)
 
                 fieldLabel("DEFAULT DISTANCE").padding(.top, 30)
-                HStack(spacing: 10) {
-                    ForEach(Array(distances.enumerated()), id: \.offset) { _, d in
-                        let active = d == store.pacerDefaultDistanceKm
-                        Button {
-                            withAnimation(.snappy(duration: 0.2)) { store.pacerDefaultDistanceKm = d }
-                        } label: {
-                            Text(d.map { $0 == 21.0975 ? "21.1" : "\(Int($0))" } ?? "Off")
-                                .font(.sg(15, weight: active ? .bold : .semibold))
-                                .foregroundStyle(active ? Theme.bg : Theme.bright)
-                                .frame(maxWidth: .infinity).frame(height: 48)
-                                .background {
-                                    if active { Capsule().fill(Theme.signal) }
-                                    else { Capsule().fill(Theme.chipFill).overlay(Capsule().stroke(Theme.chipStroke, lineWidth: 1)) }
-                                }
-                        }.buttonStyle(.plain)
+                // Every kilometre plus the half and full — too many for a chip
+                // row, and the odd distances (7, 12 km) could not be picked
+                // before. A wheel scrolls the whole range and lands exactly.
+                Picker("Default distance", selection: $store.pacerDefaultDistanceKm) {
+                    ForEach(distances.indices, id: \.self) { i in
+                        Text(distanceRow(distances[i]))
+                            .font(.sg(18))
+                            .tag(distances[i])
                     }
                 }
-                .padding(.top, 14)
+                .pickerStyle(.wheel)
+                .frame(height: 150)
+                .padding(.top, 6)
 
                 fieldLabel("AT THESE DEFAULTS").padding(.top, 30)
                 VStack(spacing: 0) {

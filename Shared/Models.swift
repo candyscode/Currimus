@@ -430,6 +430,17 @@ enum Format {
         return unit ? digits + "\u{00A0}m" : digits
     }
 
+    /// A pacer target distance as a compact label: "Off", "10 km", or the two
+    /// race distances with their decimal ("21.1 km" / "42.2 km"). One place, so
+    /// the Settings summary and the wheel cannot disagree on how a marathon
+    /// reads.
+    static func pacerDistance(_ km: Double?) -> String {
+        guard let km else { return String(localized: "Off") }
+        if km == RaceDistance.half.km { return "21.1 km" }
+        if km == RaceDistance.marathon.km { return "42.2 km" }
+        return "\(Int(km)) km"
+    }
+
     /// Signed pace delta, e.g. "−0:06" / "+0:12"
     static func paceDelta(_ seconds: TimeInterval) -> String {
         let sign = seconds < 0 ? "−" : "+"
