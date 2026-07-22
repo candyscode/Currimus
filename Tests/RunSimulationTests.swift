@@ -113,6 +113,46 @@ final class RunSimulationTests: XCTestCase {
         XCTAssertLessThan(secondHalf, firstHalf - 5, "the negative split was not faster late")
     }
 
+    func testWalkRunFoldsTheBreaksIntoSteadyKilometrePaces() {
+        let r = simulate(.walkRun)
+        XCTAssertGreaterThanOrEqual(r.distanceKm, 8)
+        XCTAssertEqual(r.metrics.splits.count, 8)
+        // A ~6-minute kilometre spans a whole 4:1 run/walk cycle, so each one
+        // folds a run and a walk together and lands between the two paces (330
+        // and 690) — near ~370, not at either extreme, and uniform km to km.
+        XCTAssertTrue(r.metrics.splits.allSatisfy { (340...420).contains($0) },
+                      "a walk break was mis-folded into a split: \(r.metrics.splits)")
+        XCTAssertLessThan(r.run.splitSpread, 30, "short cycles should even out across kilometres")
+        XCTAssertGreaterThanOrEqual(r.metrics.rollingPace, 0)
+    }
+
+    func testAPausedRunIgnoresThePauseButTheTrackKeepsTheGap() {
+        let r = simulate(.pausedLongRun)
+        XCTAssertEqual(r.metrics.splits.count, 15)
+        // The run clock is moving time: ~15 km at ~5:15 ≈ 4700 s, not ~5000
+        // with the five-minute pause folded in.
+        XCTAssertLessThan(r.elapsed, 5000, "the pause was counted as running time")
+        XCTAssertEqual(r.distanceKm, 15, accuracy: 0.2)
+        // The track carries the pause as a ~300 s gap rather than a teleport —
+        // the failure the wall-clock route timestamps exist to prevent.
+        let route = r.run.route ?? []
+        let gaps = zip(route, route.dropFirst()).map { $1.t - $0.t }
+        XCTAssertGreaterThan(gaps.max() ?? 0, 250, "the pause left no gap in the GPX timeline")
+    }
+
+    func testBatterySaverKeepsDistanceWholeWhileTheRouteGoesSparse() {
+        let r = simulate(.batterySaver)
+        // Distance and splits come from pace, so sparse GPS must not thin them.
+        XCTAssertGreaterThanOrEqual(r.distanceKm, 10)
+        XCTAssertEqual(r.metrics.splits.count, 10)
+        // The route survives — just coarser: fixes land far apart, not every 5 s.
+        let route = r.run.route ?? []
+        XCTAssertGreaterThan(route.count, 0, "battery-saver lost its route entirely")
+        let gaps = zip(route, route.dropFirst()).map { $1.t - $0.t }
+        let avgGap = gaps.reduce(0, +) / Double(max(gaps.count, 1))
+        XCTAssertGreaterThan(avgGap, 10, "battery-saver fixes were not sparse")
+    }
+
     // MARK: - Reproducibility (a "test set" must mean the same thing twice)
 
     func testTheSameScenarioProducesTheSameRun() {

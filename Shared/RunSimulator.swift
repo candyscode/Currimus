@@ -31,41 +31,57 @@ struct RunSimulator {
     func run() -> Result {
         var metrics = RunMetrics()
         var distanceKm = 0.0
-        var elapsed = 0.0
-        var second = 0
+        // Two clocks, exactly as a real run keeps: `moving` is the run clock
+        // (splits, pace, duration) and stops during a pause; `pausedTotal` is
+        // the wall time spent paused, so GPS/altitude are stamped at
+        // `moving + pausedTotal` and the track carries the pause as a gap.
+        var moving = 0.0
+        var pausedTotal = 0.0
+        var ticks = 0
+        var pending = scenario.pauses.sorted { $0.atMoving < $1.atMoving }
         var reported: [RunMetrics.KilometerSplit] = []
 
         let started = Date()
-        while !scenario.stop.reached(elapsed: elapsed, distanceKm: distanceKm),
-              second < scenario.maxSeconds {
-            second += 1
-            elapsed = Double(second)
+        while !scenario.stop.reached(elapsed: moving, distanceKm: distanceKm),
+              ticks < scenario.maxSeconds {
+            // A due pause: wall jumps, the run clock and distance do not, and
+            // nothing is ingested across the gap (RunSession drops fixes while
+            // paused).
+            if let next = pending.first, moving >= next.atMoving {
+                pending.removeFirst()
+                pausedTotal += next.wallDuration
+                continue
+            }
+            ticks += 1
+            moving += 1
+            let wall = moving + pausedTotal
 
             // Distance accrues from pace, exactly as RunSession's simulated
             // second does. A standstill (pace == .infinity) adds nothing.
-            let pace = scenario.paceSecPerKm(elapsed)
+            let pace = scenario.paceSecPerKm(moving)
             if pace.isFinite, pace > 0 { distanceKm += 1 / pace }
 
-            let heartRate = scenario.heartRate(elapsed)
+            let heartRate = scenario.heartRate(moving)
             let zone = heartRate > 0 ? zones.zone(for: heartRate) : 0
 
-            if let altitude = scenario.altitude(elapsed) {
+            if let altitude = scenario.altitude(moving) {
                 metrics.ingestAltitude(altitude, verticalAccuracy: scenario.verticalAccuracy,
-                                       at: elapsed)
+                                       at: wall)
             }
-            if scenario.hasGPS(elapsed) {
+            if scenario.hasGPS(moving) {
                 let c = scenario.coordinate(distanceKm: distanceKm)
                 metrics.ingestCoordinate(latitude: c.lat, longitude: c.lon,
-                                         altitude: scenario.altitude(elapsed) ?? 0,
+                                         altitude: scenario.altitude(moving) ?? 0,
                                          horizontalAccuracy: scenario.horizontalAccuracy,
-                                         at: elapsed)
+                                         at: wall)
             }
-            if let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
+            if let split = metrics.tick(elapsed: moving, distanceKm: distanceKm,
                                         heartRate: heartRate, zone: zone) {
                 reported.append(split)
             }
         }
         let simSeconds = Date().timeIntervalSince(started)
+        let elapsed = moving
 
         // The same construction as RunSession.end(), so the finished run is
         // shaped exactly like a real one.
@@ -85,7 +101,7 @@ struct RunSimulator {
             route: metrics.coordinates.isEmpty ? nil : metrics.coordinates
         )
         return Result(run: run, metrics: metrics, elapsed: elapsed, distanceKm: distanceKm,
-                      reportedSplits: reported, ticks: second, simSeconds: simSeconds)
+                      reportedSplits: reported, ticks: ticks, simSeconds: simSeconds)
     }
 }
 #endif

@@ -47,6 +47,12 @@ struct RunScenario {
     var origin: (lat: Double, lon: Double) = (47.9959, 7.8522)
     /// A ceiling so a mis-specified scenario can never loop forever.
     var maxSeconds: Int = 12 * 3600
+    /// Pauses to insert, each `(atMoving:, wallDuration:)`. When the run clock
+    /// reaches `atMoving`, recording pauses for `wallDuration` of wall time: the
+    /// run clock and distance stop, and — like `RunSession`, which drops fixes
+    /// while paused — no GPS is taken across it, so the track shows a time gap
+    /// rather than teleporting. Honoured by the headless `RunSimulator`.
+    var pauses: [(atMoving: TimeInterval, wallDuration: TimeInterval)] = []
 }
 
 // MARK: - Shared shaping helpers
@@ -187,10 +193,62 @@ extension RunScenario {
         )
     }
 
+    /// A walk-run session: four minutes running, one walking, repeated. The
+    /// pace steps between a run and a walk, so splits and rolling pace must
+    /// survive big swings rather than one steady effort.
+    static var walkRun: RunScenario {
+        RunScenario(
+            key: "walkrun", name: "Walk-run intervals", type: .quick,
+            stop: .afterDistance(8),
+            paceSecPerKm: { t in
+                t.truncatingRemainder(dividingBy: 300) < 240   // 4 min run, 1 min walk
+                    ? 330 + wave(t) : 690 + sin(t / 20) * 20
+            },
+            heartRate: { t in
+                t.truncatingRemainder(dividingBy: 300) < 240
+                    ? effortHR(t, peak: 156) : effortHR(t, peak: 120)
+            },
+            altitude: { roadAltitude($0) },
+            hasGPS: { _ in true }
+        )
+    }
+
+    /// A long run paused for five minutes at the half-hour mark (a café stop):
+    /// the run clock and distance must ignore the pause, and the GPS track must
+    /// carry the gap across it rather than teleporting through it.
+    static var pausedLongRun: RunScenario {
+        RunScenario(
+            key: "paused", name: "Long run · 5-min pause", type: .quick,
+            stop: .afterDistance(15),
+            paceSecPerKm: { 315 + wave($0) },
+            heartRate: { effortHR($0, peak: 150) },
+            altitude: { roadAltitude($0) },
+            hasGPS: { _ in true },
+            pauses: [(atMoving: 1800, wallDuration: 300)]
+        )
+    }
+
+    /// A battery-saver run: GPS fixes arrive sparsely (about one every fifteen
+    /// seconds) and a little coarser, but still inside the usable gate. Distance
+    /// and pace come from the workout builder, so they must stay whole while the
+    /// route is merely thinner.
+    static var batterySaver: RunScenario {
+        RunScenario(
+            key: "saver", name: "Battery-saver GPS", type: .quick,
+            stop: .afterDistance(10),
+            paceSecPerKm: { 330 + wave($0) },
+            heartRate: { effortHR($0, peak: 150) },
+            altitude: { roadAltitude($0) },
+            hasGPS: { $0.truncatingRemainder(dividingBy: 15) < 1 },
+            horizontalAccuracy: 35, verticalAccuracy: 10
+        )
+    }
+
     /// Every scenario, for the launch-argument lookup and any sweep.
     static var all: [RunScenario] {
         [.marathon, .marathonNegativeSplit, .trailUltra, .pacerOnTarget,
-         .treadmill, .gpsDropout, .heartRateGap, .stopAndGo]
+         .treadmill, .gpsDropout, .heartRateGap, .stopAndGo,
+         .walkRun, .pausedLongRun, .batterySaver]
     }
 
     static func named(_ key: String) -> RunScenario? {
