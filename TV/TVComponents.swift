@@ -6,6 +6,42 @@ import SwiftUI
 // generous spacing. The iOS chart shapes in `iOS/Charts.swift` are tuned to
 // iPhone point sizes and belong to the iOS target, so the TV carries its own.
 
+// MARK: - Focus / scrolling
+
+/// Makes a *read-only* panel focusable so the Siri Remote can move onto it and
+/// carry the scroll view to it.
+///
+/// tvOS only scrolls a `ScrollView` toward content the focus engine can reach;
+/// a screen of pure text (the dashboard, the progress panels) has nothing
+/// focusable, so anything past the first screenful is unreachable with the
+/// remote. Marking each section focusable fixes that generally — one modifier
+/// for every such panel — rather than sprinkling ad-hoc focusable stubs.
+///
+/// The feedback is deliberately quiet: these panels are read, not activated, so
+/// focus lifts them with the same faint fill a log row uses and a gentle scale,
+/// not the bright system button glow.
+///
+/// Focus is read through `.focusable(_:)`'s own callback into `@State` rather
+/// than the `isFocused` environment: the environment value is set *inside* the
+/// focusable view's subtree, so a modifier that both applies `.focusable()` and
+/// reads the environment at the same level never sees the change.
+private struct ScrollFocusable: ViewModifier {
+    @State private var isFocused = false
+    func body(content: Content) -> some View {
+        content
+            .focusable(true) { focused in isFocused = focused }
+            .scaleEffect(isFocused ? 1.02 : 1)
+            .background(Theme.ink.opacity(isFocused ? 0.06 : 0),
+                        in: RoundedRectangle(cornerRadius: 20))
+            .animation(.easeOut(duration: 0.2), value: isFocused)
+    }
+}
+
+extension View {
+    /// See `ScrollFocusable`: makes a read-only section reachable by the remote.
+    func scrollFocusable() -> some View { modifier(ScrollFocusable()) }
+}
+
 // MARK: - Cards & tiles
 
 /// The translucent content panel, matching the iPhone's `GlassCard` tokens but

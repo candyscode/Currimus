@@ -14,6 +14,7 @@ struct TVDashboardView: View {
 
                 HStack(alignment: .top, spacing: 48) {
                     weekPanel.frame(maxWidth: .infinity, alignment: .leading)
+                        .scrollFocusable()
                     sidePanel.frame(width: 620)
                 }
             }
@@ -80,6 +81,7 @@ struct TVDashboardView: View {
                     }
                     .padding(.top, 16)
                 }
+                .scrollFocusable()
             }
 
             if let banner = store.latestBenchmark {
@@ -87,6 +89,7 @@ struct TVDashboardView: View {
                     TVSectionLabel(text: "NEWEST RECORD")
                     recordBanner(banner).padding(.top, 16)
                 }
+                .scrollFocusable()
             }
         }
     }

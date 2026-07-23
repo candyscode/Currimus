@@ -393,9 +393,14 @@ platform-guarded — lowest risk for the shipping iOS and watchOS apps.
   account status or fetch error leaves the on-screen/cached log untouched.
 - `TV/TVComponents.swift` — 10-foot chart/row components (own copies, sized for
   a TV; the iOS `Charts.swift` shapes are iPhone-point-sized and iOS-target).
+  Also `scrollFocusable()`: makes read-only sections focusable so the Siri
+  Remote can scroll a text-only screen (tvOS only scrolls toward focusable
+  content — without this, anything below the first screenful of the dashboard /
+  progress screens would be unreachable with the remote).
 - `TV/TVDashboardView.swift`, `TVLogView.swift`, `TVRunDetailView.swift`
   (fetches its route/altitude on `.task`), `TVProgressView.swift` — the screens,
-  focus-engine driven, landscape.
+  focus-engine driven, landscape. The dashboard and progress panels carry
+  `scrollFocusable()` so they scroll with the remote.
 - `TV/CurrimusTV.entitlements` — CloudKit only.
 
 **Changed files**
@@ -440,6 +445,13 @@ platform-guarded — lowest risk for the shipping iOS and watchOS apps.
 5. **End-to-end test:** run the iOS app signed into iCloud, confirm records
    appear in the CloudKit Console, then run `CurrimusTV` on the same account and
    confirm the log, totals and a run's route/elevation match the phone.
-6. **Optional:** a `CKQuerySubscription` for push-driven refresh — today the TV
+6. **Focus / remote navigation:** the dashboard and progress panels are now
+   `scrollFocusable()` so the remote can scroll them, but confirm on a device
+   that focus moves sensibly between panels and that nothing below the first
+   screenful is stranded — this is the one UX area most likely to need tuning.
+7. **10-foot legibility:** the type sizes are considered guesses; check them from
+   across a room and adjust. The `.tabItem` tab bar is functional but generic —
+   it does not use the iPhone's design glyphs.
+8. **Optional:** a `CKQuerySubscription` for push-driven refresh — today the TV
    polls on foreground, which is enough for a first version.
 

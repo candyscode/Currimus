@@ -15,10 +15,12 @@ struct TVProgressView: View {
 
                 HStack(alignment: .top, spacing: 60) {
                     pacePanel.frame(maxWidth: .infinity, alignment: .leading)
+                        .scrollFocusable()
                     recordsPanel.frame(width: 640)
+                        .scrollFocusable()
                 }
 
-                monthlyPanel
+                monthlyPanel.scrollFocusable()
             }
             .padding(.horizontal, 80)
             .padding(.vertical, 60)
