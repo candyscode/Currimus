@@ -377,7 +377,17 @@ final class RunSession: NSObject, ObservableObject {
         // end wherever the runner last looked at the watch. It requires the
         // `location` background mode (Watch/Info.plist); setting it without
         // that declaration is a runtime trap, so the two belong together.
+        //
+        // The watchOS *simulator* is never a backgroundable client, so this
+        // traps there ("Invalid parameter not satisfying:
+        // CLClientIsBackgroundable(...)") regardless of the declared mode — and
+        // background GPS is meaningless in the simulator anyway. Every prior
+        // simulator run took the simulated path and skipped this, so the trap
+        // only surfaced on the first real run start. Guard the simulator out;
+        // on device the workout session + the background mode make it valid.
+        #if !targetEnvironment(simulator)
         locationManager.allowsBackgroundLocationUpdates = true
+        #endif
         // Authorization was settled in `prepareRecording`, before the clock.
         locationManager.startUpdatingLocation()
         checkLocationAuthorization()
