@@ -107,7 +107,41 @@ final class RunStore: ObservableObject {
         runs.sort { $0.date > $1.date }
         // Health may already hold the same outing from another app.
         importedRuns = HealthImport.merging(importedRuns, with: runs)
+        // Publish the freshly-arrived run to the Apple TV. Push the full run,
+        // samples included, so its route and elevation reach the TV's detail.
+        cloudUpsert(run)
     }
+
+    #if os(tvOS)
+    /// tvOS is a read-only mirror of what the phone published to CloudKit — no
+    /// recording, no HealthKit, no watch. This replaces the whole log in one
+    /// shot, so the Apple TV reuses every aggregate, record and chart the phone
+    /// computes with byte-identical logic instead of a parallel implementation.
+    ///
+    /// The phone syncs `allRuns` (its own runs *and* the ones it imported from
+    /// Health), so the split is reconstructed from each run's `imported` flag.
+    /// Persisting to standard defaults is a welcome side effect: it doubles as
+    /// an offline cache for the next cold launch before CloudKit answers.
+    ///
+    /// The runs arrive metadata-only — the GPS track and altitude series stay in
+    /// the cloud until a detail screen asks for them (`cacheCloudSamples`), so
+    /// opening the log never downloads a single route. Any samples that *do*
+    /// ride along (e.g. from a future hydrated caller) are still filed.
+    func replaceAllFromCloud(_ cloudRuns: [Run]) {
+        let incoming = cloudRuns.sorted { $0.date > $1.date }
+        for run in incoming where run.carriesSamples { storeSamples(of: run) }
+        importedRuns = incoming.filter(\.isImported).map(\.strippingSamples)
+        runs = incoming.filter { !$0.isImported }.map(\.strippingSamples)
+    }
+
+    /// File samples fetched on demand for one run so `samples(for:)` /
+    /// `hydrated(_:)` — and the detail map and elevation — see them, exactly as
+    /// a locally recorded run's would. Called by the TV detail screen after it
+    /// pulls the run's sample asset from CloudKit.
+    func cacheCloudSamples(_ samples: RunSamples, for id: UUID) {
+        sampleCache[id] = samples
+    }
+    #endif
 
     func deleteRuns(at offsets: IndexSet, in subset: [Run]) {
         // Imported runs live in Health, not here — deleting one locally would
@@ -117,6 +151,7 @@ final class RunStore: ObservableObject {
         for id in ids {
             sampleCache[id] = nil
             if !isDemo { RunSampleStore.delete(id) }
+            cloudDelete(id)
         }
     }
 
@@ -146,6 +181,67 @@ final class RunStore: ObservableObject {
         RunSampleStore.save(samples, for: run.id)
     }
 
+    // MARK: - CloudKit mirror (iPhone → Apple TV)
+
+    /// The phone is the only writer to CloudKit. These are no-ops everywhere
+    /// else: the watch has its own phone to hand runs to, and the TV only reads.
+    /// Each fires a detached task so a network round-trip never blocks a log
+    /// mutation on the main actor; the local store is the source of truth and
+    /// the sync is best-effort (`RunCloudSync` logs its own failures).
+
+    #if os(iOS)
+    /// Publish existing runs to CloudKit once, e.g. on first launch after the
+    /// feature ships, so a TV signed into the same account sees history — not
+    /// just runs recorded from now on. Idempotent, so calling it again is safe.
+    func backfillCloud() {
+        // Hand over metadata only and hydrate inside the task: `hydrated` reads
+        // a sidecar JSON file per run, and doing that for the whole log on the
+        // main actor would stall launch. `RunSampleStore.load` is nonisolated,
+        // so the detached task can rebuild each run's samples off the main
+        // thread. Imported runs carry no samples, so `load` simply returns nil.
+        let metadata = allRuns
+        Task.detached {
+            let hydrated = metadata.map { run in
+                RunSampleStore.load(run.id).map(run.merging) ?? run
+            }
+            await RunCloudSync.backfill(hydrated)
+        }
+    }
+
+    private func cloudUpsert(_ run: Run) {
+        guard !isDemo else { return }
+        Task.detached { await RunCloudSync.upsert(run) }
+    }
+
+    private func cloudDelete(_ id: UUID) {
+        guard !isDemo else { return }
+        Task.detached { await RunCloudSync.delete(id: id) }
+    }
+
+    /// Mirror the change in the imported-runs set: publish arrivals **and
+    /// in-place edits**, remove departures. Health can revise a workout it
+    /// already gave us (a corrected distance under the same UUID); diffing by id
+    /// alone would miss that and leave the TV showing stale numbers. So publish
+    /// any run whose value differs from the one we last held, keyed by id.
+    /// Imported runs carry no samples, so the metadata is enough.
+    private func cloudSyncImportedDelta(from previous: [Run], to current: [Run]) {
+        guard !isDemo else { return }
+        let previousByID = Dictionary(previous.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let currentIDs = Set(current.map(\.id))
+        // New or changed (Run is Equatable): republish. Unchanged: skip.
+        let toPublish = current.filter { previousByID[$0.id] != $0 }
+        let removed = Set(previousByID.keys).subtracting(currentIDs)
+        Task.detached {
+            for run in toPublish { await RunCloudSync.upsert(run) }
+            for id in removed { await RunCloudSync.delete(id: id) }
+        }
+    }
+    #else
+    func cloudUpsert(_ run: Run) {}
+    func cloudDelete(_ id: UUID) {}
+    func cloudSyncImportedDelta(from previous: [Run], to current: [Run]) {}
+    #endif
+
     // MARK: - Apple Health
 
     #if canImport(HealthKit)
@@ -163,7 +259,13 @@ final class RunStore: ObservableObject {
         if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
         let fetched = await HealthImport.fetchRuns(healthStore)
         let merged = HealthImport.merging(fetched, with: runs)
-        if merged != importedRuns { importedRuns = merged }
+        if merged != importedRuns {
+            let previous = importedRuns
+            importedRuns = merged
+            // The TV mirrors `allRuns`, imported runs included, so it has no
+            // Health to derive them itself. Sync only the delta.
+            cloudSyncImportedDelta(from: previous, to: merged)
+        }
         await refreshHeartRateZones()
     }
 

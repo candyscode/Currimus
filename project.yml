@@ -3,6 +3,7 @@ options:
   deploymentTarget:
     iOS: "26.0"
     watchOS: "11.0"
+    tvOS: "26.0"
   createIntermediateGroups: true
 settings:
   base:
@@ -111,6 +112,32 @@ targets:
         CFBundleDisplayName: Currimus
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  CurrimusTV:
+    type: application
+    platform: tvOS
+    sources:
+      - TV
+      - Shared
+      - path: Fonts
+        buildPhase: resources
+      - path: Resources/Localizable.xcstrings
+        buildPhase: resources
+    settings:
+      base:
+        # Same bundle id as the iOS app → Universal Purchase (one App Store
+        # product, one purchase covers iOS + tvOS). The platform distinguishes
+        # the binaries; the store record is shared.
+        PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app
+        INFOPLIST_KEY_CFBundleDisplayName: Currimus
+        # The TV reads from CloudKit; it has no HealthKit, no WatchConnectivity,
+        # no App Group. Dark-only like the phone and watch.
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
+    entitlements:
+      path: TV/CurrimusTV.entitlements
+      properties:
+        com.apple.developer.icloud-services: [CloudKit]
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.currimus.app]
 
   CurrimusTests:
     type: bundle.unit-test

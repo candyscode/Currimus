@@ -1,4 +1,5 @@
 import Foundation
+#if canImport(HealthKit)
 import HealthKit
 
 /// Derives heart-rate zones from whatever Apple Health actually knows about
@@ -127,3 +128,4 @@ enum HeartRateProfile {
         return Calendar.current.dateComponents([.year], from: birth, to: .now).year
     }
 }
+#endif

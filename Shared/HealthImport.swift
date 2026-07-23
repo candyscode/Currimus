@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(HealthKit)
 import HealthKit
+#endif
 
 /// Runs recorded by *other* apps — Apple Fitness, Nike, Strava — pulled out of
 /// Apple Health so the weekly totals, progress and widgets describe everything
@@ -8,7 +10,25 @@ import HealthKit
 /// Currimus' own workouts are in Health too, so they are filtered out by source
 /// bundle id; a time-overlap guard catches the rarer case of two apps recording
 /// the same run.
+///
+/// `merging` is pure and platform-neutral (it takes and returns `[Run]`), so it
+/// lives outside the HealthKit guard: tvOS never reads Health, but `RunStore`
+/// still dedupes there. Everything that touches `HKHealthStore` is compiled
+/// only where HealthKit exists.
 enum HealthImport {
+    /// Imported runs minus any that overlap a run Currimus recorded itself —
+    /// two apps tracking the same outing must not count twice.
+    static func merging(_ imported: [Run], with own: [Run]) -> [Run] {
+        imported.filter { candidate in
+            let range = candidate.date...(candidate.date + candidate.duration)
+            return !own.contains { mine in
+                let mineRange = mine.date...(mine.date + mine.duration)
+                return range.overlaps(mineRange)
+            }
+        }
+    }
+
+    #if canImport(HealthKit)
     /// Our own writers — the watch app saves workouts, the phone may later.
     private static let ownBundlePrefix = "com.currimus.app"
 
@@ -61,18 +81,6 @@ enum HealthImport {
             .filter { $0.distanceKm > 0.2 && $0.duration > 60 }
     }
 
-    /// Imported runs minus any that overlap a run Currimus recorded itself —
-    /// two apps tracking the same outing must not count twice.
-    static func merging(_ imported: [Run], with own: [Run]) -> [Run] {
-        imported.filter { candidate in
-            let range = candidate.date...(candidate.date + candidate.duration)
-            return !own.contains { mine in
-                let mineRange = mine.date...(mine.date + mine.duration)
-                return range.overlaps(mineRange)
-            }
-        }
-    }
-
     private static func run(from workout: HKWorkout) -> Run {
         let meters = workout
             .statistics(for: HKQuantityType(.distanceWalkingRunning))?
@@ -100,4 +108,5 @@ enum HealthImport {
             imported: true
         )
     }
+    #endif
 }
