@@ -221,8 +221,8 @@ struct MapCard: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            GridShape(step: 34).stroke(Color(hex: 0x1A1A1A), lineWidth: 1)
-            RouteShape(route: run.route)
+            GridPattern().stroke(Color(hex: 0x1A1A1A), lineWidth: 1)
+            RoutePath(run: run)
                 .stroke(Theme.signal, style: .init(lineWidth: 3, lineCap: .round, lineJoin: .round))
                 .padding(20)
             Text("MAP")
@@ -236,6 +236,48 @@ struct MapCard: View {
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.cardBorder, lineWidth: 1))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(run.route?.isEmpty == false ? "Route map" : "Route map, no GPS track recorded")
+    }
+}
+
+struct GridPattern: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path(); let step: CGFloat = 34
+        var x = rect.minX
+        while x <= rect.maxX { p.move(to: .init(x: x, y: rect.minY)); p.addLine(to: .init(x: x, y: rect.maxY)); x += step }
+        var y = rect.minY
+        while y <= rect.maxY { p.move(to: .init(x: rect.minX, y: y)); p.addLine(to: .init(x: rect.maxX, y: y)); y += step }
+        return p
+    }
+}
+
+/// The recorded GPS track normalized into the card, or a pleasant default loop.
+struct RoutePath: Shape {
+    var run: Run
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        if let route = run.route, route.count > 2 {
+            let lats = route.map(\.lat), lons = route.map(\.lon)
+            let minLat = lats.min()!, maxLat = lats.max()!, minLon = lons.min()!, maxLon = lons.max()!
+            let spanLat = max(maxLat - minLat, 1e-5), spanLon = max(maxLon - minLon, 1e-5)
+            let mapped = route.map { c in
+                CGPoint(x: (c.lon - minLon) / spanLon * rect.width,
+                        y: (1 - (c.lat - minLat) / spanLat) * rect.height)
+            }
+            p.move(to: mapped[0]); mapped.dropFirst().forEach { p.addLine(to: $0) }
+        } else {
+            let w = rect.width, h = rect.height
+            p.move(to: .init(x: 0.06 * w, y: 0.78 * h))
+            p.addCurve(to: .init(x: 0.30 * w, y: 0.34 * h),
+                       control1: .init(x: 0.16 * w, y: 0.62 * h), control2: .init(x: 0.16 * w, y: 0.38 * h))
+            p.addCurve(to: .init(x: 0.58 * w, y: 0.56 * h),
+                       control1: .init(x: 0.44 * w, y: 0.30 * h), control2: .init(x: 0.46 * w, y: 0.58 * h))
+            p.addCurve(to: .init(x: 0.84 * w, y: 0.22 * h),
+                       control1: .init(x: 0.70 * w, y: 0.54 * h), control2: .init(x: 0.72 * w, y: 0.24 * h))
+            p.addCurve(to: .init(x: 0.95 * w, y: 0.40 * h),
+                       control1: .init(x: 0.90 * w, y: 0.21 * h), control2: .init(x: 0.95 * w, y: 0.30 * h))
+        }
+        return p
     }
 }
 
