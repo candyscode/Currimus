@@ -97,18 +97,18 @@ A bug found in one is reproducible in the other, because both consume the same
 
 ## Pre-push gate
 
-`.githooks/pre-push` runs the unit + simulation tests and then the UI snapshot
-regression check on every `git push`, blocking it if either fails. Enable it
-once per clone:
+`.githooks/pre-push` runs the unit + simulation tests (which include
+`RunSimulationTests`) on every `git push`, blocking it only on a real test
+failure. Enable it once per clone:
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
 - Bypass a single push: `git push --no-verify`
-- Skip only the slow UI check: `SKIP_UI_SNAPSHOTS=1 git push`
 - Override the simulator: `IOS_SIM="iPhone 16 Pro" git push`
 
-The simulation tests are part of `CurrimusTests`, so they run in that first
-(fast, headless) step; the UI snapshots — see [UI-SNAPSHOTS.md](UI-SNAPSHOTS.md)
-— are the second step.
+The UI snapshots are **not** in the gate — they proved too flaky to block a push
+automatically (date-relative demo data, a non-deterministic MapKit map,
+occasional xcodebuild crashes). They are a **manual** step on any UI change
+instead — see [UI-SNAPSHOTS.md](UI-SNAPSHOTS.md).

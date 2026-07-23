@@ -14,10 +14,15 @@ scripts/ui-snapshot.sh record all      # (re)write references — see "Updating"
 scripts/ui-snapshot.sh verify all --no-build   # reuse the last build
 ```
 
-Exit code is `0` when everything matches and non-zero when anything changed, so
-it drops straight into a pre-push hook or CI step — and it already does: see the
-pre-push gate in [RUN-SIMULATION.md](RUN-SIMULATION.md#pre-push-gate)
-(`git config core.hooksPath .githooks`).
+Exit code is `0` when everything matches and non-zero when anything changed.
+
+**Run it by hand on every UI change** — it is deliberately **not** in the
+pre-push gate. Pixel-comparing a running app turned out too flaky to block a push
+automatically: the demo data is relative to today's date, the road-detail map is
+a live MapKit view that never renders the same twice, and `xcodebuild` itself
+crashes now and then. So the gate ([RUN-SIMULATION.md](RUN-SIMULATION.md#pre-push-gate))
+runs only the fast deterministic tests, and the snapshots are a manual step:
+after editing a view, run `verify` for the affected target and read any diff.
 
 ## Why screenshots, not view snapshots
 
@@ -61,6 +66,10 @@ budget:
   launch and capture, so their seconds glyphs drift a little; that is what the
   `medium` tier's budget absorbs. Structure, colour and layout are still held to
   account — a 1.5 % budget is tiny next to a moved card or a collapsed column.
+- **The map.** The road-run detail (`detail-road`) embeds a live MapKit view
+  whose tiles render differently every run, so the map card is masked out of the
+  comparison (`route_mask` in `ui-snapshot.sh`) — the header, stats and splits
+  around it are still checked. A live map can only ever be looked at, not diffed.
 
 ### The honest limitation: date-relative screens
 

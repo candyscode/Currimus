@@ -49,6 +49,17 @@ frac_for() { case "$1" in strict) echo 0.0020;; medium) echo 0.015;; loose) echo
 # out of every watch comparison (x y w h, as fractions of the image).
 WATCH_CLOCK_MASK="ignore 0.62 0.0 0.38 0.15"
 
+# Per-route masks (x y w h fractions), for regions that can never match pixel
+# for pixel. The road-run detail embeds a live MapKit map whose tiles render
+# differently every run, so pixel-comparing it is a guaranteed false failure —
+# mask the map card out and let the rest of the screen still be checked.
+route_mask() {
+  case "$1" in
+    detail-road) echo "ignore 0.0 0.43 1.0 0.23" ;;
+    *) : ;;
+  esac
+}
+
 RENDER_WAIT=2.4   # seconds after launch before the screenshot
 
 # ---------------------------------------------------------------- args
@@ -127,9 +138,11 @@ run_platform() {
       printf '  \033[33mMISS\033[0m %-18s no reference — run: record\n' "$name"
       FAILS=$((FAILS+1)); FAILED_NAMES+=("$plat/$name (no reference)"); continue
     fi
+    # shellcheck disable=SC2206
+    local rmask=( $(route_mask "$name") )   # extra per-route ignore rects, if any
     local out
     out=$("$COMPARE_BIN" "$ref/$name.png" "$CAND/$name.png" "$diff/$name.png" \
-          "$(tol_for "$tier")" "$(frac_for "$tier")" "${mask[@]}" 2>&1)
+          "$(tol_for "$tier")" "$(frac_for "$tier")" "${mask[@]}" "${rmask[@]}" 2>&1)
     if [ $? -eq 0 ]; then
       printf '  \033[32mok\033[0m   %-18s %s\n' "$name" "$out"
       PASSES=$((PASSES+1))
