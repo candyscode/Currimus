@@ -98,8 +98,9 @@ final class RunSession: NSObject, ObservableObject {
     private var isSimulated = false
     /// When false, `begin` skips the 3-2-1 countdown (iPhone setting).
     var countdownEnabled = true
-    /// Parked while the location prompt is on screen; see `requestLocationAccess`.
-    private var locationPromptWaiter: CheckedContinuation<Void, Never>?
+    /// Gates the run start on the location prompt; resolved by the answer (the
+    /// authorization-change delegate) or a fallback timeout. See `requestLocationAccess`.
+    private var locationGate: PromptGate?
 
     // MARK: - Derived
 
@@ -303,30 +304,19 @@ final class RunSession: NSObject, ObservableObject {
     }
 
     /// Raises the location prompt and waits for an answer, so the countdown
-    /// starts on a settled permission state.
+    /// starts on a settled permission state — without ever hanging on it. The
+    /// gate is resolved the moment the runner answers (by the authorization
+    /// delegate below) or, if the sheet never appears at all, by the 10 s
+    /// fallback: a run must not be stuck behind a dialog that is not there.
     private func requestLocationAccess() async {
         locationManager.delegate = self
         guard locationManager.authorizationStatus == .notDetermined else { return }
-
-        // The sheet is modal, so this normally returns the moment the runner
-        // taps it. The timeout covers the case where it never appears at all:
-        // a run must not be stuck behind a dialog that is not there.
-        let timeout = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(10))
-            self?.finishLocationPrompt()
+        let gate = PromptGate()
+        locationGate = gate
+        await gate.wait(timeout: .seconds(10)) { [weak self] in
+            self?.locationManager.requestWhenInUseAuthorization()
         }
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            locationPromptWaiter = continuation
-            locationManager.requestWhenInUseAuthorization()
-        }
-        timeout.cancel()
-    }
-
-    /// Resumes `requestLocationAccess`, once and only once.
-    private func finishLocationPrompt() {
-        guard let waiter = locationPromptWaiter else { return }
-        locationPromptWaiter = nil
-        waiter.resume()
+        locationGate = nil
     }
 
     @discardableResult
@@ -772,6 +762,17 @@ extension RunSession: CLLocationManagerDelegate {
     }
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        Task { @MainActor in self.checkLocationAuthorization() }
+        Task { @MainActor in
+            self.checkLocationAuthorization()
+            // The runner has answered the location prompt — release the run
+            // start at once. This wiring was missing: the start then waited on
+            // the fallback timeout instead, and if the app was suspended during
+            // it, stalled on "Checking Health…" and never began the run.
+            // Read the session's own manager (main-actor state), not the
+            // non-Sendable delegate parameter, to stay clear of a data race.
+            if self.locationManager.authorizationStatus != .notDetermined {
+                self.locationGate?.signal()
+            }
+        }
     }
 }
