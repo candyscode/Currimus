@@ -373,19 +373,29 @@ platform-guarded — lowest risk for the shipping iOS and watchOS apps.
 
 **New files**
 - `Shared/RunCloudSync.swift` — the CloudKit bridge (`#if canImport(CloudKit)`).
-  `upsert` / `delete` / `backfill` (phone) and `fetchRuns` / `accountAvailable`
-  (TV). `Run` ↔ `CKRecord` maps the metadata as a JSON payload blob keyed on
-  `Run.id`, samples as a `CKAsset`. Async CKDatabase APIs, cursor paging,
-  client-side sort (no custom index needed), `serverRecordChanged` upsert
-  recovery, `unknownItem`-tolerant delete.
+  `upsert` / `delete` / `backfill` (phone) and `fetchRuns` / `fetchSamples` /
+  `accountState` (TV). `Run` ↔ `CKRecord` maps the metadata as a JSON payload
+  blob keyed on `Run.id`, samples as a `CKAsset`. **List fetches use
+  `desiredKeys` to omit the sample asset** — routes/altitude download only when
+  a detail screen calls `fetchSamples(for:)`. `fetchRuns` **throws** on failure
+  (never returns `[]`), so a network blip can't wipe the local cache.
+  `accountState` distinguishes signed-out from transient statuses. Async
+  CKDatabase APIs, cursor paging, client-side sort (no custom index needed),
+  cached `CKContainer`, `serverRecordChanged` upsert recovery, `unknownItem`-
+  tolerant delete.
+- `Shared/RouteShapes.swift` — `RouteShape` + `GridShape`, the shared route/grid
+  geometry both the iPhone (`MapCard`) and the TV (`TVRouteCard`) draw, so the
+  normalisation lives once.
 - `TV/TVApp.swift` — `@main`, tab shell (Home · Log · Progress), loading /
-  signed-out / empty states.
+  signed-out / empty states, quiet refresh spinner overlay.
 - `TV/TVSync.swift` — `@MainActor` loading-state driver around `RunCloudSync` +
-  `RunStore.replaceAllFromCloud`.
+  `RunStore.replaceAllFromCloud`. Failure is non-destructive: a transient
+  account status or fetch error leaves the on-screen/cached log untouched.
 - `TV/TVComponents.swift` — 10-foot chart/row components (own copies, sized for
   a TV; the iOS `Charts.swift` shapes are iPhone-point-sized and iOS-target).
-- `TV/TVDashboardView.swift`, `TVLogView.swift`, `TVRunDetailView.swift`,
-  `TVProgressView.swift` — the screens, focus-engine driven, landscape.
+- `TV/TVDashboardView.swift`, `TVLogView.swift`, `TVRunDetailView.swift`
+  (fetches its route/altitude on `.task`), `TVProgressView.swift` — the screens,
+  focus-engine driven, landscape.
 - `TV/CurrimusTV.entitlements` — CloudKit only.
 
 **Changed files**
@@ -394,6 +404,8 @@ platform-guarded — lowest risk for the shipping iOS and watchOS apps.
 - `Shared/HealthImport.swift` — pure `merging(_:with:)` hoisted out of the
   HealthKit guard (tvOS `RunStore` still dedupes); everything `HK*` guarded.
 - `Shared/HeartRateProfile.swift` — whole file HealthKit-guarded.
+- `iOS/Charts.swift` — `MapCard` now draws the shared `RouteShape` / `GridShape`
+  instead of iOS-local `RoutePath` / `GridPattern` (both removed).
 - `Shared/RunStore.swift` — tvOS-only `replaceAllFromCloud(_:)` (rebuilds the
   own/imported split from `Run.imported`, repopulates `RunSampleStore` so the
   detail map/elevation work); iOS-only `backfillCloud()` + `cloudUpsert` /

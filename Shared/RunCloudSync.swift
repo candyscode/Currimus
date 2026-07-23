@@ -40,21 +40,44 @@ enum RunCloudSync {
         static let samples = "samples"   // CKAsset: JSON of RunSamples (optional)
     }
 
-    private static var database: CKDatabase {
-        CKContainer(identifier: containerIdentifier).privateCloudDatabase
-    }
+    /// The metadata keys a list fetch needs — everything *except* the `samples`
+    /// asset, so opening the log does not drag every run's GPS track and
+    /// altitude series down with it. The asset is fetched per-run in detail.
+    private static let listKeys = [Field.payload, Field.date]
+
+    /// Built once. `CKContainer(identifier:)` is not free, and `backfill` calls
+    /// through here once per run — recomputing it each time constructed a fresh
+    /// container per run.
+    private static let container = CKContainer(identifier: containerIdentifier)
+    private static var database: CKDatabase { container.privateCloudDatabase }
 
     // MARK: - Account
 
-    /// Whether the private database is reachable — i.e. the device is signed
-    /// into iCloud. The TV shows an explanatory empty state when this is false
-    /// rather than an ambiguous "no runs yet".
-    static func accountAvailable() async -> Bool {
+    /// What the private database's reachability means for the UI. A signed-out
+    /// account is a terminal state worth explaining; anything transient
+    /// (determining, temporarily unavailable, or an error) should be retried,
+    /// not shown as "sign in".
+    enum AccountState {
+        case available
+        case signedOut     // no account / restricted — the explain-and-stop state
+        case transient     // could-not-determine / temporarily-unavailable / error
+    }
+
+    static func accountState() async -> AccountState {
         do {
-            return try await CKContainer(identifier: containerIdentifier).accountStatus() == .available
+            switch try await container.accountStatus() {
+            case .available:
+                return .available
+            case .noAccount, .restricted:
+                return .signedOut
+            case .couldNotDetermine, .temporarilyUnavailable:
+                return .transient
+            @unknown default:
+                return .transient
+            }
         } catch {
             Log.sync.error("iCloud account status unavailable: \(error.localizedDescription, privacy: .public)")
-            return false
+            return .transient
         }
     }
 
@@ -94,28 +117,46 @@ enum RunCloudSync {
 
     // MARK: - Read (Apple TV)
 
-    /// Every run in the private database, newest first. Returns runs with their
-    /// samples merged back in when the sidecar asset is present, so callers can
-    /// store them exactly as a locally recorded run.
-    static func fetchRuns() async -> [Run] {
-        do {
-            let query = CKQuery(recordType: Field.recordType, predicate: NSPredicate(value: true))
-            var collected: [Run] = []
+    /// Every run in the private database, newest first, **metadata only** — the
+    /// GPS track and altitude series stay in the cloud until a detail screen
+    /// asks for them via `fetchSamples(for:)`.
+    ///
+    /// Throws rather than returning `[]` on failure: an empty result and a
+    /// failed fetch are not the same thing, and the caller must not overwrite a
+    /// good local cache with the emptiness of a network blip.
+    static func fetchRuns() async throws -> [Run] {
+        let query = CKQuery(recordType: Field.recordType, predicate: NSPredicate(value: true))
+        var collected: [Run] = []
 
-            var response = try await database.records(matching: query)
+        // desiredKeys omits the sample asset, so the list fetch never downloads
+        // routes — the whole point of storing them as a separate CKAsset.
+        var response = try await database.records(matching: query, desiredKeys: listKeys)
+        collected.append(contentsOf: decode(response.matchResults))
+
+        // Page through the rest — a query returns a cursor when the result
+        // set exceeds one batch.
+        while let cursor = response.queryCursor {
+            response = try await database.records(continuingMatchFrom: cursor, desiredKeys: listKeys)
             collected.append(contentsOf: decode(response.matchResults))
+        }
 
-            // Page through the rest — a query returns a cursor when the result
-            // set exceeds one batch.
-            while let cursor = response.queryCursor {
-                response = try await database.records(continuingMatchFrom: cursor)
-                collected.append(contentsOf: decode(response.matchResults))
-            }
+        return collected.sorted { $0.date > $1.date }
+    }
 
-            return collected.sorted { $0.date > $1.date }
+    /// The GPS track and altitude series for one run, fetched on demand when its
+    /// detail opens. Returns `nil` when the run has no sample asset or the fetch
+    /// fails — the detail screen then simply draws its default route/empty
+    /// profile, exactly as a locally recorded run with no track would.
+    static func fetchSamples(for id: UUID) async -> RunSamples? {
+        do {
+            let record = try await database.record(for: recordID(id))
+            guard let asset = record[Field.samples] as? CKAsset,
+                  let url = asset.fileURL,
+                  let data = try? Data(contentsOf: url) else { return nil }
+            return try JSONDecoder().decode(RunSamples.self, from: data)
         } catch {
-            Log.sync.error("cloud fetch failed: \(error.localizedDescription, privacy: .public)")
-            return []
+            Log.sync.error("cloud sample fetch failed for \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return nil
         }
     }
 
@@ -160,19 +201,16 @@ enum RunCloudSync {
         }
     }
 
+    /// Decode the metadata-only run from a list record. The sample asset is not
+    /// part of a list fetch (see `listKeys`); a detail screen merges it in later
+    /// through `fetchSamples(for:)`.
     private static func run(from record: CKRecord) -> Run? {
         guard let payload = record[Field.payload] as? Data else {
             Log.sync.error("cloud record \(record.recordID.recordName, privacy: .public) has no payload")
             return nil
         }
         do {
-            let run = try JSONDecoder().decode(Run.self, from: payload)
-            guard let asset = record[Field.samples] as? CKAsset,
-                  let url = asset.fileURL,
-                  let data = try? Data(contentsOf: url),
-                  let samples = try? JSONDecoder().decode(RunSamples.self, from: data)
-            else { return run }
-            return run.merging(samples)
+            return try JSONDecoder().decode(Run.self, from: payload)
         } catch {
             Log.sync.error("cloud payload unreadable: \(error.localizedDescription, privacy: .public)")
             return nil

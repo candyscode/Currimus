@@ -65,6 +65,13 @@ struct TVRootView: View {
                     )
                 } else {
                     tabs
+                        // A refresh after the first load runs quietly over the
+                        // existing content rather than blanking it.
+                        .overlay(alignment: .topTrailing) {
+                            if sync.isRefreshing {
+                                ProgressView().tint(Theme.signal).padding(48)
+                            }
+                        }
                 }
             }
         }

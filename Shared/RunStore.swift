@@ -122,15 +122,24 @@ final class RunStore: ObservableObject {
     /// Health), so the split is reconstructed from each run's `imported` flag.
     /// Persisting to standard defaults is a welcome side effect: it doubles as
     /// an offline cache for the next cold launch before CloudKit answers.
+    ///
+    /// The runs arrive metadata-only — the GPS track and altitude series stay in
+    /// the cloud until a detail screen asks for them (`cacheCloudSamples`), so
+    /// opening the log never downloads a single route. Any samples that *do*
+    /// ride along (e.g. from a future hydrated caller) are still filed.
     func replaceAllFromCloud(_ cloudRuns: [Run]) {
         let incoming = cloudRuns.sorted { $0.date > $1.date }
-        // Move each run's GPS track and altitude series into the sidecar store
-        // (Caches on tvOS) so `samples(for:)` / `hydrated(_:)` — and with them
-        // the run-detail map and elevation profile — work exactly as on iOS,
-        // and the log itself stays metadata-only.
         for run in incoming where run.carriesSamples { storeSamples(of: run) }
         importedRuns = incoming.filter(\.isImported).map(\.strippingSamples)
         runs = incoming.filter { !$0.isImported }.map(\.strippingSamples)
+    }
+
+    /// File samples fetched on demand for one run so `samples(for:)` /
+    /// `hydrated(_:)` — and the detail map and elevation — see them, exactly as
+    /// a locally recorded run's would. Called by the TV detail screen after it
+    /// pulls the run's sample asset from CloudKit.
+    func cacheCloudSamples(_ samples: RunSamples, for id: UUID) {
+        sampleCache[id] = samples
     }
     #endif
 
@@ -185,8 +194,18 @@ final class RunStore: ObservableObject {
     /// feature ships, so a TV signed into the same account sees history — not
     /// just runs recorded from now on. Idempotent, so calling it again is safe.
     func backfillCloud() {
-        let hydratedRuns = allRuns.map(hydrated)
-        Task.detached { await RunCloudSync.backfill(hydratedRuns) }
+        // Hand over metadata only and hydrate inside the task: `hydrated` reads
+        // a sidecar JSON file per run, and doing that for the whole log on the
+        // main actor would stall launch. `RunSampleStore.load` is nonisolated,
+        // so the detached task can rebuild each run's samples off the main
+        // thread. Imported runs carry no samples, so `load` simply returns nil.
+        let metadata = allRuns
+        Task.detached {
+            let hydrated = metadata.map { run in
+                RunSampleStore.load(run.id).map(run.merging) ?? run
+            }
+            await RunCloudSync.backfill(hydrated)
+        }
     }
 
     private func cloudUpsert(_ run: Run) {
@@ -199,16 +218,21 @@ final class RunStore: ObservableObject {
         Task.detached { await RunCloudSync.delete(id: id) }
     }
 
-    /// Mirror the change in the imported-runs set: publish arrivals, remove
-    /// departures. Imported runs carry no samples, so the metadata is enough.
+    /// Mirror the change in the imported-runs set: publish arrivals **and
+    /// in-place edits**, remove departures. Health can revise a workout it
+    /// already gave us (a corrected distance under the same UUID); diffing by id
+    /// alone would miss that and leave the TV showing stale numbers. So publish
+    /// any run whose value differs from the one we last held, keyed by id.
+    /// Imported runs carry no samples, so the metadata is enough.
     private func cloudSyncImportedDelta(from previous: [Run], to current: [Run]) {
         guard !isDemo else { return }
-        let previousIDs = Set(previous.map(\.id))
+        let previousByID = Dictionary(previous.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let currentIDs = Set(current.map(\.id))
-        let added = current.filter { !previousIDs.contains($0.id) }
-        let removed = previousIDs.subtracting(currentIDs)
+        // New or changed (Run is Equatable): republish. Unchanged: skip.
+        let toPublish = current.filter { previousByID[$0.id] != $0 }
+        let removed = Set(previousByID.keys).subtracting(currentIDs)
         Task.detached {
-            for run in added { await RunCloudSync.upsert(run) }
+            for run in toPublish { await RunCloudSync.upsert(run) }
             for id in removed { await RunCloudSync.delete(id: id) }
         }
     }

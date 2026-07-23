@@ -5,12 +5,15 @@ import SwiftUI
 /// the grade stats — the same split the iPhone's `RunDetailView` draws, laid
 /// out in two columns for a television.
 ///
-/// The run arrives from the log carrying metadata only; `store.hydrated` puts
-/// its GPS track and altitude series back from the sidecar the TV populated
-/// when CloudKit's sample asset came down.
+/// The run arrives from the log carrying metadata only. The GPS track and
+/// altitude series live in the cloud until this screen opens: `.task` pulls the
+/// run's sample asset from CloudKit, files it in the store, and `store.hydrated`
+/// then merges it in. Until it lands the map draws its default loop and the
+/// elevation profile is empty — the same as a run with no recorded track.
 struct TVRunDetailView: View {
     @EnvironmentObject private var store: RunStore
     private let storedRun: Run
+    @State private var samplesLoaded = false
 
     init(run: Run) { storedRun = run }
 
@@ -24,6 +27,14 @@ struct TVRunDetailView: View {
             }
             .padding(.horizontal, 80)
             .padding(.vertical, 60)
+        }
+        .task {
+            // Fetch the heavy half once, on demand. `samplesLoaded` flips the
+            // view so `run` re-hydrates from the now-cached samples.
+            guard !samplesLoaded,
+                  let samples = await RunCloudSync.fetchSamples(for: storedRun.id) else { return }
+            store.cacheCloudSamples(samples, for: storedRun.id)
+            samplesLoaded = true
         }
     }
 
