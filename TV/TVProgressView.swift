@@ -50,7 +50,9 @@ struct TVProgressView: View {
             TVTrendChart(values: series,
                          topLabel: Format.pace((present.max() ?? 0) + 8),
                          bottomLabel: Format.pace((present.min() ?? 0) - 8),
-                         invert: true)
+                         invert: true,
+                         accessibilityTitle: "Average pace per week, last 12 weeks",
+                         describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 24)
         }
     }
@@ -94,7 +96,8 @@ struct TVProgressView: View {
     private var monthlyPanel: some View {
         VStack(alignment: .leading, spacing: 20) {
             TVSectionLabel(text: "MONTHLY KM")
-            TVMonthBars(items: store.monthlyTotals(count: 6).map { (shortMonth($0.month), $0.km) }) {
+            TVMonthBars(items: store.monthlyTotals(count: 6).map { (shortMonth($0.month), $0.km) },
+                        unit: "km") {
                 "\(Int($0))"
             }
         }
@@ -114,4 +117,11 @@ struct TVProgressView: View {
         let runs = store.runs.filter { !$0.isTrail && $0.date >= cutoff }
         return (runs.reduce(0) { $0 + $1.distanceKm }, runs.reduce(0) { $0 + $1.duration })
     }
+}
+
+#Preview {
+    FontLoader.registerAll()
+    return TVProgressView()
+        .environmentObject(RunStore(seeded: true))
+        .preferredColorScheme(.dark)
 }

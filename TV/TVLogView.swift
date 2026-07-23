@@ -51,3 +51,10 @@ struct TVLogView: View {
         return "\(name) · \(Format.km(km, decimals: 1)) km"
     }
 }
+
+#Preview {
+    FontLoader.registerAll()
+    return TVLogView()
+        .environmentObject(RunStore(seeded: true))
+        .preferredColorScheme(.dark)
+}

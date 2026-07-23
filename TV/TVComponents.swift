@@ -92,6 +92,16 @@ struct TVWeekBars: View {
     private let labels = ["M", "T", "W", "T", "F", "S", "S"]
     private var latest: Int? { kmPerDay.lastIndex { $0 > 0 } }
 
+    /// Monday-first weekday names for VoiceOver — the visible labels are single
+    /// letters, which read as nonsense out loud. Matches the iPhone `WeekBars`.
+    private var spokenSummary: String {
+        let symbols = Calendar.current.weekdaySymbols
+        let mondayFirst = Array(symbols[1...]) + [symbols[0]]
+        return zip(mondayFirst, kmPerDay).map { name, km in
+            km > 0 ? "\(name) \(Format.km(km, decimals: 1)) km" : "\(name) rest"
+        }.joined(separator: ", ")
+    }
+
     var body: some View {
         let maxKm = max(kmPerDay.max() ?? 1, 1)
         HStack(alignment: .bottom, spacing: 16) {
@@ -116,6 +126,9 @@ struct TVWeekBars: View {
             }
         }
         .frame(height: height + 80, alignment: .bottom)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Kilometres per day this week")
+        .accessibilityValue(spokenSummary)
     }
 }
 
@@ -124,6 +137,8 @@ struct TVWeekBars: View {
 struct TVMonthBars: View {
     var items: [(label: String, value: Double)]
     var height: CGFloat = 200
+    /// What the numbers are, for VoiceOver ("kilometres", "metres of climb").
+    var unit: String = ""
     var format: (Double) -> String
 
     var body: some View {
@@ -146,6 +161,10 @@ struct TVMonthBars: View {
             }
         }
         .frame(height: height + 80, alignment: .bottom)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Monthly totals")
+        .accessibilityValue(items.map { "\($0.label) \(format($0.value)) \(unit)" }
+            .joined(separator: ", "))
     }
 }
 
@@ -177,6 +196,11 @@ struct TVSplitBars: View {
                         .foregroundStyle(isFastest ? Theme.signal : Theme.ink)
                         .frame(width: 110, alignment: .trailing)
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Kilometre \(index + 1)")
+                .accessibilityValue(isFastest
+                    ? "\(Format.pace(split)) per kilometre, fastest"
+                    : "\(Format.pace(split)) per kilometre")
             }
         }
     }
@@ -204,6 +228,20 @@ struct TVZoneHeatStrip: View {
             }
         }
         .frame(height: height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Time in heart rate zones")
+        .accessibilityValue(spokenSummary)
+    }
+
+    /// The zones with meaningful time in them, as percentages — matching the
+    /// iPhone `ZoneHeatStrip`. Zones under 30 s are noise and stay out.
+    private var spokenSummary: String {
+        let total = zoneSeconds.reduce(0, +)
+        guard total >= 1 else { return "No heart rate recorded" }
+        return zoneSeconds.enumerated()
+            .filter { $0.element >= 30 }
+            .map { index, seconds in "zone \(index + 1) \(Int((seconds / total * 100).rounded()))%" }
+            .joined(separator: ", ")
     }
 }
 
@@ -216,6 +254,18 @@ struct TVTrendChart: View {
     var bottomLabel: String
     var invert: Bool = true
     var height: CGFloat = 240
+    /// What the line is, and how to say one of its values, for VoiceOver.
+    var accessibilityTitle: String = "Trend"
+    var describe: (TimeInterval) -> String = { Format.pace($0) }
+
+    /// Oldest and newest point plus the direction between them — the shape a
+    /// sighted reader takes from the line at a glance. Mirrors `TrendChart`.
+    private var spokenSummary: String {
+        let present = values.compactMap { $0 }
+        guard let first = present.first, let last = present.last else { return "No data yet" }
+        let direction = last == first ? "unchanged" : (last < first ? "improving" : "slipping")
+        return "\(present.count) weeks, from \(describe(first)) to \(describe(last)), \(direction)"
+    }
 
     var body: some View {
         let present = values.compactMap { $0 }
@@ -253,6 +303,9 @@ struct TVTrendChart: View {
             }
         }
         .frame(height: height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityTitle)
+        .accessibilityValue(spokenSummary)
     }
 }
 
@@ -280,6 +333,8 @@ struct TVRouteCard: View {
         .background(Color(hex: 0x111111))
         .clipShape(RoundedRectangle(cornerRadius: 28))
         .overlay(RoundedRectangle(cornerRadius: 28).stroke(Theme.cardBorder, lineWidth: 1))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(run.route?.isEmpty == false ? "Route map" : "Route map, no GPS track recorded")
     }
 }
 
@@ -294,6 +349,18 @@ struct TVElevationProfile: View {
         LineChart(points: pts.map { CGPoint(x: $0.x, y: $0.y) })
             .stroke(Theme.signal, style: .init(lineWidth: 4, lineCap: .round, lineJoin: .round))
             .frame(height: height)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Elevation profile")
+            .accessibilityValue(spokenSummary)
+    }
+
+    /// Low / high and the endpoints — mirroring the iPhone `ElevationProfile`.
+    private var spokenSummary: String {
+        guard let low = samples.min(), let high = samples.max(), samples.count > 1 else {
+            return "No elevation recorded"
+        }
+        return "From \(Format.elevation(samples[0])) to \(Format.elevation(samples[samples.count - 1])), "
+            + "low \(Format.elevation(low)), high \(Format.elevation(high))"
     }
 }
 
@@ -331,6 +398,18 @@ struct TVLogRow: View {
         .padding(.vertical, 22)
         .background(Theme.ink.opacity(isFocused ? 0.10 : 0), in: RoundedRectangle(cornerRadius: 16))
         .overlay(alignment: .bottom) { Theme.hairline.frame(height: 1).padding(.horizontal, 28) }
+        // One clean sentence instead of the row's fragments, so the focused run
+        // reads sensibly. The link wrapping this row supplies the button trait.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spokenLabel)
+    }
+
+    private var spokenLabel: String {
+        let date = run.date.formatted(.dateTime.weekday(.wide).day().month(.wide))
+        let pr = prTag.map { ", \($0)" } ?? ""
+        let kind = run.isTrail ? "trail run" : run.classification.label
+        return "\(date), \(Format.km(run.distanceKm)) kilometres, \(kind), "
+            + "\(Format.pace(run.paceSecPerKm)) per kilometre\(pr)"
     }
 
     @ViewBuilder

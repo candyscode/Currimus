@@ -403,6 +403,12 @@ platform-guarded — lowest risk for the shipping iOS and watchOS apps.
   `scrollFocusable()` so they scroll with the remote.
 - `TV/CurrimusTV.entitlements` — CloudKit only.
 
+The TV components carry VoiceOver `accessibilityLabel`/`Value` mirroring the
+iPhone charts (tvOS has VoiceOver too), each screen has a `#Preview` seeded with
+`RunStore(seeded: true)` so the 10-foot layout renders in the Xcode canvas
+without CloudKit or a device, and `TVStatusView` copy is `LocalizedStringKey`
+so it extracts into `Localizable.xcstrings` like the rest of the app.
+
 **Changed files**
 - `Shared/RunSync.swift` — WatchConnectivity guarded; tvOS gets a no-op `RunSync`
   stub with the identical public API so `RunStore` compiles untouched.

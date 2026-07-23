@@ -155,3 +155,21 @@ struct TVRunDetailView: View {
         return f.string(from: NSNumber(value: n)) ?? "\(n)"
     }
 }
+
+#Preview("Road") {
+    FontLoader.registerAll()
+    let store = RunStore(seeded: true)
+    // Sample runs carry their samples in memory (demo mode), so the route and
+    // splits render without CloudKit or a sidecar file.
+    return TVRunDetailView(run: store.runs.first { !$0.isTrail } ?? store.runs[0])
+        .environmentObject(store)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Trail") {
+    FontLoader.registerAll()
+    let store = RunStore(seeded: true)
+    return TVRunDetailView(run: store.runs.first { $0.isTrail } ?? store.runs[0])
+        .environmentObject(store)
+        .preferredColorScheme(.dark)
+}

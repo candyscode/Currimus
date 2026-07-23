@@ -91,9 +91,11 @@ struct TVRootView: View {
 }
 
 /// Full-screen centered message for the loading / signed-out / empty states.
+/// `LocalizedStringKey` so the copy is extracted into `Localizable.xcstrings`
+/// like the rest of the app, rather than shipping as raw English.
 struct TVStatusView: View {
-    var title: String
-    var message: String
+    var title: LocalizedStringKey
+    var message: LocalizedStringKey
     var showsProgress: Bool
 
     var body: some View {

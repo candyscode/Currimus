@@ -116,3 +116,12 @@ struct TVDashboardView: View {
         .overlay(RoundedRectangle(cornerRadius: 28).stroke(Theme.signal.opacity(0.35), lineWidth: 1))
     }
 }
+
+#Preview {
+    // Seeded store → the sample marathon build-up, no CloudKit needed. Lets the
+    // 10-foot layout be judged in the Xcode canvas without a device or account.
+    FontLoader.registerAll()
+    return TVDashboardView()
+        .environmentObject(RunStore(seeded: true))
+        .preferredColorScheme(.dark)
+}
