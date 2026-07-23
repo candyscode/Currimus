@@ -9,6 +9,26 @@
 
 ---
 
+## Decisions (settled — build to these)
+
+These were the open questions; the product owner has answered them. Build to
+these; do not re-litigate.
+
+1. **Data bridge → CloudKit.** Private CloudKit database. Requires iPhone +
+   Apple TV on the same iCloud account (near-universal for Apple TV).
+2. **Distribution → Universal Purchase.** iOS + tvOS ship as one App Store
+   product with the **same bundle id** (`com.currimus.app`); one purchase covers
+   both.
+3. **TV scope → full log + detail.** Dashboard, complete log, records, **and**
+   per-run detail with route map + elevation profile. This means GPS tracks /
+   altitude series **must** be synced (as `CKAsset`), not just metadata.
+4. **Imported runs → sync `allRuns`.** Sync the merged/deduped list so the TV's
+   totals match the phone exactly (the TV has no HealthKit and cannot derive
+   them itself).
+5. **Deployment target → tvOS 26.** Matches the iOS 26 / watchOS 11 baseline.
+
+---
+
 ## Context — why this document exists
 
 Currimus is a running app: **the Apple Watch records, the iPhone reads** (log,
@@ -315,19 +335,12 @@ CloudKit is the clear first choice.
 
 ---
 
-## Open questions (decide before implementing)
+## Decisions
 
-1. **iCloud/CloudKit acceptable?** Requires iPhone + Apple TV on the same iCloud
-   account (near-universal for Apple TV, but confirm). If iCloud is off the
-   table, switch to the local-network approach.
-2. **Universal Purchase?** Ship iOS + tvOS as one App Store product (shared
-   bundle id) or as separate apps?
-3. **TV scope:** ambient dashboard only (week / records / last run), or the full
-   log incl. per-run map/elevation detail? Affects how much you sync (metadata
-   only vs. `CKAsset` routes) and how much UI to build.
-4. **Imported (HealthKit) runs on TV:** sync `allRuns` (recommended, totals
-   match the phone) or only Currimus-recorded `runs`?
-5. **Deployment target:** tvOS 26 to match the iOS 26 / watchOS 11 baseline?
+All prior open questions are settled — see **Decisions (settled)** near the top
+of this document. In short: CloudKit private DB · Universal Purchase (shared
+bundle id) · full log + per-run detail (route/elevation synced as `CKAsset`) ·
+sync `allRuns` (incl. imported) · tvOS 26. Build to those.
 
 ---
 
@@ -344,5 +357,4 @@ CloudKit is the clear first choice.
 - iOS screen layouts (reference only): `iOS/HomeView.swift`, `iOS/CurrimusApp.swift`
 - Project generation: `project.yml` + `xcodegen generate` (never hand-edit the
   `.pbxproj`)
-</content>
-</invoke>
+
