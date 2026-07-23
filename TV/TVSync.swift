@@ -42,14 +42,18 @@ final class TVSync: ObservableObject {
         if hasLoaded { isRefreshing = true }
         defer { isRefreshing = false }
 
-        switch await RunCloudSync.accountState() {
+        switch await resolvedState() {
         case .signedOut:
-            phase = .signedOut
+            // A confirmed sign-out is the one state worth explaining. Don't
+            // clobber an already-loaded screen, though — the account can't
+            // change under a running TV app in practice, and keeping cached
+            // runs beats flashing a sign-in prompt.
+            if !hasLoaded { phase = .signedOut }
             return
         case .transient:
-            // Don't downgrade to signed-out on a hiccup. If we've loaded before,
-            // keep showing it; otherwise stay on the loading screen and let the
-            // next foreground retry.
+            // Never resolved (rare). Leave the current screen — loading on a
+            // cold start, or the cached log — and let the next foreground retry.
+            // Crucially NOT signed-out: that would misread a hiccup as no account.
             return
         case .available:
             break
@@ -68,4 +72,23 @@ final class TVSync: ObservableObject {
             if hasLoaded { phase = .ready }   // keep showing cached runs
         }
     }
+
+    /// Resolve the account status, retrying a transient answer a few times with
+    /// a short backoff. iCloud status is often transient in the seconds right
+    /// after boot, and since the scene is already active on first launch nothing
+    /// would re-drive the refresh — so without this the TV could sit on the
+    /// loading spinner. Returns `.available` / `.signedOut` as soon as either is
+    /// seen, else `.transient` after the last attempt.
+    private func resolvedState() async -> RunCloudSync.AccountState {
+        for attempt in 0..<transientRetryLimit {
+            let state = await RunCloudSync.accountState()
+            if state != .transient { return state }
+            if attempt < transientRetryLimit - 1 {
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+        return .transient
+    }
+
+    private let transientRetryLimit = 3
 }

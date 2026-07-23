@@ -57,7 +57,7 @@ enum RunCloudSync {
     /// account is a terminal state worth explaining; anything transient
     /// (determining, temporarily unavailable, or an error) should be retried,
     /// not shown as "sign in".
-    enum AccountState {
+    enum AccountState: Equatable {
         case available
         case signedOut     // no account / restricted — the explain-and-stop state
         case transient     // could-not-determine / temporarily-unavailable / error
