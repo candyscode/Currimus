@@ -57,15 +57,22 @@ struct TrailSummaryView: View {
     var body: some View {
         SummaryScroller(onDone: onDone, caption: TopBarCaption(text: "TRAIL COMPLETE", mark: true)) {
             VStack(alignment: .leading, spacing: 0) {
+                // An ultra brings both a two-digit-plus-decimal distance and a
+                // four-digit climb (50.0 km ▲ 1473) — on a 40 mm case the row
+                // used to wrap "50.0" onto two lines and truncate the climb to
+                // "1…". One line, scaled to fit, keeps it whole on every case.
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(Format.km(run.distanceKm, decimals: 1))
                             .font(.stat(23))
                             .kerning(-0.9)
+                            .lineLimit(1)
                         Text("km").font(.sg(11)).foregroundStyle(Theme.muted)
                     }
                     ClimbStat(value: "\(Int(run.climbMeters ?? 0))", size: 23, color: Theme.signal)
                 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
                 .padding(.top, 5)
 
                 StatRow {

@@ -4,6 +4,8 @@ struct LogView: View {
     @EnvironmentObject private var store: RunStore
     @Environment(\.pushRoute) private var push
     @State private var filter: RunStore.LogFilter = .all
+    /// Set by the row's delete action; the confirmation reads it back.
+    @State private var pendingDelete: Run?
 
     var body: some View {
         // Cached in the store — this used to recompute the fastest 5 K and
@@ -35,8 +37,40 @@ struct LogView: View {
                             LogRow(run: run, prTag: holders[run.id])
                         }
                         .buttonStyle(.plain)
+                        .contextMenu { deleteAction(run) }
                     }
                 }
+            }
+        }
+        .confirmationDialog(
+            "Delete this run?",
+            isPresented: Binding(get: { pendingDelete != nil },
+                                 set: { if !$0 { pendingDelete = nil } }),
+            presenting: pendingDelete
+        ) { run in
+            Button("Delete", role: .destructive) {
+                store.delete(run)
+                pendingDelete = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+        } message: { run in
+            Text("\(Format.km(run.distanceKm)) km, \(run.date.formatted(.dateTime.day().month(.wide))). "
+                 + "Every total and record is recalculated without it. The workout stays in Apple Health.")
+        }
+    }
+
+    /// A mis-recorded run — a forgotten stop, a drive home still counting —
+    /// used to be permanent, and it distorts every total, chart and record it
+    /// touches. Long press rather than swipe: the log is a hand-built scroll
+    /// view, not a `List`, and a hand-rolled swipe would fight the scroll.
+    @ViewBuilder
+    private func deleteAction(_ run: Run) -> some View {
+        if run.isImported {
+            // Currimus is only reading this one; it belongs to whoever wrote it.
+            Text("Recorded by \(run.name). Delete it in Apple Health.")
+        } else {
+            Button(role: .destructive) { pendingDelete = run } label: {
+                Label("Delete run", systemImage: "trash")
             }
         }
     }
@@ -90,7 +124,7 @@ struct LogRow: View {
             Text("Trail · \(Format.clock(run.duration)) · +\(Int(run.climbMeters ?? 0)) m")
                 .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
         } else if let prTag, prTag != "Longest" {
-            (Text("\(Format.clock(run.duration)) · ") + Text(prTag).foregroundStyle(Theme.signal).fontWeight(.semibold))
+            Text("\(Format.clock(run.duration)) · \(Text(prTag).foregroundStyle(Theme.signal).fontWeight(.semibold))")
                 .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
         } else {
             Text("\(run.classification.label) · \(Format.clock(run.duration)) · Z\(run.dominantZone)")

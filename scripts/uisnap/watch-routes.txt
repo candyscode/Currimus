@@ -1,0 +1,28 @@
+# watchOS snapshot routes:  name | tier | launch-arguments
+#
+# Every watch route fabricates a fixed demo session, so the numbers are
+# deterministic — except the system clock in the top-right corner, which the
+# harness masks out of every comparison (WATCH_CLOCK_MASK in ui-snapshot.sh).
+#
+# tier:
+#   strict — the screen is static; guards every detail
+#   medium — a screen with a value that re-derives between launch and capture
+#            (a ticking run clock, or a split/delta whose last digit drifts), so
+#            a glyph or two moves; structure, colour and layout still guarded
+
+home            | strict |
+pacer-set       | strict | -screen pacer-set
+pacer-distance  | strict | -screen pacer-distance
+summary         | strict | -screen summary
+trail-summary   | strict | -screen trail-summary
+pacer-summary   | strict | -screen pacer-summary
+paused          | strict | -screen paused
+blocked-health  | strict | -screen blocked-health
+
+kmalert         | medium | -screen kmalert
+run             | medium | -screen run
+run-long        | medium | -screen run-long
+trail           | medium | -screen trail
+pacer-run       | medium | -screen pacer-run
+pacer-run-nodist| medium | -screen pacer-run-nodist
+issue-nodistance| medium | -screen issue-nodistance

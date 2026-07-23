@@ -6,11 +6,13 @@ enum Route: Hashable {
     case race
     case raceSetup
     case runDetail(Run)
+    case runEdit(Run)
     case records
     case settings
     case pacerDefaults
     case hrZones
     case gpsAccuracy
+    case acknowledgements
 }
 
 enum AppTab: Hashable { case home, log, progress }

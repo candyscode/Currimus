@@ -16,7 +16,10 @@ struct RaceView: View {
 
     private func content(_ race: Race) -> some View {
         let longest = store.longestRun?.distanceKm ?? 0
-        let longestPct = Int((longest / race.distance.km * 100).rounded())
+        // Capped: the label reads "how much of race day you have covered", and
+        // an ultra runner training for a 10 K was told they were at 340 % of
+        // it, which reads as a broken percentage rather than a compliment.
+        let longestPct = min(Int((longest / race.distance.km * 100).rounded()), 100)
         return VStack(alignment: .leading, spacing: 0) {
             Text("\(race.name.uppercased()) · \(race.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).year()).uppercased())")
                 .kicker(13, color: Theme.bright, tracking: 0.12)
@@ -117,8 +120,10 @@ struct RaceSetupView: View {
     @State private var date: Date = Calendar.current.date(byAdding: .day, value: 42, to: .now)!
     @State private var goalTime: TimeInterval = 3 * 3600 + 59 * 60
     @State private var loaded = false
+    @State private var confirmRemove = false
 
     private var requiredPace: TimeInterval { goalTime / distance.km }
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
     private var daysUntil: Int {
         Race(name: name, distance: distance, date: date, goalTime: goalTime).daysUntil()
     }
@@ -163,7 +168,7 @@ struct RaceSetupView: View {
                 HStack(alignment: .firstTextBaseline) {
                     Text("That is").font(.sg(14)).foregroundStyle(Theme.bright)
                     Spacer()
-                    (Text(Format.pace(requiredPace) + " ") + Text("/km").font(.sg(14)).foregroundStyle(Theme.bright))
+                    Text("\(Format.pace(requiredPace)) \(Text("/km").font(.sg(14)).foregroundStyle(Theme.bright))")
                         .font(.stat(26)).foregroundStyle(Theme.signal)
                 }
                 .padding(.top, 18)
@@ -175,7 +180,35 @@ struct RaceSetupView: View {
                         .background(Theme.signal, in: Capsule())
                 }
                 .buttonStyle(.plain).padding(.top, 24)
+                // An empty name saves a race that renders as "RACE DAY · " with
+                // nothing after it on Home. Blank is the one value this form
+                // can be left in that produces a broken screen, so it is the
+                // one the button refuses.
+                .disabled(trimmedName.isEmpty)
+                .opacity(trimmedName.isEmpty ? 0.4 : 1)
+
+                // Setting a race was one-way: once it existed it took over
+                // Home's headline and could only be edited, never cleared —
+                // so a race that had passed, or plans that had changed, stayed
+                // on the screen with no way off it.
+                if store.race != nil {
+                    Button(role: .destructive) { confirmRemove = true } label: {
+                        Text("Remove race").font(.sg(16, weight: .semibold))
+                            .foregroundStyle(Theme.signal)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                    }
+                    .buttonStyle(.plain).padding(.top, 6)
+                }
             }
+        }
+        .confirmationDialog("Remove this race?", isPresented: $confirmRemove, titleVisibility: .visible) {
+            Button("Remove race", role: .destructive) {
+                store.race = nil
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Home goes back to your weekly volume. Your runs and records are untouched.")
         }
         .onAppear {
             guard !loaded else { return }
@@ -188,31 +221,47 @@ struct RaceSetupView: View {
         }
     }
 
+    /// Sanity-checks the goal against the fastest sustained effort on record.
+    ///
+    /// The number here is `min` — the *best* tempo run, not the average one.
+    /// The sentence used to call it the average, so it named one statistic and
+    /// showed another, and the two differ by exactly the amount that decides
+    /// whether a goal is ambitious.
     private var realismNote: String {
-        let tempo = store.runs.filter { $0.classification == .tempo }
-        guard let avg = tempo.map(\.paceSecPerKm).min() else {
+        let tempoPaces = store.allRuns
+            .filter { !$0.isTrail && $0.classification == .tempo }
+            .map(\.paceSecPerKm)
+        guard let best = tempoPaces.min() else {
             return "Set a goal and see the pace it needs."
         }
-        return requiredPace >= avg
-            ? "Your tempo runs average \(Format.pace(avg)) — the goal is realistic."
-            : "Faster than your best tempo (\(Format.pace(avg))) — ambitious, but that is the point."
+        return requiredPace >= best
+            ? "Your best tempo run is \(Format.pace(best)) /km, so the goal sits inside what you have already held."
+            : "Faster than your best tempo (\(Format.pace(best)) /km) — ambitious, but that is the point."
     }
 
     private func fieldLabel(_ t: String) -> some View { Text(t).kicker(13, color: Theme.bright, tracking: 0.12) }
 
     private func save() {
         var race = store.race ?? Race(name: name, distance: distance, date: date, goalTime: goalTime)
-        race.name = name; race.distance = distance; race.date = date; race.goalTime = goalTime
+        race.name = trimmedName; race.distance = distance; race.date = date; race.goalTime = goalTime
         store.race = race
         dismiss()
     }
 }
 
-/// A three-row goal-time wheel, 5-minute steps. Drag or tap the neighbours.
+/// A three-row goal-time wheel, one minute per step. Drag, or tap a neighbour.
 struct GoalTimeWheel: View {
     @Binding var seconds: TimeInterval
-    private let step: TimeInterval = 300
-    @State private var drag: CGFloat = 0
+    // One minute, not five. At five, the reachable times were 4:25, 4:30, …
+    // and 4:26 simply did not exist — the whole complaint.
+    private let step: TimeInterval = 60
+    // How far the finger travels for one step. The old wheel fired a step
+    // every time the delta since the last one crossed 20 pt and then reset its
+    // baseline, so a single slow slide rattled through several steps at once;
+    // a light flick jumped minutes. This maps total travel to an absolute
+    // offset from where the drag began, so the number tracks the finger.
+    private let pointsPerStep: CGFloat = 16
+    @State private var anchor: TimeInterval?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -226,12 +275,30 @@ struct GoalTimeWheel: View {
                 .overlay(alignment: .bottom) { Theme.buttonBorder.frame(height: 1) }
             neighbour(seconds - step)
         }
-        .gesture(DragGesture()
+        .contentShape(Rectangle())
+        .gesture(DragGesture(minimumDistance: 1)
             .onChanged { v in
-                let d = v.translation.height - drag
-                if abs(d) > 20 { shift(d > 0 ? 1 : -1); drag = v.translation.height }
+                let base = anchor ?? seconds
+                anchor = base
+                // Larger values sit above centre, so dragging down brings them
+                // in — a positive translation raises the time.
+                let steps = (v.translation.height / pointsPerStep).rounded()
+                seconds = clamp(base + steps * step)
             }
-            .onEnded { _ in drag = 0 })
+            .onEnded { _ in anchor = nil })
+        // The neighbour buttons are the visual affordance; for VoiceOver the
+        // whole thing is one adjustable value, which is how a time field should
+        // read out loud.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Goal time")
+        .accessibilityValue(Format.clock(seconds))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: seconds = clamp(seconds + step)
+            case .decrement: seconds = clamp(seconds - step)
+            @unknown default: break
+            }
+        }
     }
 
     private func neighbour(_ value: TimeInterval) -> some View {
@@ -242,6 +309,5 @@ struct GoalTimeWheel: View {
         .buttonStyle(.plain)
     }
 
-    private func shift(_ dir: Int) { withAnimation(.snappy(duration: 0.18)) { seconds = clamp(seconds + Double(dir) * step) } }
     private func clamp(_ v: TimeInterval) -> TimeInterval { min(max(v, 900), 6 * 3600) }
 }

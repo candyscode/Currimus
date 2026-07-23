@@ -3,3 +3,6 @@ xcuserdata/
 *.xcuserstate
 DerivedData/
 build/
+# UI-snapshot scratch: compiled comparator, candidate captures and diff images.
+# Only the committed reference/ baseline is tracked.
+Tests/UISnapshots/_work/

@@ -68,14 +68,28 @@ struct SettingsScreen: View {
                         ChevronRow(title: "GPS accuracy") { Text(store.gpsAccuracy.label) }
                     }.buttonStyle(.plain)
                     hairline
-                    ChevronRow(title: "Units", showsChevron: false) { Text("Kilometers") }
+                    Button { Task { await store.refreshImportedRuns(requestingAccess: true) } } label: {
+                        ChevronRow(title: "Apple Health", subtitle: healthSubtitle,
+                                   showsChevron: false) {
+                            Text(healthLabel).foregroundStyle(healthTint)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(store.healthAccess == .unavailable)
                     hairline
-                    ChevronRow(title: "Apple Health", showsChevron: false) {
-                        Text("Connected").foregroundStyle(Theme.signal)
+                    // Recording lives on the watch, so whether there is one is
+                    // worth stating rather than leaving the user to infer it
+                    // from a log that never fills.
+                    ChevronRow(title: "Apple Watch", subtitle: watchSubtitle, showsChevron: false) {
+                        Text(watchLabel).foregroundStyle(watchTint)
                     }
                     hairline
                     Button(action: exportRuns) {
                         ChevronRow(title: "Export all runs", showsChevron: false) { Text("GPX / CSV") }
+                    }.buttonStyle(.plain)
+                    hairline
+                    Button { push(.acknowledgements) } label: {
+                        ChevronRow(title: "Acknowledgements") { Text(appVersion) }
                     }.buttonStyle(.plain)
                 }
             }
@@ -85,8 +99,59 @@ struct SettingsScreen: View {
         }
     }
 
-    private var pacerDistanceLabel: String {
-        store.pacerDefaultDistanceKm.map { $0 == 21.0975 ? "21.1 km" : "\(Int($0)) km" } ?? "Off"
+    private var pacerDistanceLabel: String { Format.pacerDistance(store.pacerDefaultDistanceKm) }
+
+    /// Version and build, where a support email can be asked for it.
+    private var appVersion: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = info?["CFBundleVersion"] as? String ?? "1"
+        return "\(short) (\(build))"
+    }
+
+    private var healthLabel: String {
+        switch store.healthAccess {
+        case .unavailable: return "Unavailable"
+        case .reading(let runs): return "\(runs) runs read"
+        case .nothingRead: return "Nothing read"
+        }
+    }
+
+    /// It used to say "Connected", in Signal, always — including for someone
+    /// who had declined the prompt outright. Health never reveals whether a
+    /// read was allowed, so the honest thing to report is what came back.
+    private var healthSubtitle: String? {
+        switch store.healthAccess {
+        case .unavailable: return "This device has no Health data."
+        case .reading: return "Runs other apps recorded, counted in every total."
+        case .nothingRead: return "No runs from other apps. Tap to allow access, or there may be none to read — Health does not say which."
+        }
+    }
+
+    private var healthTint: Color {
+        if case .reading = store.healthAccess { return Theme.signal }
+        return Theme.bright
+    }
+
+    private var watchLabel: String {
+        switch store.watchState {
+        case .ready: return "Ready"
+        case .appMissing: return "App missing"
+        case .noWatch: return "None paired"
+        case .unknown: return "—"
+        }
+    }
+
+    private var watchSubtitle: String? {
+        switch store.watchState {
+        case .appMissing: return "Install Currimus from the Watch app, under Available Apps."
+        case .noWatch: return "Without a watch, Currimus reads your Apple Health runs but cannot record."
+        case .ready, .unknown: return nil
+        }
+    }
+
+    private var watchTint: Color {
+        store.watchState == .ready ? Theme.signal : Theme.bright
     }
 
     private var raceLabel: String {
@@ -134,8 +199,6 @@ struct ActivityView: UIViewControllerRepresentable {
 struct PacerDefaultsView: View {
     @EnvironmentObject private var store: RunStore
 
-    private let distances: [Double?] = [nil, 5, 10, 15, 21.0975]
-
     var body: some View {
         PushedScreen(title: "Pacer defaults") {
             VStack(alignment: .leading, spacing: 0) {
@@ -143,24 +206,11 @@ struct PacerDefaultsView: View {
                 PaceDefaultWheel(seconds: $store.pacerTargetSecPerKm).padding(.top, 10)
 
                 fieldLabel("DEFAULT DISTANCE").padding(.top, 30)
-                HStack(spacing: 10) {
-                    ForEach(Array(distances.enumerated()), id: \.offset) { _, d in
-                        let active = d == store.pacerDefaultDistanceKm
-                        Button {
-                            withAnimation(.snappy(duration: 0.2)) { store.pacerDefaultDistanceKm = d }
-                        } label: {
-                            Text(d.map { $0 == 21.0975 ? "21.1" : "\(Int($0))" } ?? "Off")
-                                .font(.sg(15, weight: active ? .bold : .semibold))
-                                .foregroundStyle(active ? Theme.bg : Theme.bright)
-                                .frame(maxWidth: .infinity).frame(height: 48)
-                                .background {
-                                    if active { Capsule().fill(Theme.signal) }
-                                    else { Capsule().fill(Theme.chipFill).overlay(Capsule().stroke(Theme.chipStroke, lineWidth: 1)) }
-                                }
-                        }.buttonStyle(.plain)
-                    }
-                }
-                .padding(.top, 14)
+                // The same custom wheel as the pace one above, not a native
+                // Picker: a native wheel's grey selection capsule and 3-D curve
+                // sat directly under the hand-built pace wheel and read as two
+                // different controls on one screen. This speaks that language.
+                DistanceDefaultWheel(km: $store.pacerDefaultDistanceKm).padding(.top, 10)
 
                 fieldLabel("AT THESE DEFAULTS").padding(.top, 30)
                 VStack(spacing: 0) {
@@ -193,7 +243,10 @@ struct PacerDefaultsView: View {
 struct PaceDefaultWheel: View {
     @Binding var seconds: TimeInterval
     private let step: TimeInterval = 5
-    @State private var drag: CGFloat = 0
+    // The same absolute-offset drag as the goal-time wheel: the old delta-and-
+    // reset logic rattled through several 5-second steps on one slow slide.
+    private let pointsPerStep: CGFloat = 16
+    @State private var anchor: TimeInterval?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -212,12 +265,24 @@ struct PaceDefaultWheel: View {
             ghost(seconds - 2 * step, 20, 0x3d3d3d)
         }
         .contentShape(Rectangle())
-        .gesture(DragGesture()
+        .gesture(DragGesture(minimumDistance: 1)
             .onChanged { v in
-                let d = v.translation.height - drag
-                if abs(d) > 18 { shift(d > 0 ? 1 : -1); drag = v.translation.height }
+                let base = anchor ?? seconds
+                anchor = base
+                let steps = (v.translation.height / pointsPerStep).rounded()
+                seconds = clamp(base + steps * step)
             }
-            .onEnded { _ in drag = 0 })
+            .onEnded { _ in anchor = nil })
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Default pace per kilometre")
+        .accessibilityValue(Format.pace(seconds))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: seconds = clamp(seconds + step)
+            case .decrement: seconds = clamp(seconds - step)
+            @unknown default: break
+            }
+        }
     }
 
     private func ghost(_ v: TimeInterval, _ size: CGFloat, _ hex: UInt32) -> some View {
@@ -226,8 +291,106 @@ struct PaceDefaultWheel: View {
                 .frame(maxWidth: .infinity).padding(.vertical, 8)
         }.buttonStyle(.plain)
     }
-    private func shift(_ dir: Int) { withAnimation(.snappy(duration: 0.18)) { seconds = clamp(seconds + Double(dir) * step) } }
     private func clamp(_ v: TimeInterval) -> TimeInterval { min(max(v, 180), 600) }
+}
+
+/// Five-row distance wheel — the twin of `PaceDefaultWheel`, so the two
+/// selectors on the Pacer-defaults screen read as one control family. Off,
+/// then every kilometre 1–50, then the half and the full: the same ordered set
+/// the watch offers, stepped one stop at a time (drag, or tap a neighbour).
+struct DistanceDefaultWheel: View {
+    @Binding var km: Double?
+    // Matches PaceDefaultWheel: one stop per 16 pt of travel, mapped as an
+    // absolute offset from where the drag began so the value tracks the finger
+    // rather than rattling through several stops on one slide.
+    private let pointsPerStep: CGFloat = 16
+    @State private var anchor: Int?
+
+    private let options: [Double?] = {
+        var opts: [Double?] = [nil]
+        opts.append(contentsOf: (1...50).map { Double($0) as Double? })
+        opts.append(contentsOf: [RaceDistance.half.km, RaceDistance.marathon.km] as [Double?])
+        return opts
+    }()
+
+    private var index: Int { options.firstIndex(of: km) ?? 0 }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ghost(index + 2, 20, 0x3d3d3d)
+            ghost(index + 1, 24, 0x575757)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Spacer()
+                hero(options[index])
+                Spacer()
+            }
+            .padding(.vertical, 12)
+            .overlay(alignment: .top) { Theme.buttonBorder.frame(height: 1) }
+            .overlay(alignment: .bottom) { Theme.buttonBorder.frame(height: 1) }
+            ghost(index - 1, 24, 0x575757)
+            ghost(index - 2, 20, 0x3d3d3d)
+        }
+        .contentShape(Rectangle())
+        // Larger distances sit above centre, matching the pace wheel: a
+        // positive (downward) drag raises the distance.
+        .gesture(DragGesture(minimumDistance: 1)
+            .onChanged { v in
+                let base = anchor ?? index
+                anchor = base
+                let steps = Int((v.translation.height / pointsPerStep).rounded())
+                km = options[clampIndex(base + steps)]
+            }
+            .onEnded { _ in anchor = nil })
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Default distance")
+        .accessibilityValue(spoken(options[index]))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: km = options[clampIndex(index + 1)]
+            case .decrement: km = options[clampIndex(index - 1)]
+            @unknown default: break
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func hero(_ value: Double?) -> some View {
+        if let value {
+            Text(number(value)).font(.stat(56)).kerning(-1.7).contentTransition(.numericText())
+            Text("km").font(.sg(16)).foregroundStyle(Theme.bright)
+        } else {
+            Text("Off").font(.stat(56)).kerning(-1.7)
+        }
+    }
+
+    private func ghost(_ i: Int, _ size: CGFloat, _ hex: UInt32) -> some View {
+        Button {
+            guard i >= 0, i < options.count else { return }
+            withAnimation(.snappy(duration: 0.18)) { km = options[i] }
+        } label: {
+            Text(i >= 0 && i < options.count ? row(options[i]) : " ")
+                .font(.stat(size)).foregroundStyle(Color(hex: hex))
+                .frame(maxWidth: .infinity).padding(.vertical, 8)
+        }.buttonStyle(.plain)
+    }
+
+    /// The half and full are stored as 21.0975 / 42.195, so they carry a
+    /// decimal where whole kilometres show none.
+    private func number(_ value: Double) -> String {
+        value == RaceDistance.half.km || value == RaceDistance.marathon.km
+            ? String(format: "%.1f", value) : "\(Int(value))"
+    }
+    private func row(_ value: Double?) -> String {
+        guard let value else { return String(localized: "Off") }
+        return "\(number(value)) km"
+    }
+    private func spoken(_ value: Double?) -> String {
+        guard let value else { return String(localized: "Off, open-ended") }
+        if value == RaceDistance.half.km { return String(localized: "Half marathon, 21.1 kilometres") }
+        if value == RaceDistance.marathon.km { return String(localized: "Marathon, 42.2 kilometres") }
+        return "\(Int(value)) kilometres"
+    }
+    private func clampIndex(_ i: Int) -> Int { min(max(i, 0), options.count - 1) }
 }
 
 // MARK: - Heart rate zones

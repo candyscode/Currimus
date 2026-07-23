@@ -10,7 +10,6 @@ enum AppDefaults {
     static let raceKey = "race.v1"
     static let settingsKey = "settings.v1"
     static let goalKey = "weeklyGoal"
-    static let unitsKey = "usesKilometers"
     static let gpsAccuracyKey = "gpsAccuracy"
 
     static let appGroup = "group.com.currimus.app"
@@ -29,7 +28,7 @@ enum AppDefaults {
         }
         // The log used to live in standard defaults. Moving to the group would
         // read as "all my runs vanished", so carry them over once.
-        for key in [runsKey, raceKey, settingsKey, goalKey, unitsKey]
+        for key in [runsKey, raceKey, settingsKey, goalKey]
         where shared.object(forKey: key) == nil {
             if let legacy = UserDefaults.standard.object(forKey: key) {
                 shared.set(legacy, forKey: key)

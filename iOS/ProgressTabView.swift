@@ -1,5 +1,52 @@
 import SwiftUI
 
+/// The month ticks under a trend chart, at the position of the first week
+/// that falls in each month.
+///
+/// This used to be the literal `["Apr", "May", "Jun", "Jul"]`, straight out
+/// of the design — correct in the month the design was drawn, and wrong in
+/// every month since. It sat under both charts, so the axis and the line
+/// above it described different periods.
+struct TrendMonthAxis: View {
+    var weeks: Int
+    /// Enough for an abbreviated month at 12 pt, in any locale that keeps
+    /// them to three or four characters.
+    private let labelWidth: CGFloat = 38
+
+    private var ticks: [(label: String, fraction: Double)] {
+        let calendar = Calendar.runWeek
+        var seenMonths: Set<Int> = []
+        var out: [(String, Double)] = []
+        for offset in (0..<weeks).reversed() {
+            guard let week = calendar.date(byAdding: .weekOfYear, value: -offset, to: .now)
+            else { continue }
+            let month = calendar.component(.month, from: week)
+            guard seenMonths.insert(month).inserted else { continue }
+            let index = weeks - 1 - offset
+            out.append((week.formatted(.dateTime.month(.abbreviated)),
+                        Double(index) / Double(max(weeks - 1, 1))))
+        }
+        return out
+    }
+
+    var body: some View {
+        let ticks = ticks
+        return GeometryReader { proxy in
+            // Offset rather than `position`, so the first and last labels stay
+            // inside the chart's width instead of hanging off both ends.
+            ForEach(Array(ticks.enumerated()), id: \.offset) { _, tick in
+                Text(tick.label)
+                    .font(.sg(12)).foregroundStyle(Theme.muted)
+                    .frame(width: labelWidth, alignment: .leading)
+                    .offset(x: tick.fraction * max(proxy.size.width - labelWidth, 0))
+            }
+        }
+        .frame(height: 16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Covering \(ticks.map(\.label).joined(separator: " to "))")
+    }
+}
+
 struct ProgressScreen: View {
     @EnvironmentObject private var store: RunStore
     @Environment(\.pushRoute) private var push
@@ -10,11 +57,16 @@ struct ProgressScreen: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Progress").font(.sg(38, weight: .semibold)).kerning(-0.8).padding(.top, 6)
 
-                SegmentChips(options: [(.road, "Road"), (.trail, "Trail")], selection: $view)
-                    .frame(maxWidth: 180, alignment: .leading)
-                    .padding(.top, 18)
+                // No trail runs means the Trail half of this screen is a set
+                // of empty charts and a 0 m/h headline. Offering the tab at
+                // all invites the user to go and find that out.
+                if hasTrailRuns {
+                    SegmentChips(options: [(.road, "Road"), (.trail, "Trail")], selection: $view)
+                        .frame(maxWidth: 180, alignment: .leading)
+                        .padding(.top, 18)
+                }
 
-                if view == .road { roadContent } else { trailContent }
+                if view == .road || !hasTrailRuns { roadContent } else { trailContent }
             }
         }
     }
@@ -22,24 +74,28 @@ struct ProgressScreen: View {
     // MARK: - Road
 
     private var roadContent: some View {
-        let series = RunAnalytics.weeklyAvgPace(runs: store.runs, weeks: 12, roadOnly: true)
+        let series = RunAnalytics.weeklyAvgPace(runs: store.allRuns, weeks: 12, roadOnly: true)
         let present = series.compactMap { $0 }
         let road12 = last12WeekRoad
         let avg = road12.km > 0 ? road12.time / road12.km : 0
-        let delta = (present.first ?? 0) - (present.last ?? 0)
+        // Newest minus oldest, so a negative number means faster. It used to
+        // be `-abs(delta)`: the sign was forced, and the screen claimed an
+        // improvement no matter which way the runner had actually gone.
+        let change = (present.last ?? 0) - (present.first ?? 0)
         return VStack(alignment: .leading, spacing: 0) {
             Text("AVG PACE · LAST 12 WEEKS").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 24)
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(Format.pace(avg)).font(.stat(64)).kerning(-2.6)
                 Text("/km").font(.sg(16)).foregroundStyle(Theme.bright)
                 Spacer()
-                Text("\(Format.paceDelta(-abs(delta))) since \(sinceMonth)")
-                    .font(.stat(14)).foregroundStyle(Theme.signal)
+                if present.count >= 2 {
+                    trendDelta(Format.paceDelta(change), improved: change <= 0)
+                }
             }
             .padding(.top, 8)
-            TrendChart(values: series, topLabel: Format.pace((present.max() ?? 0) + 8),
-                       bottomLabel: Format.pace((present.min() ?? 0) - 8), invert: true,
+            TrendChart(values: series, headroom: 8, lowerIsBetter: true,
                        accessibilityTitle: "Average pace per week, last 12 weeks",
+                       format: { Format.pace($0) },
                        describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 18)
             monthAxis.padding(.top, 4)
@@ -52,24 +108,44 @@ struct ProgressScreen: View {
             MonthBars(items: store.monthlyTotals(count: 6).map { (shortMonth($0.month), $0.km) },
                       unit: "km") { "\(Int($0))" }
 
-            recordsCard(title: "Records", value: "\(store.record(.fiveK)?.value ?? "—") 5K")
+            recordsCard(title: "Records", value: fiveKSummary)
         }
     }
 
+    /// The card teases the 5 K record; without one it must not read "— 5K",
+    /// which looks like a rendering fault rather than an empty log.
+    private var fiveKSummary: String {
+        guard let record = store.record(.fiveK), !record.isUnset else {
+            return String(localized: "Nothing set yet")
+        }
+        return "\(record.value) 5K"
+    }
+
     private var driftRow: some View {
-        let drift = RunAnalytics.hrAtPace(runs: store.runs, referencePaceSec: 330)
+        let reference = RunAnalytics.referencePace(runs: store.allRuns)
+        let drift = reference.flatMap {
+            RunAnalytics.hrAtPace(runs: store.allRuns, referencePaceSec: $0)
+        }
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Heart rate at 5:30 pace").font(.sg(16))
-                Text("Same effort, less work").font(.sg(13)).foregroundStyle(Theme.muted)
+                // The pace comes from the runner's own easy runs, so the
+                // heading names theirs instead of a number this app picked.
+                Text(reference.map { "Heart rate at \(Format.pace($0)) pace" }
+                     ?? "Heart rate at your steady pace")
+                    .font(.sg(16))
+                // The subtitle carries the empty state: a heading with a lone
+                // em dash beside it reads as a fault, not as a log that has
+                // not filled up yet.
+                Text(drift == nil
+                     ? "Appears once a few easy runs sit at a similar pace"
+                     : "Same effort, less work")
+                    .font(.sg(13)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             if let drift {
-                (Text("\(drift.avg) ") + Text(drift.delta <= 0 ? "\(drift.delta)" : "+\(drift.delta)")
-                    .font(.stat(14)).foregroundStyle(Theme.signal))
+                Text("\(drift.avg) \(Text(drift.delta <= 0 ? "\(drift.delta)" : "+\(drift.delta)").font(.stat(14)).foregroundStyle(Theme.signal))")
                     .font(.stat(26))
-            } else {
-                Text("—").font(.stat(26)).foregroundStyle(Theme.muted)
             }
         }
     }
@@ -77,7 +153,7 @@ struct ProgressScreen: View {
     // MARK: - Trail
 
     private var trailContent: some View {
-        let climbSeries = RunAnalytics.weeklyClimbRate(runs: store.runs, weeks: 12)
+        let climbSeries = RunAnalytics.weeklyClimbRate(runs: store.allRuns, weeks: 12)
         let present = climbSeries.compactMap { $0 }
         let avgRate = present.isEmpty ? 0 : present.reduce(0, +) / Double(present.count)
         let rateDelta = (present.last ?? 0) - (present.first ?? 0)
@@ -87,13 +163,17 @@ struct ProgressScreen: View {
                 Text("\(Int(avgRate))").font(.stat(64)).kerning(-2.6)
                 Text("m/h").font(.sg(16)).foregroundStyle(Theme.bright)
                 Spacer()
-                Text("\(rateDelta >= 0 ? "+" : "−")\(Int(abs(rateDelta))) since \(sinceMonth)")
-                    .font(.stat(14)).foregroundStyle(Theme.signal)
+                if present.count >= 2 {
+                    // More metres per hour is the improvement here, so the
+                    // sense of "better" is the opposite way round to pace.
+                    trendDelta("\(rateDelta >= 0 ? "+" : "−")\(Int(abs(rateDelta)))",
+                               improved: rateDelta >= 0)
+                }
             }
             .padding(.top, 8)
-            TrendChart(values: climbSeries, topLabel: "\(Int((present.max() ?? 0)))",
-                       bottomLabel: "\(Int((present.min() ?? 0)))", invert: false,
+            TrendChart(values: climbSeries, headroom: 40, lowerIsBetter: false,
                        accessibilityTitle: "Climb rate per week, last 12 weeks",
+                       format: { "\(Int($0))" },
                        describe: { "\(Int($0)) metres per hour" })
                 .padding(.top, 18)
             monthAxis.padding(.top, 4)
@@ -108,23 +188,28 @@ struct ProgressScreen: View {
                 climb >= 1000 ? String(format: "%.1fk", climb / 1000) : "\(Int(climb))"
             }
 
-            recordsCard(title: "Most climb", value: "\(Int(store.mostClimbRun?.climbMeters ?? 0)) m")
+            recordsCard(title: "Most climb", value: (store.mostClimbRun?.climbMeters).map {
+                $0 > 0 ? "\(Int($0)) m" : String(localized: "Nothing set yet")
+            } ?? String(localized: "Nothing set yet"))
         }
     }
 
     private var gapRow: some View {
-        let trail = store.filteredRuns(.trail)
-        let rawPace = trail.reduce(0) { $0 + $1.paceSecPerKm } / Double(max(trail.count, 1))
-        let gap = trail.reduce(0.0) { $0 + RunAnalytics.gradeAdjustedPace($1) } / Double(max(trail.count, 1))
+        let summary = RunAnalytics.gradeAdjustedSummary(runs: store.filteredRuns(.trail))
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Grade-adjusted pace").font(.sg(16))
-                Text("Climbing costs you less").font(.sg(13)).foregroundStyle(Theme.muted)
+                Text(summary == nil
+                     ? "Appears after a trail run that recorded elevation"
+                     : "What your trail pace is worth on the flat")
+                    .font(.sg(13)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            (Text(Format.pace(gap) + " ") + Text(Format.paceDelta(gap - rawPace))
-                .font(.stat(14)).foregroundStyle(Theme.signal))
-                .font(.stat(26))
+            if let summary {
+                Text("\(Format.pace(summary.adjusted)) \(Text(Format.paceDelta(summary.adjusted - summary.raw)).font(.stat(14)).foregroundStyle(Theme.signal))")
+                    .font(.stat(26))
+            }
         }
     }
 
@@ -145,27 +230,41 @@ struct ProgressScreen: View {
         .padding(.top, 26)
     }
 
+    private var hasTrailRuns: Bool { store.allRuns.contains(where: \.isTrail) }
+
     private var divider: some View { Divider().overlay(Theme.hairline).padding(.vertical, 24) }
 
-    private var monthAxis: some View {
-        HStack {
-            ForEach(["Apr", "May", "Jun", "Jul"], id: \.self) { m in
-                Text(m).font(.sg(12)).foregroundStyle(Theme.muted)
-                if m != "Jul" { Spacer() }
-            }
-        }
+    private var monthAxis: some View { TrendMonthAxis(weeks: 12) }
+
+    /// The signed change across the chart above it.
+    ///
+    /// Signal is this app's "this is the number you came for" colour, so it
+    /// marks an improvement and nothing else — a regression is stated plainly
+    /// rather than dressed in the same accent. Which direction counts as an
+    /// improvement differs per metric, hence the parameter.
+    private func trendDelta(_ text: String, improved: Bool) -> some View {
+        Text("\(text) since \(windowStartMonth)")
+            .font(.stat(14))
+            .foregroundStyle(improved ? Theme.signal : Theme.bright)
     }
 
-    private var sinceMonth: String {
-        let d = Calendar.current.date(byAdding: .month, value: -3, to: .now) ?? .now
-        return d.formatted(.dateTime.month(.abbreviated))
+    /// The month the twelve-week window actually starts in. This used to be
+    /// "three months ago", which is a different month from the one the chart
+    /// and its axis begin at.
+    private var windowStartMonth: String {
+        let calendar = Calendar.runWeek
+        let start = calendar.date(byAdding: .weekOfYear, value: -11, to: .now) ?? .now
+        return start.formatted(.dateTime.month(.abbreviated))
     }
 
     private func shortMonth(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated)) }
 
+    /// Every figure on this screen reads `allRuns`, like Home, the Log and
+    /// Records do. It used to read `runs`, so the one screen headed "Progress"
+    /// was the only one that ignored everything recorded in another app.
     private var last12WeekRoad: (km: Double, time: TimeInterval) {
         let cutoff = Calendar.current.date(byAdding: .weekOfYear, value: -12, to: .now) ?? .now
-        let runs = store.runs.filter { !$0.isTrail && $0.date >= cutoff }
+        let runs = store.allRuns.filter { !$0.isTrail && $0.date >= cutoff }
         return (runs.reduce(0) { $0 + $1.distanceKm }, runs.reduce(0) { $0 + $1.duration })
     }
 }

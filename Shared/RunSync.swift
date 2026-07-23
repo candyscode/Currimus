@@ -17,6 +17,23 @@ struct WatchSettings: Codable, Equatable {
     var alwaysOnReduced: Bool?
 }
 
+/// Whether there is a watch to record on at all.
+///
+/// The iPhone is a reader: it shows a log the watch fills. Every screen that
+/// says so — the first-launch screen most of all — is a dead end for someone
+/// with no watch paired, or with one that does not have Currimus on it, and
+/// the app had no way of telling the difference.
+enum WatchAvailability: Equatable {
+    /// Paired, and Currimus is installed on it.
+    case ready
+    /// Paired, but the watch app is not installed.
+    case appMissing
+    /// No watch paired to this iPhone.
+    case noWatch
+    /// This device cannot pair a watch at all, or the state is not known yet.
+    case unknown
+}
+
 /// Watch ↔ iPhone transfer.
 /// - Runs: watch → iPhone via `transferUserInfo` (queued, guaranteed delivery).
 /// - Settings: iPhone → watch via `updateApplicationContext` (latest-wins).
@@ -33,6 +50,10 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     @MainActor var onReceive: ((Run) -> Void)?
     /// Receiving side (watch) applies arriving settings.
     @MainActor var onSettings: ((WatchSettings) -> Void)?
+    #if os(iOS)
+    /// Receiving side (iPhone) learns whether there is a watch to record on.
+    @MainActor var onWatchState: ((WatchAvailability) -> Void)?
+    #endif
 
     private override init() {
         super.init()
@@ -86,6 +107,7 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
         }
         // Apply any settings that were queued before activation completed.
         applySettings(from: session.receivedApplicationContext)
+        publishWatchState(session)
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
@@ -115,5 +137,19 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     #if os(iOS)
     func sessionDidBecomeInactive(_ session: WCSession) {}
     func sessionDidDeactivate(_ session: WCSession) { WCSession.default.activate() }
+
+    /// Fires when a watch is paired or unpaired, and when the watch app is
+    /// installed or removed.
+    func sessionWatchStateDidChange(_ session: WCSession) { publishWatchState(session) }
+
+    private func publishWatchState(_ session: WCSession) {
+        // Read here, on the delegate's own queue, and handed on as a value.
+        let state: WatchAvailability = session.isPaired
+            ? (session.isWatchAppInstalled ? .ready : .appMissing)
+            : .noWatch
+        Task { @MainActor in self.onWatchState?(state) }
+    }
+    #else
+    private func publishWatchState(_ session: WCSession) {}
     #endif
 }

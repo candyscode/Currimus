@@ -20,8 +20,12 @@ struct CurrimusApp: App {
                 // keeps the fixed numeric grids intact at the top end.
                 .dynamicTypeSize(...DynamicTypeSize.accessibility2)
                 // Pick up runs other apps recorded on every foreground, so the
-                // totals never lag behind what the user actually ran.
-                .task { await store.refreshImportedRuns(requestingAccess: true) }
+                // totals never lag behind what the user actually ran. Silent:
+                // the permission sheet is asked for on the first-launch
+                // screen, where there is room to say what it is for. Raising
+                // it here meant a cold start opened onto a Health dialog
+                // before the app had shown a single word about itself.
+                .task { await store.refreshImportedRuns() }
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
                     Task { await store.refreshImportedRuns() }
@@ -33,13 +37,19 @@ struct CurrimusApp: App {
 struct RootView: View {
     @EnvironmentObject private var store: RunStore
     @State private var tab: AppTab = RootView.initialTab
-    @State private var forceEmpty = UserDefaults.standard.bool(forKey: "empty")
+    @State private var forceEmpty = DebugFlags.forcesEmptyState
     @State private var icons = TabIconSet()
 
     var body: some View {
         Group {
-            if store.runs.isEmpty || forceEmpty {
-                FirstLaunchView()
+            // `allRuns`, not `runs`: someone arriving with years of runs in
+            // Apple Health has a log to show from the first launch. Gating on
+            // the runs Currimus recorded itself kept them on the welcome
+            // screen until they happened to run with this app once.
+            if store.allRuns.isEmpty || forceEmpty {
+                // In its own stack, so the first-launch screen can reach
+                // Settings — a fresh install has no tab bar to get there with.
+                TabRoot { FirstLaunchView() }
             } else {
                 // Native iOS 26 TabView → real Liquid Glass tab bar with the
                 // press-hold-and-drag-between-tabs interaction, using the
@@ -71,20 +81,15 @@ struct RootView: View {
     // MARK: - DEBUG screenshot / demo routing (release ignores it)
 
     private static var initialTab: AppTab {
-        #if DEBUG
-        switch UserDefaults.standard.string(forKey: "tab") {
+        switch DebugFlags.tab {
         case "log": return .log
         case "progress": return .progress
         default: return .home
         }
-        #else
-        return .home
-        #endif
     }
 
     private static func debugHomePath(_ store: RunStore) -> [Route] {
-        #if DEBUG
-        switch UserDefaults.standard.string(forKey: "push") {
+        switch DebugFlags.push {
         case "race": return [.race]
         case "raceSetup": return [.raceSetup]
         case "records": return [.records]
@@ -92,20 +97,18 @@ struct RootView: View {
         case "pacerDefaults": return [.pacerDefaults]
         case "hrZones": return [.hrZones]
         case "gpsAccuracy": return [.gpsAccuracy]
+        case "acknowledgements": return [.acknowledgements]
         case "detailRoad": return store.runs.first { !$0.isTrail }.map { [.runDetail($0)] } ?? []
         case "detailTrail": return store.runs.first { $0.isTrail }.map { [.runDetail($0)] } ?? []
+        case "editRun": return store.runs.first { !$0.isTrail }.map { [.runEdit($0)] } ?? []
         default: return []
         }
-        #else
-        return []
-        #endif
     }
 
     private func applyDemoStateOverrides() {
-        #if DEBUG
         // Health has no data in the simulator, so the derived zone state can
         // only be seen by injecting one.
-        if UserDefaults.standard.string(forKey: "zones") == "derived" {
+        if DebugFlags.zones == "derived" {
             store.zones = HRZones(
                 maxHR: 187, overrides: nil, restingHR: 48,
                 derivation: HRDerivation(
@@ -115,7 +118,7 @@ struct RootView: View {
                 )
             )
         }
-        switch UserDefaults.standard.string(forKey: "home") {
+        switch DebugFlags.home {
         case "norace": store.race = nil
         case "raceday":
             if var race = store.race {
@@ -123,7 +126,6 @@ struct RootView: View {
             }
         default: break
         }
-        #endif
     }
 }
 
@@ -158,10 +160,12 @@ func routeDestination(_ route: Route) -> some View {
     case .race: RaceView()
     case .raceSetup: RaceSetupView()
     case .runDetail(let run): RunDetailView(run: run)
+    case .runEdit(let run): RunEditView(run: run)
     case .records: RecordsView()
     case .settings: SettingsScreen()
     case .pacerDefaults: PacerDefaultsView()
     case .hrZones: HRZonesView()
     case .gpsAccuracy: GPSAccuracyView()
+    case .acknowledgements: AcknowledgementsView()
     }
 }

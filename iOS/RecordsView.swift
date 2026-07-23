@@ -54,7 +54,7 @@ struct RecordsView: View {
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 Text(record.value).font(.stat(19))
-                    .foregroundStyle(record.value == "—" ? Theme.muted : Theme.ink)
+                    .foregroundStyle(record.isUnset ? Theme.muted : Theme.ink)
                 Text(record.delta ?? record.date.formatted(.dateTime.day().month(.abbreviated)))
                     .font(.sg(12))
                     .foregroundStyle(record.isRaceCountdown ? Theme.signal : Theme.muted)

@@ -25,11 +25,13 @@ final class RunStore: ObservableObject {
     @Published var pacerDefaultDistanceKm: Double? = 10 { didSet { persistSettings(); pushSettings() } }
     @Published var kilometerAlert = true { didSet { persistSettings(); pushSettings() } }
     @Published var countdownEnabled = true { didSet { persistSettings(); pushSettings() } }
-    @Published var usesKilometers = true { didSet { persistSettings() } }
     /// GPS fidelity the watch records with — the run's dominant battery cost.
     @Published var gpsAccuracy: GPSAccuracy = .high { didSet { persistSettings(); pushSettings() } }
     /// Dim and simplify the run screen while the wrist is down.
     @Published var alwaysOnReduced = true { didSet { persistSettings(); pushSettings() } }
+    /// Whether there is a watch to record on. iPhone side only; the watch is
+    /// obviously its own answer.
+    @Published private(set) var watchState: WatchAvailability = .unknown
 
     /// Where this store reads and writes. Injected so tests get a scratch
     /// suite instead of scribbling on the real app group. `nonisolated(unsafe)`
@@ -43,7 +45,7 @@ final class RunStore: ObservableObject {
     /// the main thread on every single mutation. It is off the main thread now.
     private static let ioQueue = DispatchQueue(label: "com.currimus.app.store-io", qos: .utility)
 
-    init(seeded: Bool = UserDefaults.standard.bool(forKey: "demo"),
+    init(seeded: Bool = DebugFlags.seedsDemoContent,
          defaults: UserDefaults = AppDefaults.shared,
          isDemo: Bool? = nil) {
         self.defaults = defaults
@@ -67,6 +69,9 @@ final class RunStore: ObservableObject {
 
         RunSync.shared.onReceive = { [weak self] run in self?.add(run) }
         RunSync.shared.onSettings = { [weak self] settings in self?.apply(settings) }
+        #if os(iOS)
+        RunSync.shared.onWatchState = { [weak self] state in self?.watchState = state }
+        #endif
         RunSync.shared.activate()
         pushSettings()
     }
@@ -110,9 +115,26 @@ final class RunStore: ObservableObject {
     }
 
     func deleteRuns(at offsets: IndexSet, in subset: [Run]) {
+        remove(offsets.map { subset[$0] })
+    }
+
+    /// Deletes one run — what the log's own delete action calls, since the
+    /// screen is a hand-built scroll view and has no `IndexSet` to offer.
+    func delete(_ run: Run) { remove([run]) }
+
+    /// Writes back an edited run. Imported runs are Health's, not ours.
+    func update(_ run: Run) {
+        guard !run.isImported,
+              let index = runs.firstIndex(where: { $0.id == run.id }) else { return }
+        // The log holds metadata only — an edit must not put the track back in.
+        runs[index] = run.strippingSamples
+    }
+
+    private func remove(_ candidates: [Run]) {
         // Imported runs live in Health, not here — deleting one locally would
         // only make it come back on the next refresh.
-        let ids = offsets.map { subset[$0] }.filter { !$0.isImported }.map(\.id)
+        let ids = candidates.filter { !$0.isImported }.map(\.id)
+        guard !ids.isEmpty else { return }
         runs.removeAll { ids.contains($0.id) }
         for id in ids {
             sampleCache[id] = nil
@@ -183,6 +205,28 @@ final class RunStore: ObservableObject {
         if updated != zones { zones = updated }
     }
     #endif
+
+    /// What can honestly be said about the Apple Health connection.
+    ///
+    /// Not whether access was granted — Health hides read authorization by
+    /// design, returning an empty result for a denied type rather than an
+    /// error, precisely so that a refusal cannot be used to infer a medical
+    /// condition. "Connected" is therefore not a question this app can ask.
+    /// What it can report is evidence: whether anything actually came back.
+    enum HealthAccess: Equatable {
+        case unavailable
+        case reading(runs: Int)
+        case nothingRead
+    }
+
+    var healthAccess: HealthAccess {
+        #if canImport(HealthKit)
+        guard HealthImport.isAvailable else { return .unavailable }
+        return importedRuns.isEmpty ? .nothingRead : .reading(runs: importedRuns.count)
+        #else
+        return .unavailable
+        #endif
+    }
 
     // MARK: - Persistence
 
@@ -285,7 +329,6 @@ final class RunStore: ObservableObject {
             Log.store.error("could not save settings: \(error.localizedDescription, privacy: .public)")
         }
         defaults.set(weeklyGoalKm, forKey: AppDefaults.goalKey)
-        defaults.set(usesKilometers, forKey: AppDefaults.unitsKey)
         defaults.set(gpsAccuracy.rawValue, forKey: AppDefaults.gpsAccuracyKey)
     }
 
@@ -304,9 +347,6 @@ final class RunStore: ObservableObject {
         }
         if defaults.object(forKey: AppDefaults.goalKey) != nil {
             weeklyGoalKm = defaults.double(forKey: AppDefaults.goalKey)
-        }
-        if defaults.object(forKey: AppDefaults.unitsKey) != nil {
-            usesKilometers = defaults.bool(forKey: AppDefaults.unitsKey)
         }
         if let raw = defaults.string(forKey: AppDefaults.gpsAccuracyKey),
            let accuracy = GPSAccuracy(rawValue: raw) {
@@ -357,9 +397,11 @@ final class RunStore: ObservableObject {
     // MARK: - Aggregates
 
     private var calendar: Calendar { Calendar.current }
+    /// Weeks are Monday-first everywhere, whatever the device's locale says.
+    private var weekCalendar: Calendar { .runWeek }
 
     func runs(inWeekOf date: Date = .now) -> [Run] {
-        allRuns.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .weekOfYear) }
+        allRuns.filter { weekCalendar.isDate($0.date, equalTo: date, toGranularity: .weekOfYear) }
     }
 
     func runs(inMonthOf date: Date) -> [Run] {
@@ -371,8 +413,8 @@ final class RunStore: ObservableObject {
     var weekGoalFraction: Double { weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0 }
 
     var lastWeekKmToDate: Double {
-        guard let lastWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: .now),
-              let cutoff = calendar.date(byAdding: .day, value: -7, to: .now) else { return 0 }
+        guard let lastWeek = weekCalendar.date(byAdding: .weekOfYear, value: -1, to: .now),
+              let cutoff = weekCalendar.date(byAdding: .day, value: -7, to: .now) else { return 0 }
         return runs(inWeekOf: lastWeek).filter { $0.date <= cutoff }.reduce(0) { $0 + $1.distanceKm }
     }
 
@@ -382,7 +424,9 @@ final class RunStore: ObservableObject {
     var weekByDay: [Double] {
         var days = [Double](repeating: 0, count: 7)
         for run in runs(inWeekOf: .now) {
-            let weekday = calendar.component(.weekday, from: run.date) // 1 = Sun
+            // Weekday numbering is fixed (1 = Sun) whatever the week starts on;
+            // this maps it onto the M…S slots the bars are labelled with.
+            let weekday = weekCalendar.component(.weekday, from: run.date)
             days[(weekday + 5) % 7] += run.distanceKm
         }
         return days
@@ -429,7 +473,7 @@ final class RunStore: ObservableObject {
     /// (week label, km) for the last 4 weeks (race readiness), oldest first.
     func last4Weeks() -> [(label: String, km: Double)] {
         (0..<4).reversed().compactMap { offset in
-            guard let weekDate = calendar.date(byAdding: .weekOfYear, value: -offset, to: .now) else { return nil }
+            guard let weekDate = weekCalendar.date(byAdding: .weekOfYear, value: -offset, to: .now) else { return nil }
             let km = runs(inWeekOf: weekDate).reduce(0) { $0 + $1.distanceKm }
             return (offset == 0 ? "now" : "W\(4 - offset)", km)
         }
@@ -466,11 +510,14 @@ final class RunStore: ObservableObject {
                 return RecordEntry(kind: kind, value: Format.clock(time),
                                    date: recordDate(km: km, in: runs))
             }
+            // Nothing set over this distance yet. Say which distance is
+            // missing rather than printing an em dash that reads as a fault.
             let isTarget = race?.distance.km == km
             let note = isTarget
                 ? String(localized: "race day in \(race?.daysUntil() ?? 0) days")
-                : "—"
-            return RecordEntry(kind: kind, value: "—", date: .now,
+                : kind.emptyHint
+            return RecordEntry(kind: kind, value: String(localized: "Not yet"),
+                               isUnset: true, date: .now,
                                delta: note, isRaceCountdown: isTarget)
         }
         if let longest = longestRun {
@@ -516,9 +563,10 @@ final class RunStore: ObservableObject {
         let candidates: [(km: Int, label: String)] = [(5, "5K"), (10, "10K")]
         // Freshest first: a 10K PR set last week leads over a 5K PR from May.
         let held = candidates.compactMap { candidate -> LatestBenchmark? in
-            guard let holder = RunAnalytics.fastestWindowHolder(km: candidate.km, runs: runs) else { return nil }
-            let previous = RunAnalytics.fastestWindow(
-                km: candidate.km, runs: runs.filter { $0.id != holder.run.id })
+            let km = Double(candidate.km)
+            guard let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) else { return nil }
+            let previous = RunAnalytics.bestEffortHolder(
+                km: km, runs: runs.filter { $0.id != holder.run.id })?.seconds
             return LatestBenchmark(
                 label: candidate.label,
                 value: Format.clock(holder.seconds),
@@ -535,8 +583,8 @@ final class RunStore: ObservableObject {
         if let cachedHolders { return cachedHolders }
         var map: [UUID: String] = [:]
         let runs = allRuns
-        for (km, label) in [(5, "5K PR"), (10, "10K PR")] {
-            if let holder = RunAnalytics.fastestWindowHolder(km: km, runs: runs) {
+        for (km, label) in [(5.0, "5K PR"), (10.0, "10K PR")] {
+            if let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) {
                 map[holder.run.id] = label
             }
         }
@@ -545,12 +593,9 @@ final class RunStore: ObservableObject {
         return map
     }
 
-    /// Attribute a PR to the run that holds the fastest window.
+    /// Attribute a PR to the run that holds it — the same lookup the record
+    /// itself came from, so the row's date always belongs to the row's time.
     private func recordDate(km: Double, in runs: [Run]) -> Date {
-        if km <= 10, let holder = RunAnalytics.fastestWindowHolder(km: Int(km), runs: runs) {
-            return holder.run.date
-        }
-        return runs.filter { $0.distanceKm >= km - 0.4 }
-            .min { $0.paceSecPerKm < $1.paceSecPerKm }?.date ?? .now
+        RunAnalytics.bestEffortHolder(km: km, runs: runs)?.run.date ?? .now
     }
 }

@@ -54,7 +54,9 @@ struct Coordinate: Codable, Equatable, Hashable {
     var lat: Double
     var lon: Double
     var elevation: Double
-    var t: TimeInterval   // seconds since run start
+    /// Wall-clock seconds since the run started — pauses included, so the GPX
+    /// timestamps derived from it stay true to when the run actually happened.
+    var t: TimeInterval
 }
 
 /// How the Log/Home present a run. Road runs are auto-classified from their
@@ -99,6 +101,12 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// persisted before it existed — i.e. wipe the log. New fields stay
     /// optional; read it through `isImported`.
     var imported: Bool?
+    /// Set when the runner disagrees with the auto-classification, which is a
+    /// heuristic over splits and zones and is wrong often enough to be worth
+    /// correcting — it is the label every log row leads with. Optional for the
+    /// same reason as `imported`: a non-optional field would fail to decode
+    /// every run already in the log.
+    var classificationOverride: RunClass?
 
     var paceSecPerKm: TimeInterval { distanceKm > 0.05 ? duration / distanceKm : 0 }
 
@@ -134,7 +142,9 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// Auto-derived training type. Heuristic — good for the common cases,
     /// approximate at the edges (a hard tempo vs. a threshold interval set).
     var classification: RunClass {
+        // Trail is a recording mode, not a guess, so it outranks both.
         if type == .trail { return .trail }
+        if let classificationOverride { return classificationOverride }
         if distanceKm >= 18 { return .long }
         // Intervals: repeated hard efforts → wide split spread with Z4/Z5 work.
         if splits.count >= 4, splitSpread >= 18, zoneSeconds[3] + zoneSeconds[4] >= duration * 0.20 {
@@ -224,6 +234,20 @@ struct RecordEntry: Identifiable {
             }
         }
 
+        /// What is still missing, for a row that has no time yet. An em dash
+        /// says "broken" as readily as "empty"; this says which.
+        var emptyHint: String {
+            switch self {
+            case .oneK: return String(localized: "no 1 km effort yet")
+            case .fiveK: return String(localized: "no 5 km effort yet")
+            case .tenK: return String(localized: "no 10 km effort yet")
+            case .half: return String(localized: "no half marathon yet")
+            case .marathon: return String(localized: "no marathon yet")
+            case .longest: return String(localized: "no runs yet")
+            case .mostClimb: return String(localized: "no trail runs yet")
+            }
+        }
+
         /// The benchmark distance this row is a personal best over.
         var km: Double? {
             switch self {
@@ -241,6 +265,10 @@ struct RecordEntry: Identifiable {
     var id: String { kind.rawValue }
     var label: String { kind.label }
     var value: String
+    /// No time set over this distance yet. A flag rather than checking the
+    /// value for a placeholder string, which stops being recognisable the
+    /// moment it is translated.
+    var isUnset = false
     var date: Date
     /// Secondary line: how much a PR beat the previous best, or why there is
     /// no time yet. `nil` falls back to the date.
@@ -400,6 +428,17 @@ enum Format {
         formatter.groupingSize = 3
         let digits = formatter.string(from: NSNumber(value: value)) ?? "\(value)"
         return unit ? digits + "\u{00A0}m" : digits
+    }
+
+    /// A pacer target distance as a compact label: "Off", "10 km", or the two
+    /// race distances with their decimal ("21.1 km" / "42.2 km"). One place, so
+    /// the Settings summary and the wheel cannot disagree on how a marathon
+    /// reads.
+    static func pacerDistance(_ km: Double?) -> String {
+        guard let km else { return String(localized: "Off") }
+        if km == RaceDistance.half.km { return "21.1 km" }
+        if km == RaceDistance.marathon.km { return "42.2 km" }
+        return "\(Int(km)) km"
     }
 
     /// Signed pace delta, e.g. "−0:06" / "+0:12"

@@ -1,7 +1,21 @@
 import SwiftUI
 
 /// The promise, before any data exists.
+///
+/// It is also the only screen a fresh install has, so it has to carry the one
+/// thing the user can actually do here. Recording happens on the watch — but
+/// the race, the heart-rate zones and the pacer defaults are the iPhone's, and
+/// they are worth setting *before* the first run rather than after it.
 struct FirstLaunchView: View {
+    @EnvironmentObject private var store: RunStore
+    @Environment(\.pushRoute) private var push
+    @State private var healthAsk: HealthAsk = .idle
+
+    /// The Health import is the one action here that can visibly fail — the
+    /// prompt can be declined, and there may simply be nothing to import.
+    /// Health never reveals which, so the wording covers both.
+    private enum HealthAsk { case idle, working, foundNothing }
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Theme.bg.ignoresSafeArea()
@@ -16,7 +30,7 @@ struct FirstLaunchView: View {
 
                 Spacer()
 
-                (Text("Simple.\nBeautiful.\n") + Text("Yours.").foregroundStyle(Theme.signal))
+                Text("Simple.\nBeautiful.\n\(Text("Yours.").foregroundStyle(Theme.signal))")
                     .font(.sg(56, weight: .semibold)).kerning(-1.9).lineSpacing(2)
                 VStack(alignment: .leading, spacing: 13) {
                     promise("No ads. No account. No feed.")
@@ -29,18 +43,68 @@ struct FirstLaunchView: View {
                 Spacer()
 
                 VStack(spacing: 14) {
-                    Text("Start on your Apple Watch")
-                        .font(.sg(17, weight: .bold)).foregroundStyle(Theme.bg)
-                        .frame(maxWidth: .infinity, minHeight: 58)
-                        .background(Theme.signal, in: Capsule())
-                    Text("Race, zones and pacer defaults live in Settings.")
+                    // The primary action names something this screen can
+                    // actually do. It used to read "Start on your Apple Watch"
+                    // — an instruction dressed as a button, on a screen with
+                    // no way through to Settings at all.
+                    Button { push(.settings) } label: {
+                        Text("Set up race, zones and pacer")
+                            .font(.sg(17, weight: .bold)).foregroundStyle(Theme.bg)
+                            .frame(maxWidth: .infinity, minHeight: 58)
+                            .background(Theme.signal, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+
+                    // Asked here rather than at launch: someone who has been
+                    // running for years already has a log, and this is the
+                    // screen with room to say what the permission is for.
+                    Button(action: importFromHealth) {
+                        Text(healthAsk == .working
+                             ? "Reading Apple Health…"
+                             : "Already have runs? Bring them in")
+                            .font(.sg(15, weight: .semibold)).foregroundStyle(Theme.bright)
+                            .frame(maxWidth: .infinity, minHeight: 50)
+                            .background(Theme.chipFill, in: Capsule())
+                            .overlay(Capsule().stroke(Theme.chipStroke, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(healthAsk == .working)
+
+                    Text(caption)
                         .font(.sg(13)).foregroundStyle(Theme.muted)
+                        .multilineTextAlignment(.center).lineSpacing(2)
                 }
             }
             .padding(.horizontal, 30)
             .padding(.vertical, 40)
         }
         .foregroundStyle(Theme.ink)
+    }
+
+    /// The closing line has to survive being read by someone with no watch —
+    /// "start your first run on the Apple Watch" is a dead end for them, and
+    /// the app knows perfectly well whether one is paired.
+    private var caption: String {
+        switch store.watchState {
+        case .noWatch:
+            return "Currimus records on the Apple Watch — there is none paired with this iPhone yet. Everything here still reads your Apple Health runs."
+        case .appMissing:
+            return "Install Currimus on your Apple Watch to record — the Watch app, under Available Apps."
+        case .ready, .unknown:
+            return healthAsk == .foundNothing
+                ? "No running workouts in Apple Health yet — or access was declined. Either way, your first run on the watch starts the log."
+                : "Then start your first run on the Apple Watch — the log fills itself."
+        }
+    }
+
+    /// Raises the Health prompt and pulls in whatever other apps recorded. On
+    /// success this screen disappears on its own: the log stops being empty.
+    private func importFromHealth() {
+        healthAsk = .working
+        Task {
+            await store.refreshImportedRuns(requestingAccess: true)
+            healthAsk = store.allRuns.isEmpty ? .foundNothing : .idle
+        }
     }
 
     private func promise(_ text: String) -> some View {

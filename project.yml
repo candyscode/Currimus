@@ -17,7 +17,16 @@ settings:
     # (and String(localized:) call sites) show up in the catalogue.
     SWIFT_EMIT_LOC_STRINGS: YES
     GENERATE_INFOPLIST_FILE: YES
+    # The app uses no encryption beyond what iOS itself provides over HTTPS —
+    # in fact it makes no network calls at all. Declaring it here answers the
+    # export-compliance question once, instead of on every single upload.
+    INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
     CODE_SIGN_STYLE: Automatic
+    # The project file is generated, so anything set by hand in Xcode's
+    # Signing & Capabilities pane survives exactly until the next
+    # `xcodegen generate`. The team belongs here or it does not persist —
+    # and HealthKit cannot be built onto a device without it.
+    DEVELOPMENT_TEAM: 88U4UH4ASG
     CURRENT_PROJECT_VERSION: 1
     MARKETING_VERSION: "1.0"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -33,6 +42,11 @@ targets:
         buildPhase: resources
       - path: Resources/Localizable.xcstrings
         buildPhase: resources
+      # Required since May 2024. Both apps and the widget read UserDefaults,
+      # which is a required-reason API; without a manifest declaring it the
+      # upload is answered with ITMS-91053.
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app
@@ -40,8 +54,11 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads your running workouts from Apple Health."
-        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Currimus saves your runs as workouts to Apple Health."
+        # Read only. The iPhone never writes to Health — the watch saves the
+        # workout, and this app reads runs other apps recorded. Declaring a
+        # write description it does not use invites a review question with no
+        # good answer.
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads your running workouts from Apple Health, so every total counts what you actually ran."
         TARGETED_DEVICE_FAMILY: "1"
     entitlements:
       path: iOS/Currimus.entitlements
@@ -62,6 +79,11 @@ targets:
         buildPhase: resources
       - path: Resources/Localizable.xcstrings
         buildPhase: resources
+      # Required since May 2024. Both apps and the widget read UserDefaults,
+      # which is a required-reason API; without a manifest declaring it the
+      # upload is answered with ITMS-91053.
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.watchkitapp
@@ -75,9 +97,18 @@ targets:
     info:
       path: Watch/Info.plist
       properties:
+        # Both were literals here, so the watch app stayed on 1.0/1 while the
+        # iPhone app followed MARKETING_VERSION. App Store Connect rejects a
+        # bundle whose embedded watch app disagrees with it.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.currimus.app
-        WKBackgroundModes: [workout-processing]
+        # `location` alongside the workout mode: the workout session keeps the
+        # app alive, but CoreLocation still refuses to deliver fixes in the
+        # background without its own declaration — and
+        # `allowsBackgroundLocationUpdates` traps at runtime if it is missing.
+        WKBackgroundModes: [workout-processing, location]
         WKSupportsAlwaysOnDisplay: true
         CFBundleDisplayName: Currimus
     entitlements:
@@ -96,6 +127,8 @@ targets:
       - WatchWidgets
       - Shared
       - path: Fonts
+        buildPhase: resources
+      - path: Resources/PrivacyInfo.xcprivacy
         buildPhase: resources
     settings:
       base:
@@ -116,7 +149,13 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - Tests
+      # UISnapshots holds the UI-regression harness's golden PNGs and its
+      # scratch output — data for scripts/ui-snapshot.sh, not the XCTest bundle.
+      # Without this exclude xcodegen copies them in as resources, and the
+      # ios/watch/_work copies collide on basename ("multiple commands produce").
+      - path: Tests
+        excludes:
+          - "UISnapshots/**"
       - Shared
     settings:
       base:

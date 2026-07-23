@@ -3,6 +3,7 @@ import SwiftUI
 /// Step 1 · Target pace (required) — the crown scrolls the wheel.
 struct PacerPaceView: View {
     @ObservedObject var session: RunSession
+    var onCancel: () -> Void
     var onNext: () -> Void
     @State private var crownValue: Double = 315
 
@@ -34,17 +35,20 @@ struct PacerPaceView: View {
 
             Spacer(minLength: 14)
 
-            Button(action: {
-                session.pacerTarget = target
-                onNext()
-            }) {
-                Text("Next")
-                    .font(.sg(15, weight: .bold))
-                    .foregroundStyle(Theme.bg)
-                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
-                    .background(Theme.signal, in: Capsule())
+            HStack(spacing: 8) {
+                PacerSecondaryButton(system: "xmark", action: onCancel)
+                Button(action: {
+                    session.pacerTarget = target
+                    onNext()
+                }) {
+                    Text("Next")
+                        .font(.sg(15, weight: .bold))
+                        .foregroundStyle(Theme.bg)
+                        .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
+                        .background(Theme.signal, in: Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(EdgeInsets(top: 12, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PACER") }
@@ -57,22 +61,62 @@ struct PacerPaceView: View {
     }
 }
 
+/// The quiet leading button that pairs with a pacer step's primary action —
+/// cancel on the pace step, back on the distance step. Circular so it stays
+/// out of the way of the wide Signal button beside it.
+struct PacerSecondaryButton: View {
+    var system: String
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: system)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .frame(width: 50, height: 50)
+                .background(Theme.button, in: Circle())
+                .overlay(Circle().stroke(Theme.buttonBorder, lineWidth: 0.75))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 /// Step 2 · Distance (optional) — scroll up to Off and the pacer runs
 /// open-ended: gauge and cumulative delta only, no finish forecast.
 struct PacerDistanceView: View {
     @ObservedObject var session: RunSession
+    var onBack: () -> Void
     var onStart: () -> Void
-    /// Index into `options`; 0 = Off, then 5 km steps.
-    @State private var crownValue = 2.0
+    /// Index into `options`; 0 = Off, then every kilometre, then the two race
+    /// distances. Starts on 10 km, which onAppear overrides with the default.
+    @State private var crownValue = 10.0
 
-    private let options: [Double?] = [nil] + stride(from: 5.0, through: 50.0, by: 5.0).map { $0 }
+    /// Off, then 1 km at a time — the old wheel only offered multiples of five,
+    /// so 7 km or 12 km could not be paced — then the half and the full, which
+    /// are the two distances people actually pace and are not whole numbers.
+    private let options: [Double?] = {
+        var opts: [Double?] = [nil]
+        opts.append(contentsOf: (1...50).map { Double($0) as Double? })
+        opts.append(contentsOf: [RaceDistance.half.km, RaceDistance.marathon.km] as [Double?])
+        return opts
+    }()
 
     private var index: Int { min(max(Int(crownValue.rounded()), 0), options.count - 1) }
     private var selection: Double? { options[index] }
 
+    /// The half and full are stored as 21.0975 / 42.195, so they show a decimal
+    /// where whole kilometres show none.
+    private func isRace(_ value: Double) -> Bool {
+        value == RaceDistance.half.km || value == RaceDistance.marathon.km
+    }
+
+    private func number(_ value: Double) -> String {
+        isRace(value) ? String(format: "%.1f", value) : "\(Int(value))"
+    }
+
     private func label(_ value: Double?) -> String {
         guard let value else { return "Off" }
-        return "\(Int(value)) km"
+        return "\(number(value)) km"
     }
 
     var body: some View {
@@ -83,9 +127,13 @@ struct PacerDistanceView: View {
                 Group {
                     if let selection {
                         HStack(alignment: .firstTextBaseline, spacing: 5) {
-                            Text("\(Int(selection))")
+                            Text(number(selection))
                                 .font(.stat(37))
                                 .kerning(-1.5)
+                                // "42.2" is wider than the old two-digit
+                                // maximum; keep it on one line on a 40 mm case.
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                             Text("km")
                                 .font(.sg(15))
                                 .foregroundStyle(Theme.bright)
@@ -117,24 +165,30 @@ struct PacerDistanceView: View {
 
             Spacer(minLength: 14)
 
-            Button(action: {
-                session.pacerDistanceKm = selection
-                onStart()
-            }) {
-                Text("Start")
-                    .font(.sg(15, weight: .bold))
-                    .foregroundStyle(Theme.bg)
-                    .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
-                    .background(Theme.signal, in: Capsule())
+            HStack(spacing: 8) {
+                PacerSecondaryButton(system: "chevron.left", action: onBack)
+                Button(action: {
+                    session.pacerDistanceKm = selection
+                    onStart()
+                }) {
+                    Text("Start")
+                        .font(.sg(15, weight: .bold))
+                        .foregroundStyle(Theme.bg)
+                        .frame(maxWidth: .infinity, minHeight: 50, maxHeight: 50)
+                        .background(Theme.signal, in: Capsule())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(EdgeInsets(top: 12, leading: 20, bottom: 16, trailing: 20))
         .topBarCaption { TopBarCaption(text: "PACER · DISTANCE") }
         .focusable()
+        // Medium, not low: there are 53 stops now (Off, 50 kilometres, half,
+        // full), and low made reaching the longer distances a long turn. The
+        // `by: 1` still snaps to one kilometre at a time, so precision is kept.
         .digitalCrownRotation(
             $crownValue, from: 0, through: Double(options.count - 1), by: 1,
-            sensitivity: .low, isContinuous: false, isHapticFeedbackEnabled: true
+            sensitivity: .medium, isContinuous: false, isHapticFeedbackEnabled: true
         )
         .onAppear {
             if let existing = session.pacerDistanceKm,
@@ -331,10 +385,13 @@ struct PacerSummaryView: View {
         let targetTime = targetDistanceKm * target
         let delta = run.duration - targetTime
         guard abs(delta) >= 1 else { return ("Finished ", "right on", " the \(Format.clock(targetTime)) target.") }
+        // "ahead of the target", but "behind the target" — the "of" belongs to
+        // "ahead" alone, so it rides with the direction word rather than the
+        // trailing clause (which read "behind of the target" otherwise).
         return (
             "Finished ",
-            "\(Format.clock(abs(delta))) \(delta < 0 ? "ahead" : "behind")",
-            " of the \(Format.clock(targetTime)) target."
+            "\(Format.clock(abs(delta))) \(delta < 0 ? "ahead of" : "behind")",
+            " the \(Format.clock(targetTime)) target."
         )
     }
 

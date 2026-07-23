@@ -10,6 +10,8 @@
 		00B5BFA9AA8BAE87BBD70110 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C025916FFE193709BFE79626 /* Localizable.xcstrings */; };
 		045548523ED1B5719BF4BF25 /* RunScaffold.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81AF2D50A1295819CF2F665 /* RunScaffold.swift */; };
 		046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
+		04FD31CEDB16B3B7AE18FCBC /* RunScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0AB554106862365931D05C /* RunScenario.swift */; };
+		051AF0F0EA15F44F5D3F9848 /* RunWeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5464BE0196BC03E8F0255 /* RunWeek.swift */; };
 		07C5CEEF37DA02B813DDA920 /* CurrimusWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0AF2B49944699FB95A35180D /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		1036F046D58875E97CB5C429 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
@@ -40,11 +42,14 @@
 		4CBCD27EBAFE272144D57CC1 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
 		4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
 		4E9DC5F07B3CCE7B709E81C6 /* HealthImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E064E4F53870876EEA1602 /* HealthImport.swift */; };
+		4EFB3C418AF0617477BEB34E /* RunScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0AB554106862365931D05C /* RunScenario.swift */; };
 		4F5B2CED42029C3BED5B683E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
 		53B0ED35B918C95FCCCA4B07 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		53FBDEC2B58546052685A40C /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
+		55D0F85F59CB6BE1C66EAD38 /* RunWeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5464BE0196BC03E8F0255 /* RunWeek.swift */; };
 		5843214DF0F756E312673578 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D363B4FE9688A032EED38C4 /* OFL.txt */; };
 		5871CAE9414DFEAD955B7C4B /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
+		58BE88512FF1EC1C60A45B25 /* RunScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0AB554106862365931D05C /* RunScenario.swift */; };
 		58D78360BAFF6BF5665AC772 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87DFFE92F35B99B3676E4629 /* FirstLaunchView.swift */; };
 		59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591C33FACB6B9A5D87A858BB /* RunSession.swift */; };
 		5B29CAA45111F1A2496CB5B5 /* RecordingIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC5D9A0957780EACF963837 /* RecordingIssue.swift */; };
@@ -52,6 +57,9 @@
 		5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
 		6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
+		6531B6F7EE07A875F176BC98 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
+		66EEF7F6247B07B2DD689B96 /* AcknowledgementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 840F76F4456F3229DB916764 /* AcknowledgementsView.swift */; };
+		682DE7363C94109DF8D8A910 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
 		6841D02032CC9CDD2B2C09B3 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		68D6599A4AFBC9796959F88B /* TopBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485542A4B0D645CFCC648C51 /* TopBar.swift */; };
 		6905CDB7A68F0AF8003D5E95 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
@@ -62,6 +70,7 @@
 		6CDF6CAC52FFF686C46A9587 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
 		6CEAFA77482B7929938A2DE1 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		6EB9B6945D9E649D58FC53D1 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
+		70A19E1E2303F0EAC6B2588A /* RunWeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5464BE0196BC03E8F0255 /* RunWeek.swift */; };
 		7106A2CF88A06C1A9832676F /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
 		7643EAA0E5005D421F7CA092 /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		7689C91808C6D09BB947694D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
@@ -85,12 +94,16 @@
 		921B31AB79D2FBF173A9B1C7 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		928FB6A679175338A1AB032B /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		95057FCF29C634615715C893 /* ProgressTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2093769E1832392AF743C8EC /* ProgressTabView.swift */; };
+		9727438948BE77F429EBCE65 /* DebugFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E09415889FE9881BBFFB33 /* DebugFlags.swift */; };
 		97FDBDF1A2B41336BA763A90 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
+		9817FE36FB474C32290ECCE0 /* RunWeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5464BE0196BC03E8F0255 /* RunWeek.swift */; };
 		9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		9ADAF4F78A56DF1F635A50C9 /* RecordingIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC5D9A0957780EACF963837 /* RecordingIssue.swift */; };
 		9B9424914A12A92D7CB3F61C /* RaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */; };
+		9C154D0CA18F02DF6958BD91 /* RunScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0AB554106862365931D05C /* RunScenario.swift */; };
 		A10FC0458A9B7ADD0008EE8A /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
 		A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6CFB5CC07067218F2414163 /* Assets.xcassets */; };
+		A26A16C3F90065FA5A88BC10 /* DebugFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E09415889FE9881BBFFB33 /* DebugFlags.swift */; };
 		A28544720DE563808062AEE6 /* RunMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776C9DC6EFBBC77654B2C197 /* RunMetricsTests.swift */; };
 		A28A4016C9EF471DC28C03A9 /* SpaceGrotesk-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 741D0ECD05019FE9B9E6258E /* SpaceGrotesk-Medium.ttf */; };
 		A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315BB07B29A7E2F717AFC457 /* SettingsView.swift */; };
@@ -101,15 +114,18 @@
 		AB3F9B670C35A7DF7524C002 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		AF7888360F4BF7DBD2E1BF2A /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		AF8B59555800E52D952805DD /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
+		AF973897D856107C80D15624 /* RunSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC92A81632A837F36A44AD7 /* RunSimulator.swift */; };
 		B088041022A6EF3E28813E66 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C025916FFE193709BFE79626 /* Localizable.xcstrings */; };
 		B1750243611A3E10BDCD574D /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C9CB42153EFED5140123404 /* RecordsView.swift */; };
 		B1A27DE2B7F0E859A492023D /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		B22739DB9864EA01A42319F5 /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
 		B749CFE69D9A5A8A4D6D3A8D /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D363B4FE9688A032EED38C4 /* OFL.txt */; };
 		B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */; };
+		B98978D0DB117FD39936AE05 /* RunSimulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62E33AFA1FFA39DF433C9B73 /* RunSimulationTests.swift */; };
 		B9AB9B26A8F7D7B113454FE8 /* RunAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */; };
 		BBA33462F041B60D1F8C523E /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		BD8AD29F820387287BC04619 /* RunExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E024589EC7343ED3809D8F41 /* RunExportTests.swift */; };
 		BE8B9BE35F089EDE445C643B /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		C1BC79A4D874C952DAE8F3E1 /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		C2486B37815CA4713B1A972F /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
@@ -120,15 +136,22 @@
 		CB051C7B414C753DA3945E3A /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		D03CFF6F549424CF8B570758 /* RecordingPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CB59BCA4018F4C3EBBFD25 /* RecordingPolicyTests.swift */; };
 		D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752748C2C4376164266AC885 /* CurrimusApp.swift */; };
+		D47B33063F6CCE2BCC5A6DB3 /* DebugFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E09415889FE9881BBFFB33 /* DebugFlags.swift */; };
+		D529E10E8D2EF160F64C6D1D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
 		D687CD7AA9868B8B982FE26E /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		DB7737B26FB59423A7ADD549 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55F4CF421595E439C843775 /* WatchApp.swift */; };
 		DC5F3F32B0274951D97B1959 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
+		DE0C57860063777DB60AD519 /* DebugFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E09415889FE9881BBFFB33 /* DebugFlags.swift */; };
 		E7AD9B70C6E27CE0D4CB116D /* RecordingIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC5D9A0957780EACF963837 /* RecordingIssue.swift */; };
 		E86BFECCF96440F2567693E0 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		EC55258A7F95B65787BEEDD2 /* RecordingIssueViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E3EEBDD46A2C2878930F10 /* RecordingIssueViews.swift */; };
+		F0CF0F9D86EBC31D792555EE /* RunSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC92A81632A837F36A44AD7 /* RunSimulator.swift */; };
+		F207E95C76E6E6A33A9B4859 /* RunEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD6D8198237FDA19530FD50 /* RunEditView.swift */; };
+		F43D622D23714E7018BDCF6F /* RunSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC92A81632A837F36A44AD7 /* RunSimulator.swift */; };
 		F510560E3551F6D4F3842E46 /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		F7A7C35C3DF0D466D580D012 /* TrailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 093CE780E88BBF9DB0F19E1D /* TrailViews.swift */; };
 		F8AB414317BEB2FAAB2E3321 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
+		FB593E6D9E7273C05E28747F /* RunSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC92A81632A837F36A44AD7 /* RunSimulator.swift */; };
 		FCB58A150AA3CAC5971F86BB /* SummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B6CDF2A60DB7B8C7B810C1A /* SummaryView.swift */; };
 		FE5A5F0749AAABADF619C9F0 /* HealthImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E064E4F53870876EEA1602 /* HealthImport.swift */; };
 /* End PBXBuildFile section */
@@ -181,8 +204,10 @@
 		13D61C620B2F41C1B8C0B5B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1EC5D9A0957780EACF963837 /* RecordingIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIssue.swift; sourceTree = "<group>"; };
 		2093769E1832392AF743C8EC /* ProgressTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressTabView.swift; sourceTree = "<group>"; };
+		2D0AB554106862365931D05C /* RunScenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunScenario.swift; sourceTree = "<group>"; };
 		2EA58C9AB36DB9CE81261E36 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		315BB07B29A7E2F717AFC457 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		31E09415889FE9881BBFFB33 /* DebugFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugFlags.swift; sourceTree = "<group>"; };
 		35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSampleStore.swift; sourceTree = "<group>"; };
 		367A4044965F5409D34C5401 /* CurrimusWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusWidgets.swift; sourceTree = "<group>"; };
 		3C9CB42153EFED5140123404 /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsView.swift; sourceTree = "<group>"; };
@@ -191,12 +216,16 @@
 		42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekSnapshot.swift; sourceTree = "<group>"; };
 		46E064E4F53870876EEA1602 /* HealthImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthImport.swift; sourceTree = "<group>"; };
 		485542A4B0D645CFCC648C51 /* TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBar.swift; sourceTree = "<group>"; };
-		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
 		506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAnalytics.swift; sourceTree = "<group>"; };
+		56F5464BE0196BC03E8F0255 /* RunWeek.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunWeek.swift; sourceTree = "<group>"; };
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
+		5CD6D8198237FDA19530FD50 /* RunEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunEditView.swift; sourceTree = "<group>"; };
 		60332871CFEA2AFE9925CDAE /* RunPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunPalette.swift; sourceTree = "<group>"; };
+		611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		61423834EFBB80EBFAC112C9 /* CurrimusWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatchWidgets.entitlements; sourceTree = "<group>"; };
+		62E33AFA1FFA39DF433C9B73 /* RunSimulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSimulationTests.swift; sourceTree = "<group>"; };
 		65AEBA896B9201B26676F060 /* Scaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scaffold.swift; sourceTree = "<group>"; };
 		65B6A62A4E92A05F4D05C253 /* RunStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStore.swift; sourceTree = "<group>"; };
 		6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunMetrics.swift; sourceTree = "<group>"; };
@@ -209,6 +238,7 @@
 		7833EDFB1BA31C1B90CF2A5E /* Charts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Charts.swift; sourceTree = "<group>"; };
 		7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Regular.ttf"; sourceTree = "<group>"; };
 		7D363B4FE9688A032EED38C4 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
+		840F76F4456F3229DB916764 /* AcknowledgementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgementsView.swift; sourceTree = "<group>"; };
 		858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Bold.ttf"; sourceTree = "<group>"; };
 		87DFFE92F35B99B3676E4629 /* FirstLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchView.swift; sourceTree = "<group>"; };
 		8A2261073FBBD8C3A56D3695 /* SpaceGrotesk-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-Light.ttf"; sourceTree = "<group>"; };
@@ -234,11 +264,13 @@
 		D2A0A8C374CC2DF912776427 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
 		DCBE840AF1F7A6789D2DADA0 /* Currimus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Currimus.entitlements; sourceTree = "<group>"; };
 		DD88986EEA97DE1411F9263F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E024589EC7343ED3809D8F41 /* RunExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunExportTests.swift; sourceTree = "<group>"; };
 		E47BCF44600BC83F472F7AE0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		E4A703AB6859F2CA4B35CC46 /* AlwaysOn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlwaysOn.swift; sourceTree = "<group>"; };
 		E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-SemiBold.ttf"; sourceTree = "<group>"; };
 		E7F9B6C5CE55770CF0FED06C /* RunStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunStoreTests.swift; sourceTree = "<group>"; };
 		EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceView.swift; sourceTree = "<group>"; };
+		EEC92A81632A837F36A44AD7 /* RunSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSimulator.swift; sourceTree = "<group>"; };
 		FBF1B697133D1D045364B6E4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -247,6 +279,7 @@
 			isa = PBXGroup;
 			children = (
 				4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */,
+				31E09415889FE9881BBFFB33 /* DebugFlags.swift */,
 				7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */,
 				46E064E4F53870876EEA1602 /* HealthImport.swift */,
 				A7FBB797F1648FC729833297 /* HeartRateProfile.swift */,
@@ -258,8 +291,11 @@
 				6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */,
 				60332871CFEA2AFE9925CDAE /* RunPalette.swift */,
 				35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */,
+				2D0AB554106862365931D05C /* RunScenario.swift */,
+				EEC92A81632A837F36A44AD7 /* RunSimulator.swift */,
 				65B6A62A4E92A05F4D05C253 /* RunStore.swift */,
 				99659A5B888C4EF67485D477 /* RunSync.swift */,
+				56F5464BE0196BC03E8F0255 /* RunWeek.swift */,
 				9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */,
 				742835D6D8B7C6204427A3C0 /* SharedComponents.swift */,
 				E47BCF44600BC83F472F7AE0 /* Theme.swift */,
@@ -308,6 +344,7 @@
 		5C62DF926D8D3642EBDDEFC5 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
+				840F76F4456F3229DB916764 /* AcknowledgementsView.swift */,
 				A6CFB5CC07067218F2414163 /* Assets.xcassets */,
 				7833EDFB1BA31C1B90CF2A5E /* Charts.swift */,
 				DCBE840AF1F7A6789D2DADA0 /* Currimus.entitlements */,
@@ -320,6 +357,7 @@
 				EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */,
 				3C9CB42153EFED5140123404 /* RecordsView.swift */,
 				CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */,
+				5CD6D8198237FDA19530FD50 /* RunEditView.swift */,
 				65AEBA896B9201B26676F060 /* Scaffold.swift */,
 				315BB07B29A7E2F717AFC457 /* SettingsView.swift */,
 			);
@@ -352,7 +390,9 @@
 			children = (
 				A2CB59BCA4018F4C3EBBFD25 /* RecordingPolicyTests.swift */,
 				0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */,
+				E024589EC7343ED3809D8F41 /* RunExportTests.swift */,
 				776C9DC6EFBBC77654B2C197 /* RunMetricsTests.swift */,
+				62E33AFA1FFA39DF433C9B73 /* RunSimulationTests.swift */,
 				E7F9B6C5CE55770CF0FED06C /* RunStoreTests.swift */,
 			);
 			path = Tests;
@@ -362,6 +402,7 @@
 			isa = PBXGroup;
 			children = (
 				C025916FFE193709BFE79626 /* Localizable.xcstrings */,
+				611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -465,15 +506,19 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					02321DE45E155EE5C1C4F746 = {
+						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
 					CA2C3F29B285D1403A3E2C2F = {
+						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
 					DC4EB7F9010256AAE8FB5ED9 = {
+						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
 					F7FBDF38598250E3CB3341E4 = {
+						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -508,6 +553,7 @@
 				2BED9195AAB4F4F85A5717DC /* Assets.xcassets in Resources */,
 				B088041022A6EF3E28813E66 /* Localizable.xcstrings in Resources */,
 				B749CFE69D9A5A8A4D6D3A8D /* OFL.txt in Resources */,
+				682DE7363C94109DF8D8A910 /* PrivacyInfo.xcprivacy in Resources */,
 				6B518FFE68FA01C3ADD13FDD /* SpaceGrotesk-Bold.ttf in Resources */,
 				2CB91D71E6B6E6FA24F1C95F /* SpaceGrotesk-Light.ttf in Resources */,
 				830260335BDEAF3CD5BCBE7F /* SpaceGrotesk-Medium.ttf in Resources */,
@@ -523,6 +569,7 @@
 				A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */,
 				00B5BFA9AA8BAE87BBD70110 /* Localizable.xcstrings in Resources */,
 				5843214DF0F756E312673578 /* OFL.txt in Resources */,
+				6531B6F7EE07A875F176BC98 /* PrivacyInfo.xcprivacy in Resources */,
 				5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */,
 				B79B4C5D78818C6FB7DE3668 /* SpaceGrotesk-Light.ttf in Resources */,
 				A28A4016C9EF471DC28C03A9 /* SpaceGrotesk-Medium.ttf in Resources */,
@@ -536,6 +583,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				487CD92918738997F3DB723F /* OFL.txt in Resources */,
+				D529E10E8D2EF160F64C6D1D /* PrivacyInfo.xcprivacy in Resources */,
 				AF8B59555800E52D952805DD /* SpaceGrotesk-Bold.ttf in Resources */,
 				6CDF6CAC52FFF686C46A9587 /* SpaceGrotesk-Light.ttf in Resources */,
 				046023FB4F5535E396CA54F9 /* SpaceGrotesk-Medium.ttf in Resources */,
@@ -553,6 +601,7 @@
 			files = (
 				A6734944701C0004DB0EEB48 /* AlwaysOn.swift in Sources */,
 				6924813CBAB2B1FE0D43B31E /* AppDefaults.swift in Sources */,
+				DE0C57860063777DB60AD519 /* DebugFlags.swift in Sources */,
 				CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */,
 				4E9DC5F07B3CCE7B709E81C6 /* HealthImport.swift in Sources */,
 				C1BC79A4D874C952DAE8F3E1 /* HeartRateProfile.swift in Sources */,
@@ -567,10 +616,13 @@
 				A10FC0458A9B7ADD0008EE8A /* RunPalette.swift in Sources */,
 				420A6A484F0DE550B615F0C8 /* RunSampleStore.swift in Sources */,
 				045548523ED1B5719BF4BF25 /* RunScaffold.swift in Sources */,
+				4EFB3C418AF0617477BEB34E /* RunScenario.swift in Sources */,
 				59BA508FAA84EEC60E39378E /* RunSession.swift in Sources */,
+				F0CF0F9D86EBC31D792555EE /* RunSimulator.swift in Sources */,
 				1242EDB609907C5835F455E1 /* RunStore.swift in Sources */,
 				29202736108BECE52768BC98 /* RunSync.swift in Sources */,
 				76EC5DB3393322A4BE112ABE /* RunView.swift in Sources */,
+				55D0F85F59CB6BE1C66EAD38 /* RunWeek.swift in Sources */,
 				6CEAFA77482B7929938A2DE1 /* SampleData.swift in Sources */,
 				DC5F3F32B0274951D97B1959 /* SharedComponents.swift in Sources */,
 				FCB58A150AA3CAC5971F86BB /* SummaryView.swift in Sources */,
@@ -588,6 +640,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				861722063404981A6CD43987 /* AppDefaults.swift in Sources */,
+				9727438948BE77F429EBCE65 /* DebugFlags.swift in Sources */,
 				4CBCD27EBAFE272144D57CC1 /* FontLoader.swift in Sources */,
 				47D3F5548C3FD6747232EAA3 /* HealthImport.swift in Sources */,
 				868EC442098C4BD06E26115B /* HeartRateProfile.swift in Sources */,
@@ -598,13 +651,18 @@
 				651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */,
 				B9AB9B26A8F7D7B113454FE8 /* RunAnalyticsTests.swift in Sources */,
 				A4E9CEEEFE94B2D7711201C3 /* RunExport.swift in Sources */,
+				BD8AD29F820387287BC04619 /* RunExportTests.swift in Sources */,
 				CB051C7B414C753DA3945E3A /* RunMetrics.swift in Sources */,
 				A28544720DE563808062AEE6 /* RunMetricsTests.swift in Sources */,
 				C3408FCD4D821DCB249C039C /* RunPalette.swift in Sources */,
 				3EDCB951E6A8420B6587553D /* RunSampleStore.swift in Sources */,
+				58BE88512FF1EC1C60A45B25 /* RunScenario.swift in Sources */,
+				B98978D0DB117FD39936AE05 /* RunSimulationTests.swift in Sources */,
+				FB593E6D9E7273C05E28747F /* RunSimulator.swift in Sources */,
 				C402C57F16B22CD36FCDBC7E /* RunStore.swift in Sources */,
 				2FBDE3651DB7F383C79F5873 /* RunStoreTests.swift in Sources */,
 				40D4E4DB344B503AAF1DF4B9 /* RunSync.swift in Sources */,
+				9817FE36FB474C32290ECCE0 /* RunWeek.swift in Sources */,
 				B1A27DE2B7F0E859A492023D /* SampleData.swift in Sources */,
 				E86BFECCF96440F2567693E0 /* SharedComponents.swift in Sources */,
 				F8AB414317BEB2FAAB2E3321 /* Theme.swift in Sources */,
@@ -618,6 +676,7 @@
 			files = (
 				29F109AB2C5C54FCA7053EE2 /* AppDefaults.swift in Sources */,
 				8B6414D964170CF94DE59755 /* CurrimusWidgets.swift in Sources */,
+				D47B33063F6CCE2BCC5A6DB3 /* DebugFlags.swift in Sources */,
 				2981B3EADB4136CEB5C61AD3 /* FontLoader.swift in Sources */,
 				4C3178B122AD4A60DCDDA078 /* HealthImport.swift in Sources */,
 				AF7888360F4BF7DBD2E1BF2A /* HeartRateProfile.swift in Sources */,
@@ -629,8 +688,11 @@
 				82ACFB09DDF6B7B2DCC420F1 /* RunMetrics.swift in Sources */,
 				7D7DDAD960A42C75E9FB606E /* RunPalette.swift in Sources */,
 				97FDBDF1A2B41336BA763A90 /* RunSampleStore.swift in Sources */,
+				9C154D0CA18F02DF6958BD91 /* RunScenario.swift in Sources */,
+				F43D622D23714E7018BDCF6F /* RunSimulator.swift in Sources */,
 				4E4AF6DCA02A01FEE46387B7 /* RunStore.swift in Sources */,
 				0AF2B49944699FB95A35180D /* RunSync.swift in Sources */,
+				70A19E1E2303F0EAC6B2588A /* RunWeek.swift in Sources */,
 				36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */,
 				7F84D2D9C84563F992B44A82 /* SharedComponents.swift in Sources */,
 				8911108B369D36350F47DAE3 /* Theme.swift in Sources */,
@@ -642,9 +704,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				66EEF7F6247B07B2DD689B96 /* AcknowledgementsView.swift in Sources */,
 				782D299EA462322E9724CBA6 /* AppDefaults.swift in Sources */,
 				7772564C47ADC2DC7E2C838C /* Charts.swift in Sources */,
 				D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */,
+				A26A16C3F90065FA5A88BC10 /* DebugFlags.swift in Sources */,
 				58D78360BAFF6BF5665AC772 /* FirstLaunchView.swift in Sources */,
 				5871CAE9414DFEAD955B7C4B /* FontLoader.swift in Sources */,
 				8E2EBF3DF43C6B4E2BEC91AF /* Glass.swift in Sources */,
@@ -660,12 +724,16 @@
 				B1750243611A3E10BDCD574D /* RecordsView.swift in Sources */,
 				898A0FE20D45DAF944B06D0A /* RunAnalytics.swift in Sources */,
 				8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */,
+				F207E95C76E6E6A33A9B4859 /* RunEditView.swift in Sources */,
 				6905CDB7A68F0AF8003D5E95 /* RunExport.swift in Sources */,
 				6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */,
 				B22739DB9864EA01A42319F5 /* RunPalette.swift in Sources */,
 				6841D02032CC9CDD2B2C09B3 /* RunSampleStore.swift in Sources */,
+				04FD31CEDB16B3B7AE18FCBC /* RunScenario.swift in Sources */,
+				AF973897D856107C80D15624 /* RunSimulator.swift in Sources */,
 				BC5EEA2E4381B9371D0A86CD /* RunStore.swift in Sources */,
 				6EB9B6945D9E649D58FC53D1 /* RunSync.swift in Sources */,
+				051AF0F0EA15F44F5D3F9848 /* RunWeek.swift in Sources */,
 				9927D96D0D564F054BC2B449 /* SampleData.swift in Sources */,
 				79F43D75C534282329132BD0 /* Scaffold.swift in Sources */,
 				A3B64D4AADF9E2AFF22057DF /* SettingsView.swift in Sources */,
@@ -729,6 +797,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -746,6 +815,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -767,10 +837,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iOS/Currimus.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads your running workouts from Apple Health.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads your running workouts from Apple Health, so every total counts what you actually ran.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
@@ -805,7 +873,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Watch/CurrimusWatch.entitlements;
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = Watch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads heart rate and distance to show live pace and zones during your run.";
@@ -822,7 +889,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = WatchWidgets/CurrimusWatchWidgets.entitlements;
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = WatchWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -842,7 +908,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Watch/CurrimusWatch.entitlements;
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = Watch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads heart rate and distance to show live pace and zones during your run.";
@@ -859,7 +924,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = WatchWidgets/CurrimusWatchWidgets.entitlements;
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_FILE = WatchWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -880,10 +944,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = iOS/Currimus.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads your running workouts from Apple Health.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads your running workouts from Apple Health, so every total counts what you actually ran.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
@@ -935,6 +997,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 88U4UH4ASG;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -946,6 +1009,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;

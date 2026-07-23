@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Currimus — Support</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 6vh 6vw 12vh;
+    background: #0A0A0A; color: #F5F4F2;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 44rem; margin-inline: auto;
+  }
+  header { border-bottom: 1px solid #1E1E1E; padding-bottom: 2rem; margin-bottom: 2.5rem; }
+  .wordmark { font-weight: 700; letter-spacing: .13em; font-size: .95rem; }
+  h1 { font-size: 2.1rem; line-height: 1.15; letter-spacing: -.02em; margin: 1.2rem 0 .4rem; }
+  h2 { font-size: 1.1rem; margin: 2.4rem 0 .5rem; letter-spacing: -.01em; }
+  p, li { color: #C9C7C4; }
+  strong { color: #F5F4F2; }
+  a { color: #FF4D00; }
+  .lead { color: #F5F4F2; font-size: 1.1rem; }
+  ul { padding-left: 1.1rem; }
+  li { margin: .35rem 0; }
+  .contact {
+    margin-top: 3rem; padding: 1.5rem 1.6rem;
+    border: 1px solid rgba(255,77,0,.35); border-radius: 18px;
+    background: rgba(255,77,0,.06);
+  }
+  footer { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid #1E1E1E; color: #6B6B6B; font-size: .9rem; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wordmark">CURRIMUS</div>
+  <h1>Support</h1>
+</header>
+
+<p class="lead">Currimus records on the Apple Watch. The iPhone app is where you
+read the log, set your zones and your target race, and export everything.</p>
+
+<h2>Starting a run</h2>
+<p>Open Currimus on the watch and pick <strong>Start</strong> for a normal run,
+<strong>Trail</strong> for climb and elevation, or <strong>Pacer</strong> to run
+to a target pace. Tap the run screen — or press both buttons — to pause.</p>
+
+<h2>“A run will not start”</h2>
+<p>Distance and heart rate both come from Apple Health, so a run cannot record
+without permission to save workouts. If it is refused, the watch says so
+instead of recording an empty run. To grant it:
+<strong>iPhone › Watch › Privacy › Health › Currimus</strong>.</p>
+
+<h2>“My run has no route or elevation”</h2>
+<p>That is location access. A run without it still records distance, pace, heart
+rate and zones — only the map, the climb and the elevation profile are missing.
+Grant it under <strong>iPhone › Watch › Privacy › Location › Currimus</strong>.
+Runs imported from other apps have no route either; Currimus reads their
+distance and duration from Health, not their track.</p>
+
+<h2>“Distance stays at 0.00 during a run”</h2>
+<p>Health can grant permission to save workouts while withholding distance
+separately, and Apple deliberately does not reveal which permissions were
+given. Currimus shows a banner after two minutes of no distance. Check that
+Distance is allowed under <strong>iPhone › Watch › Privacy › Health ›
+Currimus</strong>. A run that ends with no distance is not filed in the log.</p>
+
+<h2>“My old runs are not here”</h2>
+<p>Tap <strong>Apple Health</strong> in Settings, or “Already have runs? Bring
+them in” on the welcome screen. Currimus reads running workouts other apps
+saved to Health and counts them in every total. They have no per-kilometre
+splits, so they show fewer details than runs Currimus recorded itself.</p>
+
+<h2>Fixing a run</h2>
+<ul>
+  <li><strong>Delete</strong> — press and hold a run in the log. Runs recorded
+      by another app have to be deleted in that app or in Health.</li>
+  <li><strong>Rename, or change road/trail or the session type</strong> — open
+      the run and tap <strong>Edit run</strong>. Distance, time and heart rate
+      are not editable: they were measured.</li>
+</ul>
+
+<h2>Battery</h2>
+<p>GPS is the largest single draw of a recorded run — more than the screen.
+<strong>Settings › GPS accuracy</strong> trades precision for hours and says
+what each step costs. Trail runs are worth keeping on High, since elevation
+comes from GPS too.</p>
+
+<h2>Getting your data out</h2>
+<p><strong>Settings › Export all runs</strong> writes GPX and CSV and hands them
+to the iOS share sheet. No account, no lock-in, any time.</p>
+
+<div class="contact">
+  <strong>Still stuck?</strong>
+  <p style="margin:.5rem 0 0">Write to
+  <a href="mailto:support@currimus.app">support@currimus.app</a>. Please include
+  your iPhone and watch models and their OS versions — it saves a round trip.</p>
+</div>
+
+<footer><a href="privacy.html">Privacy Policy</a></footer>
+</body>
+</html>

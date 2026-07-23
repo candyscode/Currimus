@@ -57,7 +57,7 @@ struct HomeView: View {
         Button { push(.race) } label: {
             VStack(alignment: .leading, spacing: 0) {
                 Text("RACE DAY · \(race.name.uppercased())").kicker(13, color: Theme.bright, tracking: 0.12)
-                (Text("Today").foregroundStyle(Theme.ink) + Text(".").foregroundStyle(Theme.signal))
+                Text("Today\(Text(verbatim: ".").foregroundStyle(Theme.signal))")
                     .font(.stat(96)).kerning(-4.8)
                     .padding(.top, 6)
                 raceStats(race, planLabel: true).padding(.top, 24)
@@ -116,7 +116,12 @@ struct HomeView: View {
     // MARK: - Recent
 
     private var recent: some View {
-        let rows = Array(store.runs.dropFirst().prefix(2))
+        // `allRuns`, matching the card above: `dropFirst` is meant to skip the
+        // run that card is already showing, and that run is `allRuns.first`.
+        // Reading `runs` here dropped the newest run Currimus recorded instead
+        // — so whenever the freshest run was an imported one, this list
+        // repeated the card and swallowed a run of its own.
+        let rows = Array(store.allRuns.dropFirst().prefix(2))
         return VStack(alignment: .leading, spacing: 0) {
             if !rows.isEmpty {
                 Text("RECENT").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 26)
