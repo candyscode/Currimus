@@ -107,7 +107,32 @@ final class RunStore: ObservableObject {
         runs.sort { $0.date > $1.date }
         // Health may already hold the same outing from another app.
         importedRuns = HealthImport.merging(importedRuns, with: runs)
+        // Publish the freshly-arrived run to the Apple TV. Push the full run,
+        // samples included, so its route and elevation reach the TV's detail.
+        cloudUpsert(run)
     }
+
+    #if os(tvOS)
+    /// tvOS is a read-only mirror of what the phone published to CloudKit — no
+    /// recording, no HealthKit, no watch. This replaces the whole log in one
+    /// shot, so the Apple TV reuses every aggregate, record and chart the phone
+    /// computes with byte-identical logic instead of a parallel implementation.
+    ///
+    /// The phone syncs `allRuns` (its own runs *and* the ones it imported from
+    /// Health), so the split is reconstructed from each run's `imported` flag.
+    /// Persisting to standard defaults is a welcome side effect: it doubles as
+    /// an offline cache for the next cold launch before CloudKit answers.
+    func replaceAllFromCloud(_ cloudRuns: [Run]) {
+        let incoming = cloudRuns.sorted { $0.date > $1.date }
+        // Move each run's GPS track and altitude series into the sidecar store
+        // (Caches on tvOS) so `samples(for:)` / `hydrated(_:)` — and with them
+        // the run-detail map and elevation profile — work exactly as on iOS,
+        // and the log itself stays metadata-only.
+        for run in incoming where run.carriesSamples { storeSamples(of: run) }
+        importedRuns = incoming.filter(\.isImported).map(\.strippingSamples)
+        runs = incoming.filter { !$0.isImported }.map(\.strippingSamples)
+    }
+    #endif
 
     func deleteRuns(at offsets: IndexSet, in subset: [Run]) {
         // Imported runs live in Health, not here — deleting one locally would
@@ -117,6 +142,7 @@ final class RunStore: ObservableObject {
         for id in ids {
             sampleCache[id] = nil
             if !isDemo { RunSampleStore.delete(id) }
+            cloudDelete(id)
         }
     }
 
@@ -146,6 +172,52 @@ final class RunStore: ObservableObject {
         RunSampleStore.save(samples, for: run.id)
     }
 
+    // MARK: - CloudKit mirror (iPhone → Apple TV)
+
+    /// The phone is the only writer to CloudKit. These are no-ops everywhere
+    /// else: the watch has its own phone to hand runs to, and the TV only reads.
+    /// Each fires a detached task so a network round-trip never blocks a log
+    /// mutation on the main actor; the local store is the source of truth and
+    /// the sync is best-effort (`RunCloudSync` logs its own failures).
+
+    #if os(iOS)
+    /// Publish existing runs to CloudKit once, e.g. on first launch after the
+    /// feature ships, so a TV signed into the same account sees history — not
+    /// just runs recorded from now on. Idempotent, so calling it again is safe.
+    func backfillCloud() {
+        let hydratedRuns = allRuns.map(hydrated)
+        Task.detached { await RunCloudSync.backfill(hydratedRuns) }
+    }
+
+    private func cloudUpsert(_ run: Run) {
+        guard !isDemo else { return }
+        Task.detached { await RunCloudSync.upsert(run) }
+    }
+
+    private func cloudDelete(_ id: UUID) {
+        guard !isDemo else { return }
+        Task.detached { await RunCloudSync.delete(id: id) }
+    }
+
+    /// Mirror the change in the imported-runs set: publish arrivals, remove
+    /// departures. Imported runs carry no samples, so the metadata is enough.
+    private func cloudSyncImportedDelta(from previous: [Run], to current: [Run]) {
+        guard !isDemo else { return }
+        let previousIDs = Set(previous.map(\.id))
+        let currentIDs = Set(current.map(\.id))
+        let added = current.filter { !previousIDs.contains($0.id) }
+        let removed = previousIDs.subtracting(currentIDs)
+        Task.detached {
+            for run in added { await RunCloudSync.upsert(run) }
+            for id in removed { await RunCloudSync.delete(id: id) }
+        }
+    }
+    #else
+    func cloudUpsert(_ run: Run) {}
+    func cloudDelete(_ id: UUID) {}
+    func cloudSyncImportedDelta(from previous: [Run], to current: [Run]) {}
+    #endif
+
     // MARK: - Apple Health
 
     #if canImport(HealthKit)
@@ -163,7 +235,13 @@ final class RunStore: ObservableObject {
         if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
         let fetched = await HealthImport.fetchRuns(healthStore)
         let merged = HealthImport.merging(fetched, with: runs)
-        if merged != importedRuns { importedRuns = merged }
+        if merged != importedRuns {
+            let previous = importedRuns
+            importedRuns = merged
+            // The TV mirrors `allRuns`, imported runs included, so it has no
+            // Health to derive them itself. Sync only the delta.
+            cloudSyncImportedDelta(from: previous, to: merged)
+        }
         await refreshHeartRateZones()
     }
 

@@ -41,6 +41,7 @@ The watch records actual workouts:
 |---|---|---|
 | `Watch/` | `CurrimusWatch` (watchOS app, embedded) | All screens above; `RunSession` drives the recording lifecycle (HealthKit + CoreLocation, simulation only in DEBUG screenshot routes) |
 | `iOS/` | `Currimus` (iOS app) | Home (week, day bars, last run), Log → Run detail, Progress → Records, Settings → Pacer target, first-launch state |
+| `TV/` | `CurrimusTV` (tvOS app) | Read-only 10-foot dashboard: week volume, log, progress, run detail with route + elevation. Reads the log from CloudKit (`RunCloudSync`), reusing every `RunStore` aggregate the phone computes |
 | `WatchWidgets/` | `CurrimusWatchWidgets` (WidgetKit) | Circular complication, Smart Stack card, inline |
 | `Shared/` | all targets | Theme, models, formatters, zones, `RunStore` (persisted), `RunSync` (WatchConnectivity), `RunMetrics` (the run's arithmetic), `RunSampleStore` (GPS tracks + altitude series) |
 | `Tests/` | `CurrimusTests` | `RunAnalytics`, `RunMetrics` and `RunStore` — 44 cases, each on a throwaway defaults suite |
@@ -63,6 +64,30 @@ climb, time in zones, and the sampling of altitude and route. It is pure, so
 it is unit-tested; `RunSession` is the HealthKit and CoreLocation lifecycle
 around it. When a sample buffer fills it halves its resolution rather than
 dropping from the front, so a four-hour run keeps its start.
+
+### The Apple TV (read-only)
+
+`CurrimusTV` shows the same log on a television. tvOS is **not** a watch-style
+companion — it is a standalone app that shares nothing device-local with the
+phone (App Groups do not cross devices, and tvOS has neither HealthKit nor
+WatchConnectivity). So the phone mirrors its log into the user's **private
+CloudKit database** and the TV reads it: same iCloud account, no server, no
+data leaves the account.
+
+- **Phone (writer):** `RunStore` publishes through `RunCloudSync` — `upsert` on
+  every added run, `delete` on removal, a one-time `backfillCloud()` to seed the
+  existing log. It syncs `allRuns` (Currimus' own runs *and* the ones it
+  imported from Health) so the TV's totals match the phone, which the TV cannot
+  derive itself. A run is stored as a JSON blob of its metadata plus a `CKAsset`
+  for the GPS track and altitude series — the same split as `RunSampleStore`.
+- **TV (reader):** `TVSync` fetches on launch/foreground and hands the runs to a
+  `RunStore` via `replaceAllFromCloud`, so every aggregate, record and chart is
+  the phone's logic unchanged — the TV owns only its 10-foot SwiftUI layer.
+
+The shared bundle id (`com.currimus.app`) puts iOS and tvOS under one App Store
+record (Universal Purchase). `RunSync` (WatchConnectivity), `HealthImport` and
+`HeartRateProfile` (HealthKit) are `#if canImport(...)`-guarded so `Shared/`
+compiles on tvOS, which links neither framework.
 
 ### When recording cannot work
 

@@ -1,7 +1,9 @@
 # tvOS Companion App — Implementation Plan
 
-> **Status:** Design / planning only. No tvOS code exists yet.
-> **Audience:** An engineer or AI agent implementing a tvOS target for Currimus.
+> **Status:** ✅ Implemented on branch `feat/tv-os`. This document is now the
+> design record for the code that exists; see "Implementation notes" at the end
+> for what was actually built and what still needs Xcode.
+> **Audience:** An engineer or AI agent working on the tvOS target for Currimus.
 > **Written against:** `main` @ commit `28314bc` (2026-07-21), after the
 > `tech/architecture-hardening` work (PR #1) landed.
 > **Language note:** This doc is in English to match the repository (README,
@@ -357,4 +359,75 @@ sync `allRuns` (incl. imported) · tvOS 26. Build to those.
 - iOS screen layouts (reference only): `iOS/HomeView.swift`, `iOS/CurrimusApp.swift`
 - Project generation: `project.yml` + `xcodegen generate` (never hand-edit the
   `.pbxproj`)
+
+---
+
+## Implementation notes (what was actually built)
+
+Built on branch `feat/tv-os`. The approach deviated from the plan in one useful
+way: instead of extracting `RunStore`'s aggregates into a protocol, the **whole
+`RunStore` is compiled into the tvOS target unchanged** and gets one small,
+tvOS-only injection point. The TV therefore reuses the phone's records / week /
+month math byte-for-byte, and the change to shared code is purely additive and
+platform-guarded — lowest risk for the shipping iOS and watchOS apps.
+
+**New files**
+- `Shared/RunCloudSync.swift` — the CloudKit bridge (`#if canImport(CloudKit)`).
+  `upsert` / `delete` / `backfill` (phone) and `fetchRuns` / `accountAvailable`
+  (TV). `Run` ↔ `CKRecord` maps the metadata as a JSON payload blob keyed on
+  `Run.id`, samples as a `CKAsset`. Async CKDatabase APIs, cursor paging,
+  client-side sort (no custom index needed), `serverRecordChanged` upsert
+  recovery, `unknownItem`-tolerant delete.
+- `TV/TVApp.swift` — `@main`, tab shell (Home · Log · Progress), loading /
+  signed-out / empty states.
+- `TV/TVSync.swift` — `@MainActor` loading-state driver around `RunCloudSync` +
+  `RunStore.replaceAllFromCloud`.
+- `TV/TVComponents.swift` — 10-foot chart/row components (own copies, sized for
+  a TV; the iOS `Charts.swift` shapes are iPhone-point-sized and iOS-target).
+- `TV/TVDashboardView.swift`, `TVLogView.swift`, `TVRunDetailView.swift`,
+  `TVProgressView.swift` — the screens, focus-engine driven, landscape.
+- `TV/CurrimusTV.entitlements` — CloudKit only.
+
+**Changed files**
+- `Shared/RunSync.swift` — WatchConnectivity guarded; tvOS gets a no-op `RunSync`
+  stub with the identical public API so `RunStore` compiles untouched.
+- `Shared/HealthImport.swift` — pure `merging(_:with:)` hoisted out of the
+  HealthKit guard (tvOS `RunStore` still dedupes); everything `HK*` guarded.
+- `Shared/HeartRateProfile.swift` — whole file HealthKit-guarded.
+- `Shared/RunStore.swift` — tvOS-only `replaceAllFromCloud(_:)` (rebuilds the
+  own/imported split from `Run.imported`, repopulates `RunSampleStore` so the
+  detail map/elevation work); iOS-only `backfillCloud()` + `cloudUpsert` /
+  `cloudDelete` / `cloudSyncImportedDelta` hooked into `add` / `deleteRuns` /
+  `refreshImportedRuns` via detached tasks; no-op stubs elsewhere.
+- `iOS/CurrimusApp.swift` — one-time `backfillCloud()` behind a
+  `cloudBackfilled` UserDefaults flag.
+- `iOS/Currimus.entitlements` — added CloudKit container.
+- `project.yml` — `tvOS: "26.0"` deployment target + `CurrimusTV` target
+  (sources `TV` + `Shared`, Fonts + xcstrings resources, shared bundle id for
+  Universal Purchase, CloudKit entitlement).
+
+**Verified without Xcode**
+- `project.yml` is valid YAML; both entitlements pass `plutil -lint`.
+- No unguarded `HK*` / `WCSession` symbols remain in `Shared/` (all inside
+  `#if` blocks); `TV/` uses only shared types and cross-platform SwiftUI APIs.
+
+**Still needs Xcode / a Mac with the toolchain (could not be done here)**
+1. `xcodegen generate` to regenerate `Currimus.xcodeproj` with the new target.
+   *(XcodeGen is not installed in this environment.)*
+2. **Build all four targets** — the Swift was written but never compiled here.
+   Watch especially for Swift 6 strict-concurrency diagnostics around the
+   `Task.detached` cloud calls (values passed are `Sendable` value types, but
+   confirm) and the `RunSync` tvOS stub's `@MainActor` closure properties.
+3. **CloudKit dashboard:** the container `iCloud.com.currimus.app` must exist and
+   the `Run` record type's schema is created on first write (development
+   environment) — deploy the schema to production before release. The reader
+   relies only on the default `recordName` queryable index; no custom index is
+   required.
+4. **Signing:** set the development team for `CurrimusTV`; CloudKit needs a real
+   provisioning profile, same as HealthKit does for the phone/watch.
+5. **End-to-end test:** run the iOS app signed into iCloud, confirm records
+   appear in the CloudKit Console, then run `CurrimusTV` on the same account and
+   confirm the log, totals and a run's route/elevation match the phone.
+6. **Optional:** a `CKQuerySubscription` for push-driven refresh — today the TV
+   polls on foreground, which is enough for a first version.
 
