@@ -31,6 +31,49 @@ settings:
     MARKETING_VERSION: "1.0"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
+# XcodeGen writes no schemes unless asked, and Xcode's autocreation is flaky
+# right after a regenerate with the project open — it dropped the iOS `Currimus`
+# scheme, which is the one you archive. Define the schemes we actually drive, by
+# hand and from the scripts (Currimus, CurrimusWatch, CurrimusTests), so they are
+# shared, deterministic and survive every `xcodegen generate`.
+schemes:
+  Currimus:
+    build:
+      targets:
+        Currimus: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - CurrimusTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  CurrimusWatch:
+    build:
+      targets:
+        CurrimusWatch: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  CurrimusTests:
+    build:
+      targets:
+        CurrimusTests: all
+    test:
+      config: Debug
+      targets:
+        - CurrimusTests
+
 targets:
   Currimus:
     type: application
@@ -54,11 +97,14 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        # Read only. The iPhone never writes to Health — the watch saves the
-        # workout, and this app reads runs other apps recorded. Declaring a
-        # write description it does not use invites a review question with no
-        # good answer.
+        # At runtime the iPhone only reads Health — the watch saves the workout,
+        # and this app reads runs other apps recorded. But the shared HealthKit
+        # code (RunStore → HealthImport.requestAuthorization(toShare:read:)) links
+        # the share-authorization symbol into the iPhone binary, so the App Store
+        # static analyser (error 90683) demands the update description too, even
+        # though no write ever fires. It is required, not shown; keep it honest.
         INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads your running workouts from Apple Health, so every total counts what you actually ran."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Currimus saves your runs as workouts to Apple Health."
         TARGETED_DEVICE_FAMILY: "1"
     entitlements:
       path: iOS/Currimus.entitlements
@@ -104,11 +150,16 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.currimus.app
-        # `location` alongside the workout mode: the workout session keeps the
-        # app alive, but CoreLocation still refuses to deliver fixes in the
-        # background without its own declaration — and
+        # The workout session keeps the app alive, but CoreLocation still refuses
+        # to deliver fixes in the background without its own declaration — and
         # `allowsBackgroundLocationUpdates` traps at runtime if it is missing.
-        WKBackgroundModes: [workout-processing, location]
+        # On watchOS that declaration is `location` in UIBackgroundModes, NOT in
+        # WKBackgroundModes: WKBackgroundModes only accepts the watch-specific
+        # modes (workout-processing, self-care, …), so `location` there is
+        # rejected on upload (error 90362 "Invalid Info.plist value"). The two
+        # keys together are what a real running watch app declares.
+        WKBackgroundModes: [workout-processing]
+        UIBackgroundModes: [location]
         WKSupportsAlwaysOnDisplay: true
         CFBundleDisplayName: Currimus
     entitlements:

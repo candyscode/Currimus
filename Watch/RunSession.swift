@@ -365,8 +365,9 @@ final class RunSession: NSObject, ObservableObject {
         // the start — which is most of a run. Without this the fixes stop
         // arriving there, and the route, the climb and the elevation profile
         // end wherever the runner last looked at the watch. It requires the
-        // `location` background mode (Watch/Info.plist); setting it without
-        // that declaration is a runtime trap, so the two belong together.
+        // `location` background mode — on watchOS that is UIBackgroundModes in
+        // Watch/Info.plist, not WKBackgroundModes; setting this without that
+        // declaration is a runtime trap, so the two belong together.
         //
         // The watchOS *simulator* is never a backgroundable client, so this
         // traps there ("Invalid parameter not satisfying:

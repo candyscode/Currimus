@@ -853,6 +853,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads your running workouts from Apple Health, so every total counts what you actually ran.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
@@ -960,6 +961,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_KEY_CFBundleDisplayName = Currimus;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Currimus reads your running workouts from Apple Health, so every total counts what you actually ran.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Currimus saves your runs as workouts to Apple Health.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
