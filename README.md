@@ -37,7 +37,7 @@ the only external data store.
 
 ### Build
 
-Requires Xcode with the iOS 26 / watchOS 11 SDKs and
+Requires Xcode 26 or later (for the iOS 26 / watchOS 11 SDKs) and
 [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 `Currimus.xcodeproj` is generated, not source of truth — `project.yml` is:
 
@@ -62,7 +62,9 @@ Xcode's Signing & Capabilities pane is overwritten on the next
 `xcodegen generate`. The watch target's HealthKit entitlement, usage
 descriptions and `workout-processing`/`location` background modes are
 declared there too. The simulator builds without a HealthKit-enabled team;
-a device build does not.
+a device build does not — if you're not on that team, swap
+`DEVELOPMENT_TEAM` for your own (locally; don't commit it) before building
+to a device.
 
 ### Test
 
@@ -104,6 +106,16 @@ git config core.hooksPath .githooks   # once per clone — enables the pre-push 
 
 Bypass a single push with `git push --no-verify`; override the simulator
 with `IOS_SIM="iPhone 16 Pro" git push`.
+
+### Release
+
+- [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) — everything that
+  couldn't be automated: an Apple account, a browser, a credit card, a real
+  wrist.
+- [docs/STORE-LISTING.md](docs/STORE-LISTING.md) — paste-ready App Store
+  Connect copy.
+- [docs/README.md](docs/README.md) — publishing the privacy/support pages
+  App Review requires, and what to double-check before you do.
 
 ## Recording pipeline
 
@@ -147,6 +159,8 @@ with `IOS_SIM="iPhone 16 Pro" git push`.
 | `Resources/` | both apps | `Localizable.xcstrings` — the string catalogue |
 | `Assets/make_icon.swift` | — | Renders the app icon; `swift Assets/make_icon.swift out.png` |
 | `DesignRefs/` | — | Imported Claude Design HTML used as the pixel reference |
+| `Fonts/` | both apps | Space Grotesk (OFL-licensed), the app's typeface |
+| `Marketing/` | — | Raw screenshots behind the App Store listing and `docs/marketing-hero.png` |
 
 ### How a run is stored
 
