@@ -1,14 +1,111 @@
 # CURRIMUS
 
-Minimalist running app — **running lives on the Apple Watch; the iPhone only
-reads** (log, stats, settings). The watch UI is a pixel-faithful build of the
-Claude Design page **"Watch Screens - Readability"** (Space Grotesk, signal
-`#FF4D00` on ink `#0A0A0A`, bright metric labels `#A8A8A8`); the iPhone follows
-`iPhone Screens.dc.html`.
+![Currimus — progress on iPhone, a trail run on Apple Watch, and race day on iPhone + Watch](docs/marketing-hero.png)
 
-## Recording is real
+## Simple. Beautiful. Yours.
 
-The watch records actual workouts:
+Currimus is a minimalist running app for iPhone and Apple Watch. No ads, no
+account, no feed — just the numbers that matter.
+
+- **Your progress, no clutter.** Personal bests and pace trends at a glance.
+- **Into trail running? Say no more.** Climb, descent and elevation live on
+  the wrist, not buried in a menu.
+- **Stay on pace, every step.** The Pacer tells you in real time whether
+  you're running too fast or too slow.
+- **Every run, in full detail.** Syncs with Apple Health both ways — nothing
+  recorded twice, nothing lost.
+- **Celebrate your records.** Every personal best in one place, including
+  runs logged by other apps.
+
+**Search "Currimus" on the App Store.**
+
+---
+
+## For developers
+
+Two Xcode targets share one `Shared/` module: a watchOS app that owns
+recording, and an iOS app that only reads. The watch is the sole source of
+truth for a run — HealthKit supplies heart rate, distance and energy,
+CoreLocation supplies the GPS route and altitude — and syncs a finished run
+to the iPhone over WatchConnectivity; the iPhone never records, it only
+aggregates, displays and edits. Both sides persist independently, so a phone
+that was unreachable when a run finished still gets it on the next sync.
+
+SwiftUI throughout; Swift 6 language mode with complete strict concurrency
+(`RunStore` and `RunSession` are `@MainActor`); no backend — Apple Health is
+the only external data store.
+
+### Build
+
+Requires Xcode with the iOS 26 / watchOS 11 SDKs and
+[XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
+`Currimus.xcodeproj` is generated, not source of truth — `project.yml` is:
+
+```bash
+xcodegen generate      # after cloning, and after any project.yml edit
+open Currimus.xcodeproj
+```
+
+Or build the two app targets from the CLI, the same way the pre-push hook
+and the UI snapshot script do:
+
+```bash
+xcodebuild -project Currimus.xcodeproj -scheme Currimus \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+xcodebuild -project Currimus.xcodeproj -scheme CurrimusWatch \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 3 (49mm)' build
+```
+
+Signing is automatic; the team lives in `project.yml`
+(`DEVELOPMENT_TEAM` under `settings.base`), because anything set by hand in
+Xcode's Signing & Capabilities pane is overwritten on the next
+`xcodegen generate`. The watch target's HealthKit entitlement, usage
+descriptions and `workout-processing`/`location` background modes are
+declared there too. The simulator builds without a HealthKit-enabled team;
+a device build does not.
+
+### Test
+
+```bash
+git config core.hooksPath .githooks   # once per clone — enables the pre-push gate
+```
+
+- **Unit + simulation tests** — 97 cases across `PromptGateTests`,
+  `RecordingPolicyTests`, `RunAnalyticsTests`, `RunExportTests`,
+  `RunMetricsTests`, `RunSimulationTests` and `RunStoreTests`, each on a
+  throwaway `UserDefaults` suite. Fast, headless, deterministic — this is
+  what `.githooks/pre-push` runs on every push, and what to run first after
+  any change:
+
+  ```bash
+  xcodebuild test -project Currimus.xcodeproj -scheme CurrimusTests \
+    -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+  ```
+
+  `RunSimulationTests` drives a whole marathon or a six-hour ultra through
+  the real `RunMetrics` pipeline in milliseconds instead of a real device
+  session; the same scenarios also play live on the watch
+  (`-simulate marathon`, `-at 25`, `-finish 1`), so a bug found headless is
+  reproducible on screen — see [RUN-SIMULATION.md](docs/RUN-SIMULATION.md).
+
+- **UI snapshot regression** — every screen against a committed reference
+  image, captured as a real simulator screenshot rather than an in-process
+  view snapshot, because the design leans on Liquid Glass, native pickers
+  and MapKit that a view snapshot would not render faithfully. Manual, not
+  gated — run it by hand after any UI change:
+
+  ```bash
+  scripts/ui-snapshot.sh verify all      # or ios | watch
+  scripts/ui-snapshot.sh record all      # re-record references after an intentional change
+  ```
+
+  See [UI-SNAPSHOTS.md](docs/UI-SNAPSHOTS.md) for the diff tiers and what
+  each one tolerates.
+
+Bypass a single push with `git push --no-verify`; override the simulator
+with `IOS_SIM="iPhone 16 Pro" git push`.
+
+## Recording pipeline
 
 - `HKWorkoutSession` + `HKLiveWorkoutBuilder` — live heart rate, distance,
   energy; the finished run is saved to Apple Health as a running workout.
@@ -46,7 +143,7 @@ The watch records actual workouts:
 | `iOS/` | `Currimus` (iOS app) | Home (week, day bars, last run), Log → Run detail → Edit, Progress → Records, Settings → Pacer target, first-launch state |
 | `WatchWidgets/` | `CurrimusWatchWidgets` (WidgetKit) | Circular complication, Smart Stack card, inline |
 | `Shared/` | all targets | Theme, models, formatters, zones, `RunStore` (persisted), `RunSync` (WatchConnectivity), `RunMetrics` (the run's arithmetic), `RunSampleStore` (GPS tracks + altitude series) |
-| `Tests/` | `CurrimusTests` | `RunAnalytics`, `RunMetrics`, `RunStore` and `RunExport` — 80 cases, each on a throwaway defaults suite |
+| `Tests/` | `CurrimusTests` | `PromptGate`, `RecordingPolicy`, `RunAnalytics`, `RunExport`, `RunMetrics`, `RunSimulation`, `RunStore` — 97 cases, each on a throwaway defaults suite; `UISnapshots/` holds the screenshot-regression references (see [Test](#test)) |
 | `Resources/` | both apps | `Localizable.xcstrings` — the string catalogue |
 | `Assets/make_icon.swift` | — | Renders the app icon; `swift Assets/make_icon.swift out.png` |
 | `DesignRefs/` | — | Imported Claude Design HTML used as the pixel reference |
@@ -85,19 +182,6 @@ then dropped rather than filed as a 0.00 km entry.
 
 Everything else that used to be swallowed goes to `os.Logger` under the
 `com.currimus.app` subsystem.
-
-Project file is generated: `xcodegen generate` (config in `project.yml`).
-The project builds in the **Swift 6 language mode** with complete strict
-concurrency; `RunStore` and `RunSession` are `@MainActor`.
-Watch target carries the HealthKit entitlement, usage descriptions and the
-`workout-processing` and `location` background modes.
-
-Because the project file is generated, **nothing set by hand in Xcode's
-Signing & Capabilities pane survives** — `xcodegen generate` overwrites it.
-The development team therefore lives in `project.yml` (`DEVELOPMENT_TEAM`
-under `settings.base`), which every target inherits. Signing stays automatic;
-HealthKit still needs a real provisioning profile, so device builds only work
-with a team that has the capability enabled.
 
 ## Demo / screenshot routing (DEBUG builds only)
 
