@@ -175,7 +175,13 @@ struct WatchRootView: View {
             session.pacerDistanceKm = 10
             session.debugFastForward(.pacer, seconds: 3146)
             finishedRun = session.end()
-        case "trail", "elevation", "elevation-noroute":
+        // Mid-climb, so the glance shows a live climb rate rather than the zero
+        // a descent reads once the summit is behind you.
+        case "trail":
+            session.debugFastForward(.trail, seconds: 2700)
+        // Longer, so the profile carries the whole shape — climb, summit and the
+        // way back down — which is what the elevation page is there to show.
+        case "elevation", "elevation-noroute":
             session.debugFastForward(.trail, seconds: 4500)
         // Deterministic no-route profiles — the Y axis measured against known
         // numbers rather than a live simulation.

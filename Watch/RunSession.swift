@@ -133,6 +133,18 @@ final class RunSession: NSObject, ObservableObject {
         self.type = type
         resetMetrics()
 
+        #if DEBUG && targetEnvironment(simulator)
+        // The watchOS simulator has no GPS, no barometer and no HealthKit
+        // distance, so an interactively started run there records nothing but
+        // an empty clock — a trail run in particular sits at 0 m climbed and
+        // 0 m/h forever. Drive it from the built-in demo model instead (the
+        // same simulated path the screenshot routes take), so tapping Trail →
+        // Start gives a live run with real pace, heart rate and climb.
+        // Device builds are untouched: `targetEnvironment(simulator)` is false
+        // there, so a real watch still records for real.
+        isSimulated = true
+        #endif
+
         guard !isSimulated else { return startRun() }
         // Settle Health before the clock starts. Distance and heart rate both
         // come out of the workout builder, so a run without it records nothing
@@ -660,24 +672,37 @@ final class RunSession: NSObject, ObservableObject {
         heartRate = simulatedHeartRate
         #endif
 
-        if type == .trail {
-            let climbing = sin(elapsed / 120) > -0.35
-            if climbing {
-                let rate = 420 + sin(elapsed / 60) * 140
-                metrics.addSimulatedClimb(rate / 3600, ratePerHour: rate + Double.random(in: -25...25))
-            } else {
-                metrics.addSimulatedDescent(700 / 3600)
-            }
-            if !debugPinnedAltitude {
-                metrics.setSimulatedAltitude(704 + metrics.climbMeters - metrics.descentMeters,
-                                             at: elapsed)
-            }
+        if type == .trail, !debugPinnedAltitude {
+            // A smooth mountain profile rather than a mechanical sawtooth. It is
+            // fed through the same altitude path a real GPS stream takes, so the
+            // climb, the descent, the elevation profile and the 10-minute climb
+            // rate all derive from one consistent series instead of three
+            // separately-set numbers that need not agree.
+            metrics.ingestAltitude(simulatedTrailAltitude(elapsed),
+                                   verticalAccuracy: 5, at: elapsed)
         }
 
         // Zone time and splits follow the same path a real second takes.
         let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
                                  heartRate: heartRate, zone: currentZone)
         if let split { raiseKilometerAlert(split) }
+    }
+
+    /// A deterministic, realistic trail elevation (m) for a simulated run.
+    /// One long arc — a climb to a summit past the middle of the run, then a
+    /// descent — with switchback-scale rolls and fine trail texture layered on,
+    /// so the drawn profile reads like a real mountain outing rather than a
+    /// regular zigzag. No randomness: the same second always yields the same
+    /// altitude, so screenshots and snapshots stay stable.
+    private func simulatedTrailAltitude(_ t: TimeInterval) -> Double {
+        let base = 420.0
+        // The big climb-and-descent: summit near t ≈ 2800 s (past mid-run).
+        let arc = 560 * (1 - cos(t / 900)) / 2
+        // Saddles and switchbacks along the way.
+        let rolling = sin(t / 380) * 30 + sin(t / 150) * 14
+        // Fine texture, so the line has grain rather than a clean sine.
+        let texture = sin(t / 41) * 6 + sin(t / 17) * 3
+        return base + arc + rolling + texture
     }
 
     private var simulatedHeartRate: Int {
