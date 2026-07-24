@@ -22,12 +22,12 @@ submitting, because App Review opens them.
 
 ## Before publishing — two things to decide
 
-**The contact address.** Both pages use `support@currimus.app`, which is a
-placeholder. It has to be an address that actually receives mail, or App
-Review will flag the support page. Replace it in both files:
+**The contact address.** Both pages use `currimus@andreas-thaler.com`. It has to
+stay an address that actually receives mail, or App Review will flag the support
+page. To change it, replace it in both files:
 
 ```sh
-grep -rl 'support@currimus.app' docs/ | xargs sed -i '' 's/support@currimus.app/YOUR@ADDRESS/g'
+grep -rl 'currimus@andreas-thaler.com' docs/ | xargs sed -i '' 's/currimus@andreas-thaler.com/YOUR@ADDRESS/g'
 ```
 
 **The privacy policy is accurate as written, and has to stay that way.** It
