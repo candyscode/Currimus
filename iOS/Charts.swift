@@ -241,6 +241,7 @@ struct SplitBars: View {
 struct MapCard: View {
     var run: Run
     var height: CGFloat = 160
+    @State private var isExpanded = false
 
     private var route: [CLLocationCoordinate2D] {
         (run.route ?? []).map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) }
@@ -257,8 +258,24 @@ struct MapCard: View {
         .frame(height: height)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.cardBorder, lineWidth: 1))
+        .overlay(alignment: .bottomTrailing) {
+            if route.count > 1 {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 26, height: 26)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .padding(8)
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 20))
+        .onTapGesture { if route.count > 1 { isExpanded = true } }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(route.count > 1 ? "Route map" : "No GPS track recorded")
+        .accessibilityAddTraits(route.count > 1 ? .isButton : [])
+        .fullScreenCover(isPresented: $isExpanded) {
+            RouteMapFullScreen(route: route, region: region)
+        }
     }
 
     /// Said plainly, because it has a cause the user can act on: a run records
@@ -304,6 +321,10 @@ struct MapCard: View {
 private struct RouteMap: UIViewRepresentable {
     var route: [CLLocationCoordinate2D]
     var region: MKCoordinateRegion
+    /// The card embedded in a scrolling detail screen locks scroll/zoom, so
+    /// panning doesn't fight the page; the full-screen presentation is the
+    /// one place that turns them back on.
+    var interactive: Bool = false
 
     func makeUIView(context: Context) -> MKMapView {
         let view = MKMapView()
@@ -314,10 +335,8 @@ private struct RouteMap: UIViewRepresentable {
         view.showsScale = false
         view.isRotateEnabled = false
         view.isPitchEnabled = false
-        // A card, not a map view: panning inside a scrolling detail screen
-        // would fight the scroll, and there is nothing here to explore.
-        view.isScrollEnabled = false
-        view.isZoomEnabled = false
+        view.isScrollEnabled = interactive
+        view.isZoomEnabled = interactive
         view.addOverlay(MKPolyline(coordinates: route, count: route.count))
         view.setRegion(region, animated: false)
         return view
@@ -337,6 +356,30 @@ private struct RouteMap: UIViewRepresentable {
             renderer.lineJoin = .round
             return renderer
         }
+    }
+}
+
+/// The route, expanded to fill the screen so it can be zoomed and panned —
+/// tapped open from the `MapCard`, which keeps its own map locked to a
+/// scroll-safe preview.
+private struct RouteMapFullScreen: View {
+    var route: [CLLocationCoordinate2D]
+    var region: MKCoordinateRegion
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Theme.bg.ignoresSafeArea()
+            RouteMap(route: route, region: region, interactive: true)
+                .ignoresSafeArea()
+            TopScrim {
+                HStack {
+                    GlassIconButton(systemImagePath: .close) { dismiss() }
+                    Spacer()
+                }
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 

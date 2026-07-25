@@ -47,13 +47,16 @@ struct GlassIconButton: View {
 
 /// Hand-drawn glyphs matching the design's stroked SVG icons.
 enum GlassGlyph {
-    case back, settings
+    case back, settings, close
 
     @ViewBuilder var shape: some View {
         switch self {
         case .back:
             Image(systemName: "chevron.left")
                 .font(.system(size: 18, weight: .semibold))
+        case .close:
+            Image(systemName: "xmark")
+                .font(.system(size: 16, weight: .semibold))
         case .settings:
             SlidersGlyph()
                 .stroke(Theme.ink, style: .init(lineWidth: 1.8, lineCap: .round))

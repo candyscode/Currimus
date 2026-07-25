@@ -60,6 +60,10 @@ struct RunDetailView: View {
             }
             .padding(.top, 18)
 
+            if isFastestPaceOfMonth {
+                fastestPaceOfMonthLine.padding(.top, 12)
+            }
+
             MapCard(run: run, height: 160).padding(.top, 22)
 
             sectionLabel("SPLITS /KM").padding(.top, 26).padding(.bottom, 14)
@@ -89,6 +93,8 @@ struct RunDetailView: View {
                 DetailStat(value: "\(Int(climbRate))", label: "CLIMB M/H")
             }
             .padding(.top, 18)
+
+            MapCard(run: run, height: 160).padding(.top, 22)
 
             sectionLabel("ELEVATION").padding(.top, 28).padding(.bottom, 12)
             ElevationProfile(samples: run.altitudeSamples ?? [], height: 120)
@@ -120,6 +126,20 @@ struct RunDetailView: View {
     }
 
     // MARK: - Shared
+
+    /// Trail is excluded upstream — its pace never earns the accent, so this
+    /// is only ever true on the road branch.
+    private var isFastestPaceOfMonth: Bool { store.fastestPaceOfMonthHolders.contains(run.id) }
+
+    private var fastestPaceOfMonthLine: some View {
+        let month = run.date.formatted(.dateTime.month(.wide))
+        let year = run.date.formatted(.dateTime.year(.twoDigits))
+        return HStack(spacing: 6) {
+            Image(systemName: "bolt.fill").font(.system(size: 11, weight: .semibold))
+            Text("Fastest pace in \(month) \(year)").font(.sg(13, weight: .semibold))
+        }
+        .foregroundStyle(Theme.signal)
+    }
 
     private var dateLine: some View {
         let stamp = run.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)).uppercased()

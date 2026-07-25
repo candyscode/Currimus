@@ -11,6 +11,7 @@ struct LogView: View {
         // Cached in the store — this used to recompute the fastest 5 K and
         // 10 K window across the whole log on every body pass.
         let holders = store.benchmarkHolders
+        let fastestOfMonth = store.fastestPaceOfMonthHolders
         return TabScreen(topInset: 8) { EmptyView() } content: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
@@ -34,7 +35,8 @@ struct LogView: View {
                         .overlay(alignment: .bottom) { Theme.hairline.frame(height: 1) }
                     ForEach(group.runs) { run in
                         Button { push(.runDetail(run)) } label: {
-                            LogRow(run: run, prTag: holders[run.id])
+                            LogRow(run: run, prTag: holders[run.id],
+                                   isFastestPaceOfMonth: fastestOfMonth.contains(run.id))
                         }
                         .buttonStyle(.plain)
                         .contextMenu { deleteAction(run) }
@@ -85,8 +87,7 @@ struct LogView: View {
 struct LogRow: View {
     var run: Run
     var prTag: String?
-
-    private var isFast: Bool { !run.isTrail && run.paceSecPerKm < 310 }
+    var isFastestPaceOfMonth: Bool
 
     var body: some View {
         HStack(spacing: 14) {
@@ -105,7 +106,7 @@ struct LogRow: View {
             Spacer()
             Text(Format.pace(run.paceSecPerKm))
                 .font(.stat(18))
-                .foregroundStyle(isFast || prTag != nil ? Theme.signal : Theme.ink)
+                .foregroundStyle(isFastestPaceOfMonth ? Theme.signal : Theme.ink)
         }
         .frame(minHeight: 60)
         .padding(.vertical, 6)

@@ -94,12 +94,14 @@ final class RunStore: ObservableObject {
     private var cachedRecords: [RecordEntry]?
     private var cachedHolders: [UUID: String]?
     private var cachedLatestBenchmark: LatestBenchmark??
+    private var cachedFastestPaceOfMonth: Set<UUID>?
 
     private func invalidateAggregates() {
         cachedAllRuns = nil
         cachedRecords = nil
         cachedHolders = nil
         cachedLatestBenchmark = nil
+        cachedFastestPaceOfMonth = nil
     }
 
     var lastRun: Run? { allRuns.first }
@@ -591,6 +593,24 @@ final class RunStore: ObservableObject {
         if let longest = longestRun { map[longest.id, default: ""] = "Longest" }
         cachedHolders = map
         return map
+    }
+
+    /// Which run holds the fastest pace within its own calendar month — the
+    /// log's accent color leads with "fastest this month", not a fixed
+    /// threshold that meant nothing without knowing the runner's level.
+    /// Trail is excluded: its pace isn't comparable to road/pacer pace, so it
+    /// never earns the accent.
+    var fastestPaceOfMonthHolders: Set<UUID> {
+        if let cachedFastestPaceOfMonth { return cachedFastestPaceOfMonth }
+        let eligible = allRuns.filter { !$0.isTrail && $0.hasUsableDistance && $0.paceSecPerKm > 0 }
+        let byMonth = Dictionary(grouping: eligible) {
+            calendar.dateInterval(of: .month, for: $0.date)?.start ?? $0.date
+        }
+        let built = Set(byMonth.values.compactMap { runs in
+            runs.min { $0.paceSecPerKm < $1.paceSecPerKm }?.id
+        })
+        cachedFastestPaceOfMonth = built
+        return built
     }
 
     /// Attribute a PR to the run that holds it — the same lookup the record
