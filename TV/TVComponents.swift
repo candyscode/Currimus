@@ -246,38 +246,60 @@ struct TVZoneHeatStrip: View {
 }
 
 /// A trend polyline over gridlines with end dot — the TV twin of `TrendChart`.
-/// `values` oldest→newest; nil gaps are bridged. Lower = higher on screen when
-/// `invert` (pace: faster is better).
+/// `values` oldest→newest; nil gaps are bridged.
+///
+/// Scaling, headroom and axis labels are the phone's, deliberately: this used
+/// to scale into the raw min/max while the caller labelled the frame edges with
+/// ±8 s of headroom, so the fastest and slowest weeks rode the top and bottom
+/// edges under labels claiming values they never reached. The band now owns
+/// both, and the labels are derived from it rather than passed in beside it.
+///
+/// There is no `invert`: the larger value is always the higher one on screen,
+/// and which direction counts as an *improvement* is a VoiceOver question
+/// (`lowerIsBetter`), not a geometry one. The iPhone chart learned that the
+/// hard way — a trail chart once drew its biggest climb week at the bottom
+/// under a label at the top claiming that number.
 struct TVTrendChart: View {
     var values: [TimeInterval?]
-    var topLabel: String
-    var bottomLabel: String
-    var invert: Bool = true
+    /// Headroom above and below the data, in the values' own unit, so the line
+    /// never rides the frame's edge.
+    var headroom: Double = 8
+    /// Whether a falling line is the improvement (pace) or a rising one.
+    /// Only affects what VoiceOver calls the direction.
+    var lowerIsBetter = true
     var height: CGFloat = 240
+    /// An axis bound, written for the edge label.
+    var format: (Double) -> String = { Format.pace($0) }
     /// What the line is, and how to say one of its values, for VoiceOver.
     var accessibilityTitle: String = "Trend"
     var describe: (TimeInterval) -> String = { Format.pace($0) }
+
+    /// The band the line is scaled into: the data plus its headroom.
+    private var band: (low: Double, high: Double) {
+        let present = values.compactMap { $0 }
+        guard let low = present.min(), let high = present.max() else { return (0, 1) }
+        return (low - headroom, high + headroom)
+    }
 
     /// Oldest and newest point plus the direction between them — the shape a
     /// sighted reader takes from the line at a glance. Mirrors `TrendChart`.
     private var spokenSummary: String {
         let present = values.compactMap { $0 }
         guard let first = present.first, let last = present.last else { return "No data yet" }
-        let direction = last == first ? "unchanged" : (last < first ? "improving" : "slipping")
+        let improved = lowerIsBetter ? last < first : last > first
+        let direction = last == first ? "unchanged" : (improved ? "improving" : "slipping")
         return "\(present.count) weeks, from \(describe(first)) to \(describe(last)), \(direction)"
     }
 
     var body: some View {
-        let present = values.compactMap { $0 }
-        let hi = present.max() ?? 1
-        let lo = present.min() ?? 0
-        let span = max(hi - lo, 1)
+        let band = band
+        let span = max(band.high - band.low, 1)
+        let topLabel = format(band.high)
+        let bottomLabel = format(band.low)
         let pts: [CGPoint] = values.enumerated().compactMap { i, v in
             guard let v else { return nil }
-            let x = Double(i) / Double(max(values.count - 1, 1))
-            let norm = (v - lo) / span
-            let y = invert ? norm : 1 - norm
-            return CGPoint(x: x, y: y)
+            return CGPoint(x: Double(i) / Double(max(values.count - 1, 1)),
+                           y: (v - band.low) / span)
         }
         return ZStack(alignment: .topLeading) {
             VStack(spacing: 0) {

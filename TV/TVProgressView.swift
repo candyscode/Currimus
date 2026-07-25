@@ -55,9 +55,9 @@ struct TVProgressView: View {
             }
             .padding(.top, 10)
             TVTrendChart(values: series,
-                         topLabel: Format.pace((present.max() ?? 0) + 8),
-                         bottomLabel: Format.pace((present.min() ?? 0) - 8),
-                         invert: true,
+                         headroom: 8,
+                         lowerIsBetter: true,
+                         format: { Format.pace($0) },
                          accessibilityTitle: "Average pace per week, last 12 weeks",
                          describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 24)

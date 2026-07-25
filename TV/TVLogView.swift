@@ -7,6 +7,7 @@ import SwiftUI
 struct TVLogView: View {
     @EnvironmentObject private var store: RunStore
     @State private var path: [Run] = []
+    @State private var hasRouted = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -37,7 +38,17 @@ struct TVLogView: View {
         }
         // DEBUG screenshot routing (`-push detailRoad` / `detailTrail`), the
         // same switch the iPhone's TabRoot honours. Release ignores it.
-        .onAppear { path = Self.debugPath(store) }
+        //
+        // Once, not on every appear: `.onAppear` fires again each time the tab
+        // bar comes back to Log, and in a Release build `debugPath` is always
+        // empty — so re-running it popped whatever run detail the viewer had
+        // open the moment they glanced at Home and back.
+        .onAppear {
+            guard !hasRouted else { return }
+            hasRouted = true
+            let debug = Self.debugPath(store)
+            if !debug.isEmpty { path = debug }
+        }
     }
 
     private static func debugPath(_ store: RunStore) -> [Run] {

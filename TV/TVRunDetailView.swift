@@ -12,6 +12,7 @@ import SwiftUI
 /// elevation profile is empty — the same as a run with no recorded track.
 struct TVRunDetailView: View {
     @EnvironmentObject private var store: RunStore
+    @EnvironmentObject private var sync: TVSync
     private let storedRun: Run
     @State private var samplesLoaded = false
 
@@ -31,7 +32,13 @@ struct TVRunDetailView: View {
         .task {
             // Fetch the heavy half once, on demand. `samplesLoaded` flips the
             // view so `run` re-hydrates from the now-cached samples.
-            guard !samplesLoaded,
+            //
+            // `readsCloud` for the same reason `TVSync` has it: under `-demo 1`
+            // the sample runs already carry their track in memory, and the
+            // documented screenshot route (`-push detailRoad`) opens straight
+            // onto this screen — which would otherwise be the one place the
+            // demo still reached for an iCloud account that isn't there.
+            guard sync.readsCloud, !samplesLoaded,
                   let samples = await RunCloudSync.fetchSamples(for: storedRun.id) else { return }
             store.cacheCloudSamples(samples, for: storedRun.id)
             samplesLoaded = true

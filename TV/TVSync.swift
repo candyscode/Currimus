@@ -25,8 +25,16 @@ final class TVSync: ObservableObject {
     private let store: RunStore
     /// Off for `-demo 1`, which fills the store from `SampleData` instead: the
     /// tvOS simulator has no iCloud account, so without this the only screen
-    /// the app can ever show there is "Sign in to iCloud".
-    private let readsCloud: Bool
+    /// the app can ever show there is "Sign in to iCloud". Read by the run
+    /// detail too, which otherwise fetches its route straight from CloudKit
+    /// and bypasses this switch entirely.
+    let readsCloud: Bool
+
+    /// Guards against two refreshes at once. On a cold launch the root view's
+    /// `.task` and its `scenePhase` change both fire, which otherwise meant two
+    /// account probes, two full paged queries, and the first one to finish
+    /// clearing the spinner while the second was still running.
+    private var isFetching = false
 
     /// Whether a successful fetch has ever populated the store this launch. Once
     /// true, a later failure must not blank the screen or wipe the cache.
@@ -46,7 +54,9 @@ final class TVSync: ObservableObject {
     /// offline cache) untouched — only a confirmed sign-out or a genuinely empty
     /// account changes what the user sees.
     func refresh() async {
-        guard readsCloud else { return }
+        guard readsCloud, !isFetching else { return }
+        isFetching = true
+        defer { isFetching = false }
         if hasLoaded { isRefreshing = true }
         defer { isRefreshing = false }
 

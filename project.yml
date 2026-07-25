@@ -125,6 +125,17 @@ targets:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
         com.apple.security.application-groups: [group.com.currimus.app]
+        # The phone is the writer of the CloudKit mirror the Apple TV reads.
+        # This belongs here and nowhere else: the entitlements file is
+        # *generated* from these properties, so a key added to it by hand (or
+        # by Xcode's Signing & Capabilities pane) survives exactly until the
+        # next `xcodegen generate` — which is precisely how it was lost once
+        # already. Without it the container is not authorised and no run ever
+        # reaches the TV; in a bundle with no iCloud entitlement at all,
+        # `CKContainer(identifier:)` traps rather than throws (that is what
+        # takes the XCTest bundle down — see `RunStore.mirrorsToCloud`).
+        com.apple.developer.icloud-services: [CloudKit]
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.currimus.app]
     dependencies:
       - target: CurrimusWatch
 

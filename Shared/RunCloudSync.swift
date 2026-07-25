@@ -91,8 +91,17 @@ enum RunCloudSync {
     /// `backfill` cannot, because it is only allowed to happen once.
     @discardableResult
     static func upsert(_ run: Run) async -> Bool {
+        var scratch: URL?
+        defer {
+            // The sidecar only has to outlive the upload. Left behind, a
+            // backfill would copy the entire GPS history into the temp
+            // directory and leave it there.
+            if let scratch { try? FileManager.default.removeItem(at: scratch) }
+        }
         do {
-            try await save(makeRecord(for: run))
+            let (record, assetURL) = try makeRecord(for: run)
+            scratch = assetURL
+            try await save(record)
             return true
         } catch {
             Log.sync.error("cloud upsert failed for \(run.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
@@ -183,26 +192,40 @@ enum RunCloudSync {
         CKRecord.ID(recordName: id.uuidString)
     }
 
-    private static func makeRecord(for run: Run) throws -> CKRecord {
+    /// The record to save, plus the scratch file its `CKAsset` reads from —
+    /// the caller deletes that once the save has returned.
+    ///
+    /// A run **without** samples deliberately leaves `Field.samples` unset
+    /// rather than clearing it. That is what makes an edit safe: `update` on
+    /// the phone republishes metadata only, and `save`'s conflict recovery
+    /// copies just the keys present here onto the server's copy, so the run's
+    /// track in the cloud survives a rename. Nothing here ever needs to *drop*
+    /// a track — a run that loses its samples is a run being deleted, and
+    /// `delete(id:)` takes the whole record with it.
+    private static func makeRecord(for run: Run) throws -> (CKRecord, URL?) {
         let record = CKRecord(recordType: Field.recordType, recordID: recordID(run.id))
         // Data and Date both conform to CKRecordValueProtocol, which is what
         // the record subscript takes — assign directly, no cast.
         record[Field.payload] = try JSONEncoder().encode(run.strippingSamples)
         record[Field.date] = run.date
-        if run.carriesSamples {
-            record[Field.samples] = try sampleAsset(for: run)
-        }
-        return record
+        guard run.carriesSamples else { return (record, nil) }
+        let url = try writeSampleFile(for: run)
+        record[Field.samples] = CKAsset(fileURL: url)
+        return (record, url)
     }
 
-    /// Writes the run's samples to a temporary JSON file and wraps it as a
-    /// `CKAsset`. CloudKit uploads the file's contents and manages its lifetime.
-    private static func sampleAsset(for run: Run) throws -> CKAsset {
+    /// Writes the run's samples to a scratch JSON file for `CKAsset` to upload.
+    ///
+    /// The name carries a fresh UUID, not just the run's id: a backfill and an
+    /// `add` can publish the same run at the same time, and a fixed path let
+    /// the second call rewrite the file while CloudKit was still reading it for
+    /// the first one's asset.
+    private static func writeSampleFile(for run: Run) throws -> URL {
         let data = try JSONEncoder().encode(RunSamples(run))
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(run.id.uuidString)-samples.json")
+            .appendingPathComponent("\(run.id.uuidString)-\(UUID().uuidString)-samples.json")
         try data.write(to: url, options: .atomic)
-        return CKAsset(fileURL: url)
+        return url
     }
 
     private static func decode(_ matches: [(CKRecord.ID, Result<CKRecord, Error>)]) -> [Run] {

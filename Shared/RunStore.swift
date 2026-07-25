@@ -126,10 +126,17 @@ final class RunStore: ObservableObject {
         runs.insert(run.strippingSamples, at: 0)
         runs.sort { $0.date > $1.date }
         // Health may already hold the same outing from another app.
+        let previousImported = importedRuns
         importedRuns = HealthImport.merging(importedRuns, with: runs)
         // Publish the freshly-arrived run to the Apple TV. Push the full run,
         // samples included, so its route and elevation reach the TV's detail.
         cloudUpsert(run)
+        // …and retract whatever the line above just evicted. The TV does the
+        // `imported`-flag split, not the overlap merge, so a Strava copy of
+        // this same outing that is already in the cloud would otherwise stay
+        // there: the phone shows one run, the TV shows two and counts the
+        // distance twice.
+        cloudSyncImportedDelta(from: previousImported, to: importedRuns)
     }
 
     #if os(tvOS)
@@ -177,6 +184,13 @@ final class RunStore: ObservableObject {
               let index = runs.firstIndex(where: { $0.id == run.id }) else { return }
         // The log holds metadata only — an edit must not put the track back in.
         runs[index] = run.strippingSamples
+        // Republish, or the TV keeps the name and classification the run had
+        // when it arrived: nothing else re-uploads an existing run once the
+        // one-time backfill has been marked done. `upsert` is keyed on the id,
+        // so this overwrites rather than duplicates. Metadata only — the track
+        // in the cloud is unchanged by an edit, and re-reading the sidecar to
+        // resend it would be a file read per keystroke-sized change.
+        cloudUpsert(runs[index])
     }
 
     private func remove(_ candidates: [Run]) {
