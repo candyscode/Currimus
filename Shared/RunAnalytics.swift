@@ -45,34 +45,60 @@ enum RunAnalytics {
 
     // MARK: - Personal records
 
+    /// The benchmark distances the Records screen and the prediction work in.
+    static let benchmarkDistances: [Double] = [1, 5, 10, 21.0975, 42.195]
+
+    /// How far short of a benchmark a run may fall and still count as one.
+    /// Proportional, so a 4.6 km run is not a 5 K while a 20.7 km one is still
+    /// a half.
+    private static func tolerance(_ km: Double) -> Double { min(km * 0.02, 0.4) }
+
+    /// How far past a benchmark a run may reach and still be scaled onto it.
+    /// 2.5 is the value that keeps a marathon counting as evidence for a half
+    /// — a runner does cover the distance on the way — while stopping the same
+    /// marathon from filing its average pace as a 1 K or 5 K record, which
+    /// would be true arithmetic and a worthless number.
+    private static let scaledReach = 2.5
+
     /// Best time (s) for the classic benchmark distances, keyed by km.
-    /// 1/5/10 km use the fastest rolling window inside any run; half/marathon
-    /// require an actual effort of at least that distance.
     static func personalBests(runs: [Run]) -> [Double: TimeInterval] {
         var best: [Double: TimeInterval] = [:]
-        for windowKm in [1.0, 5.0, 10.0] {
-            if let t = fastestWindow(km: Int(windowKm), runs: runs) {
-                best[windowKm] = t
-            }
-        }
-        for dist in [21.0975, 42.195] {
-            let efforts = runs.filter { $0.distanceKm >= dist - 0.4 }
-            // Scale the actual time to the exact distance for a fair benchmark.
-            if let t = efforts.map({ $0.paceSecPerKm * dist }).min() {
-                best[dist] = t
+        for km in benchmarkDistances {
+            if let holder = bestEffortHolder(km: km, runs: runs) {
+                best[km] = holder.seconds
             }
         }
         return best
     }
 
-    /// The run holding the fastest `km`-window, with that window's time.
+    /// The run holding the best time over `km`, and that time.
     ///
-    /// Callers used to find this by sorting runs with `fastestWindow` *inside*
-    /// the comparator, which recomputes the window O(n log n) times. One pass
-    /// is enough.
-    static func fastestWindowHolder(km: Int, runs: [Run]) -> (run: Run, seconds: TimeInterval)? {
-        runs.compactMap { run in
-            fastestWindow(km: km, runs: [run]).map { (run: run, seconds: $0) }
+    /// A run can hold one two ways. The fastest rolling window inside it is
+    /// the better evidence, but it needs per-kilometre splits — and only runs
+    /// Currimus recorded itself have those. A run read out of Apple Health
+    /// arrives as one distance and one duration, so all it can offer is the
+    /// whole run scaled to the benchmark.
+    ///
+    /// Both are considered and the faster wins, so an estimate can never
+    /// displace a real PR — it only fills a row that would otherwise read
+    /// "—". Without this, someone arriving with years of Strava history saw an
+    /// empty Records screen and no race prediction, because none of it carries
+    /// splits.
+    ///
+    /// The scaled reading is capped at `scaledReach`× the benchmark: average
+    /// pace over a marathon is fair evidence for a half, and says nothing
+    /// worth filing about a kilometre.
+    static func bestEffortHolder(km: Double, runs: [Run]) -> (run: Run, seconds: TimeInterval)? {
+        runs.compactMap { run -> (run: Run, seconds: TimeInterval)? in
+            var best: TimeInterval?
+            if km <= 10, let window = fastestWindow(km: Int(km), runs: [run]) {
+                best = window
+            }
+            if run.distanceKm >= km - tolerance(km), run.distanceKm <= km * scaledReach {
+                let scaled = run.paceSecPerKm * km
+                best = min(best ?? scaled, scaled)
+            }
+            return best.map { (run: run, seconds: $0) }
         }
         .min { $0.seconds < $1.seconds }
     }
@@ -111,13 +137,32 @@ enum RunAnalytics {
         return max(flatTime, 0) / run.distanceKm
     }
 
+    /// Raw and flat-equivalent pace across a set of runs.
+    ///
+    /// Weighted by distance, because averaging pace *values* treats a 4 km jog
+    /// and a 30 km mountain day as equal evidence. Total time over total
+    /// distance is what "average pace across these runs" actually means.
+    ///
+    /// Only runs that recorded climb count. Without elevation the adjustment
+    /// is the identity, so every flat or GPS-less run used to drag the
+    /// difference between the two numbers toward zero — and that difference is
+    /// the entire point of showing them.
+    static func gradeAdjustedSummary(runs: [Run]) -> (raw: TimeInterval, adjusted: TimeInterval)? {
+        let climbed = runs.filter { ($0.climbMeters ?? 0) > 0 && $0.distanceKm > 0.05 }
+        let km = climbed.reduce(0) { $0 + $1.distanceKm }
+        guard km > 0 else { return nil }
+        let time = climbed.reduce(0) { $0 + $1.duration }
+        let flatTime = climbed.reduce(0.0) { $0 + gradeAdjustedPace($1) * $1.distanceKm }
+        return (raw: time / km, adjusted: flatTime / km)
+    }
+
     // MARK: - Trends
 
     /// Average pace (s/km) per ISO week for the last `weeks`, oldest first.
     /// nil weeks (no runs) are dropped from the polyline but reserve their slot.
     static func weeklyAvgPace(runs: [Run], weeks: Int, roadOnly: Bool = true,
                               now: Date = .now) -> [TimeInterval?] {
-        let cal = Calendar.current
+        let cal = Calendar.runWeek
         let source = roadOnly ? runs.filter { !$0.isTrail } : runs
         return (0..<weeks).reversed().map { offset -> TimeInterval? in
             guard let weekDate = cal.date(byAdding: .weekOfYear, value: -offset, to: now) else { return nil }
@@ -131,7 +176,7 @@ enum RunAnalytics {
 
     /// Average climb rate (m/h) per week for the last `weeks`, trail only.
     static func weeklyClimbRate(runs: [Run], weeks: Int, now: Date = .now) -> [Double?] {
-        let cal = Calendar.current
+        let cal = Calendar.runWeek
         let trail = runs.filter { $0.isTrail }
         return (0..<weeks).reversed().map { offset -> Double? in
             guard let weekDate = cal.date(byAdding: .weekOfYear, value: -offset, to: now) else { return nil }
@@ -141,6 +186,30 @@ enum RunAnalytics {
             guard hours > 0.01 else { return nil }
             return climb / hours
         }
+    }
+
+    /// The pace to measure cardiac drift at — the runner's own steady pace,
+    /// rather than a number chosen in advance.
+    ///
+    /// The median of their easy and long runs: the efforts they repeat most,
+    /// which is the only condition under which "same pace, lower heart rate"
+    /// means anything. The reference used to be a fixed 5:30, so anyone who
+    /// does not happen to run 5:30 read "—" under the heading "Same effort,
+    /// less work" forever, with no way to tell whether that was their data or
+    /// a broken screen.
+    ///
+    /// Rounded to five seconds so the label names a pace a runner would say
+    /// out loud, and so the band the runs are matched against is the same one
+    /// the label advertises.
+    static func referencePace(runs: [Run]) -> TimeInterval? {
+        let steady = runs
+            .filter { !$0.isTrail && $0.avgHR > 0 && $0.paceSecPerKm > 0 }
+            .filter { $0.classification == .easy || $0.classification == .long }
+            .map(\.paceSecPerKm)
+            .sorted()
+        // Four is the point where a median stops being one arbitrary run.
+        guard steady.count >= 4 else { return nil }
+        return (steady[steady.count / 2] / 5).rounded() * 5
     }
 
     /// Cardiac drift: average HR near a reference pace, and the change between

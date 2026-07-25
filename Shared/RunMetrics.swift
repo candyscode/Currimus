@@ -203,21 +203,5 @@ struct RunMetrics: Equatable {
         altitudeMeters = samples.last ?? 0
     }
 
-    /// Simulated trail climb — the real one comes from GPS altitude.
-    mutating func addSimulatedClimb(_ meters: Double, ratePerHour: Double) {
-        climbMeters += meters
-        climbRatePerHour = max(0, ratePerHour)
-    }
-
-    mutating func addSimulatedDescent(_ meters: Double) {
-        descentMeters += meters
-        climbRatePerHour = max(0, climbRatePerHour - 40)
-    }
-
-    mutating func setSimulatedAltitude(_ altitude: Double, at elapsed: TimeInterval) {
-        altitudeMeters = altitude
-        sampleAltitude(altitude, at: elapsed)
-    }
-
     mutating func setRollingPace(_ pace: TimeInterval) { rollingPace = pace }
 }

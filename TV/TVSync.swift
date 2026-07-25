@@ -14,6 +14,7 @@ final class TVSync: ObservableObject {
         case loading            // first fetch in flight, nothing to show yet
         case ready              // at least one fetch has completed
         case signedOut          // no iCloud account — the explain-and-stop state
+        case failed             // the first fetch never landed — offer a retry
     }
 
     @Published private(set) var phase: Phase = .loading
@@ -22,13 +23,19 @@ final class TVSync: ObservableObject {
     @Published private(set) var isRefreshing = false
 
     private let store: RunStore
+    /// Off for `-demo 1`, which fills the store from `SampleData` instead: the
+    /// tvOS simulator has no iCloud account, so without this the only screen
+    /// the app can ever show there is "Sign in to iCloud".
+    private let readsCloud: Bool
 
     /// Whether a successful fetch has ever populated the store this launch. Once
     /// true, a later failure must not blank the screen or wipe the cache.
     private var hasLoaded = false
 
-    init(store: RunStore) {
+    init(store: RunStore, readsCloud: Bool = !DebugFlags.seedsDemoContent) {
         self.store = store
+        self.readsCloud = readsCloud
+        if !readsCloud { phase = .ready }
     }
 
     /// Fetch the log and hand it to the store. Safe to call on every appear /
@@ -39,6 +46,7 @@ final class TVSync: ObservableObject {
     /// offline cache) untouched — only a confirmed sign-out or a genuinely empty
     /// account changes what the user sees.
     func refresh() async {
+        guard readsCloud else { return }
         if hasLoaded { isRefreshing = true }
         defer { isRefreshing = false }
 
@@ -51,9 +59,12 @@ final class TVSync: ObservableObject {
             if !hasLoaded { phase = .signedOut }
             return
         case .transient:
-            // Never resolved (rare). Leave the current screen — loading on a
-            // cold start, or the cached log — and let the next foreground retry.
+            // Never resolved. Leave a loaded screen alone; on a cold start say
+            // so and offer the retry, rather than spinning forever — a TV is
+            // left running for hours and may never be backgrounded, so
+            // "the next foreground will fix it" is not a real recovery.
             // Crucially NOT signed-out: that would misread a hiccup as no account.
+            if !hasLoaded { phase = fallbackPhase }
             return
         case .available:
             break
@@ -69,8 +80,16 @@ final class TVSync: ObservableObject {
             // that would wipe the offline cache and show "no runs". Leave the
             // last good data in place and let the next refresh try again.
             Log.sync.error("TV refresh failed: \(error.localizedDescription, privacy: .public)")
-            if hasLoaded { phase = .ready }   // keep showing cached runs
+            phase = hasLoaded ? .ready : fallbackPhase
         }
+    }
+
+    /// What to show when the first fetch of this launch did not land: the log
+    /// left over from the previous launch if there is one — it is a mirror of
+    /// runs already recorded, so a stale copy is still the right answer — and
+    /// otherwise the retry screen.
+    private var fallbackPhase: Phase {
+        store.allRuns.isEmpty ? .failed : .ready
     }
 
     /// Resolve the account status, retrying a transient answer a few times with

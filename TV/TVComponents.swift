@@ -371,9 +371,11 @@ struct TVElevationProfile: View {
 struct TVLogRow: View {
     var run: Run
     var prTag: String?
+    /// The one run in its calendar month with the fastest pace — the only
+    /// thing that lights the pace up, exactly as on the iPhone. It used to be
+    /// a fixed 5:10/km cutoff, which meant nothing without knowing the runner.
+    var isFastestPaceOfMonth: Bool
     @Environment(\.isFocused) private var isFocused
-
-    private var isFast: Bool { !run.isTrail && run.paceSecPerKm < 310 }
 
     var body: some View {
         HStack(spacing: 28) {
@@ -392,7 +394,7 @@ struct TVLogRow: View {
             Spacer()
             Text(Format.pace(run.paceSecPerKm))
                 .font(.stat(26))
-                .foregroundStyle(isFast || prTag != nil ? Theme.signal : Theme.ink)
+                .foregroundStyle(isFastestPaceOfMonth ? Theme.signal : Theme.ink)
         }
         .padding(.horizontal, 28)
         .padding(.vertical, 22)

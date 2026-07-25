@@ -49,6 +49,50 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNil(RunAnalytics.fastestWindow(km: 12, runs: [run]))
     }
 
+    /// A run out of Apple Health has no splits, so the rolling window finds
+    /// nothing in it — it has to hold a record on its distance and time alone.
+    func testImportedRunWithoutSplitsStillHoldsARecord() {
+        let imported = Run(date: .now, name: "Strava", distanceKm: 10, duration: 2800,
+                           avgHR: 0, splits: [], imported: true)
+        XCTAssertNil(RunAnalytics.fastestWindow(km: 10, runs: [imported]))
+
+        let holder = RunAnalytics.bestEffortHolder(km: 10, runs: [imported])
+        XCTAssertEqual(holder?.run.id, imported.id)
+        XCTAssertEqual(try XCTUnwrap(holder?.seconds), 2800, accuracy: 1)
+    }
+
+    /// The scaled reading is a fallback, never a promotion: a genuine window
+    /// inside a run has to win when it is faster.
+    func testRealWindowBeatsScaledEstimate() {
+        let splits: [TimeInterval] = [340, 340, 280, 280, 280, 280, 280, 340, 340, 340]
+        let recorded = Run(date: .now, name: "own", distanceKm: 10,
+                           duration: splits.reduce(0, +), avgHR: 150, splits: splits)
+        let window = try? XCTUnwrap(RunAnalytics.fastestWindow(km: 5, runs: [recorded]))
+        let holder = RunAnalytics.bestEffortHolder(km: 5, runs: [recorded])
+        XCTAssertEqual(try XCTUnwrap(holder?.seconds), try XCTUnwrap(window), accuracy: 0.1)
+        XCTAssertLessThan(try XCTUnwrap(holder?.seconds), recorded.paceSecPerKm * 5)
+    }
+
+    /// Average pace over a marathon says something about a half and nothing
+    /// worth claiming about a kilometre.
+    func testLongRunDoesNotSetShortBenchmarks() {
+        let marathon = Run(date: .now, name: "M", distanceKm: 42.2, duration: 42.2 * 330,
+                           avgHR: 150, splits: [], imported: true)
+        let prs = RunAnalytics.personalBests(runs: [marathon])
+        XCTAssertNotNil(prs[42.195])
+        XCTAssertNotNil(prs[21.0975])
+        XCTAssertNil(prs[1])
+        XCTAssertNil(prs[5])
+        XCTAssertNil(prs[10])
+    }
+
+    /// A run that falls short of the benchmark must not be filed as one.
+    func testShortRunIsNotABenchmark() {
+        let short = Run(date: .now, name: "s", distanceKm: 4.6, duration: 4.6 * 300,
+                        avgHR: 150, splits: [], imported: true)
+        XCTAssertNil(RunAnalytics.bestEffortHolder(km: 5, runs: [short]))
+    }
+
     func testPersonalBestsIncludeHalfFromLongEffort() {
         let long = Run(date: .now, name: "long", distanceKm: 22, duration: 22 * 330,
                        avgHR: 150, splits: Array(repeating: 330, count: 22))
@@ -56,6 +100,71 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNotNil(prs[21.0975])
         XCTAssertEqual(prs[21.0975]!, 330 * 21.0975, accuracy: 1)
         XCTAssertNil(prs[42.195]) // no marathon-length effort
+    }
+
+    // MARK: Grade-adjusted pace
+
+    private func trailRun(km: Double, pace: TimeInterval, climb: Double?) -> Run {
+        Run(date: .now, type: .trail, name: "t", distanceKm: km, duration: km * pace,
+            avgHR: 150, climbMeters: climb, descentMeters: climb.map { $0 * 0.5 })
+    }
+
+    /// A short jog and a long mountain day are not equal evidence. Weighting
+    /// by distance is what "average pace across these runs" means.
+    func testGradeAdjustedSummaryIsWeightedByDistance() {
+        let short = trailRun(km: 2, pace: 600, climb: 100)
+        let long = trailRun(km: 30, pace: 400, climb: 1000)
+        let summary = try? XCTUnwrap(RunAnalytics.gradeAdjustedSummary(runs: [short, long]))
+        let expectedRaw = (short.duration + long.duration) / 32
+        XCTAssertEqual(try XCTUnwrap(summary?.raw), expectedRaw, accuracy: 0.5)
+        // The unweighted mean of the two paces would be 500; the long run has
+        // to dominate.
+        XCTAssertLessThan(try XCTUnwrap(summary?.raw), 450)
+    }
+
+    /// Runs with no elevation recorded make the adjustment the identity, so
+    /// including them only dilutes the difference the row exists to show.
+    func testGradeAdjustedSummarySkipsRunsWithoutClimb() {
+        let flat = trailRun(km: 10, pace: 400, climb: nil)
+        XCTAssertNil(RunAnalytics.gradeAdjustedSummary(runs: [flat]))
+
+        let climbed = trailRun(km: 10, pace: 400, climb: 500)
+        let summary = try? XCTUnwrap(RunAnalytics.gradeAdjustedSummary(runs: [flat, climbed]))
+        XCTAssertEqual(try XCTUnwrap(summary?.raw), 400, accuracy: 0.5)
+        XCTAssertLessThan(try XCTUnwrap(summary?.adjusted), 400)   // climbing explains the pace
+    }
+
+    // MARK: Cardiac drift
+
+    private func easyRun(_ pace: TimeInterval, hr: Int, daysAgo: Int) -> Run {
+        Run(date: Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now)!,
+            name: "easy", distanceKm: 10, duration: 10 * pace, avgHR: hr,
+            splits: Array(repeating: pace, count: 10),
+            zoneSeconds: [60, 3000, 300, 0, 0])
+    }
+
+    func testReferencePaceIsTheRunnersOwnMedian() {
+        let runs = [330.0, 350, 360, 370, 380].enumerated().map {
+            easyRun($0.element, hr: 150, daysAgo: $0.offset * 7)
+        }
+        // Median of the five is 360, and it snaps to the nearest five seconds.
+        XCTAssertEqual(try XCTUnwrap(RunAnalytics.referencePace(runs: runs)), 360, accuracy: 0.1)
+    }
+
+    func testReferencePaceNeedsEnoughSteadyRuns() {
+        let runs = [easyRun(330, hr: 150, daysAgo: 0), easyRun(340, hr: 150, daysAgo: 7)]
+        XCTAssertNil(RunAnalytics.referencePace(runs: runs))
+    }
+
+    /// A slow runner used to see nothing here at all: the reference was
+    /// pinned at 5:30 and none of their runs came within twenty seconds.
+    func testDriftIsFoundForARunnerNowhereNearFiveThirty() {
+        let runs = (0..<6).map { easyRun(420 + Double($0 % 2) * 5, hr: 160 - $0, daysAgo: $0 * 7) }
+        let reference = try? XCTUnwrap(RunAnalytics.referencePace(runs: runs))
+        XCTAssertEqual(try XCTUnwrap(reference), 425, accuracy: 5)
+        XCTAssertNil(RunAnalytics.hrAtPace(runs: runs, referencePaceSec: 330))
+        XCTAssertNotNil(RunAnalytics.hrAtPace(runs: runs,
+                                              referencePaceSec: try XCTUnwrap(reference)))
     }
 
     // MARK: Classification

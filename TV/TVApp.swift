@@ -11,7 +11,12 @@ struct CurrimusTVApp: App {
         // One store, shared with the sync driver. `StateObject(wrappedValue:)`
         // keeps SwiftUI's single-instance guarantee while letting the two
         // objects reference each other.
-        let store = RunStore()
+        //
+        // `-demo 1` fills it from `SampleData` and puts `TVSync` into its
+        // no-cloud mode, the same switch the iPhone and watch use for
+        // screenshots. Without it the tvOS simulator — which has no iCloud
+        // account — can only ever show "Sign in to iCloud".
+        let store = RunStore(seeded: DebugFlags.seedsDemoContent)
         _store = StateObject(wrappedValue: store)
         _sync = StateObject(wrappedValue: TVSync(store: store))
     }
@@ -38,6 +43,7 @@ struct CurrimusTVApp: App {
 struct TVRootView: View {
     @EnvironmentObject private var store: RunStore
     @EnvironmentObject private var sync: TVSync
+    @State private var tab = TVTab.launchArgument
 
     var body: some View {
         ZStack {
@@ -56,6 +62,20 @@ struct TVRootView: View {
                     message: "Currimus shows the runs from your iPhone. Sign this Apple TV into the same iCloud account in Settings, then reopen Currimus.",
                     showsProgress: false
                 )
+            case .failed:
+                // iCloud never answered on this launch and there is no cached
+                // log to fall back on. A TV is left running for hours without
+                // ever being backgrounded, so waiting for the next foreground
+                // is not a recovery — the remote gets a button instead.
+                TVStatusView(
+                    title: "Can't reach iCloud",
+                    message: "Currimus couldn't load your runs. Check this Apple TV's network connection, then try again.",
+                    showsProgress: false
+                ) {
+                    Button("Try Again") { Task { await sync.refresh() } }
+                        .font(.sg(24, weight: .semibold))
+                        .padding(.top, 16)
+                }
             case .ready:
                 if store.allRuns.isEmpty {
                     TVStatusView(
@@ -79,13 +99,32 @@ struct TVRootView: View {
     }
 
     private var tabs: some View {
-        TabView {
+        TabView(selection: $tab) {
             TVDashboardView()
                 .tabItem { Text("Home") }
+                .tag(TVTab.home)
             TVLogView()
                 .tabItem { Text("Log") }
+                .tag(TVTab.log)
             TVProgressView()
                 .tabItem { Text("Progress") }
+                .tag(TVTab.progress)
+        }
+    }
+}
+
+/// The three top-bar tabs. A real selection rather than TabView's implicit one,
+/// so `-tab log` can open the app on a given screen — the same DEBUG routing
+/// the iPhone and the watch use, and the only way to photograph a TV screen
+/// without a Siri Remote in the loop.
+enum TVTab: Hashable {
+    case home, log, progress
+
+    static var launchArgument: TVTab {
+        switch DebugFlags.tab {
+        case "log": return .log
+        case "progress": return .progress
+        default: return .home
         }
     }
 }
@@ -93,10 +132,13 @@ struct TVRootView: View {
 /// Full-screen centered message for the loading / signed-out / empty states.
 /// `LocalizedStringKey` so the copy is extracted into `Localizable.xcstrings`
 /// like the rest of the app, rather than shipping as raw English.
-struct TVStatusView: View {
+struct TVStatusView<Action: View>: View {
     var title: LocalizedStringKey
     var message: LocalizedStringKey
     var showsProgress: Bool
+    /// An optional focusable control under the copy — the retry button. Empty
+    /// on the states there is nothing to do about from the sofa.
+    @ViewBuilder var action: Action
 
     var body: some View {
         VStack(spacing: 24) {
@@ -111,7 +153,14 @@ struct TVStatusView: View {
             if showsProgress {
                 ProgressView().tint(Theme.signal).padding(.top, 8)
             }
+            action
         }
         .padding(60)
+    }
+}
+
+extension TVStatusView where Action == EmptyView {
+    init(title: LocalizedStringKey, message: LocalizedStringKey, showsProgress: Bool) {
+        self.init(title: title, message: message, showsProgress: showsProgress) { EmptyView() }
     }
 }

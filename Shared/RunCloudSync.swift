@@ -86,11 +86,17 @@ enum RunCloudSync {
     /// Publish one run. Pass the run **with its samples still attached** (the
     /// hydrated run) so the route/altitude sidecar asset is written too.
     /// Idempotent: keyed on the run's own id, so re-publishing overwrites.
-    static func upsert(_ run: Run) async {
+    ///
+    /// Returns whether it landed. Callers that fire and forget can ignore that;
+    /// `backfill` cannot, because it is only allowed to happen once.
+    @discardableResult
+    static func upsert(_ run: Run) async -> Bool {
         do {
             try await save(makeRecord(for: run))
+            return true
         } catch {
             Log.sync.error("cloud upsert failed for \(run.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
         }
     }
 
@@ -110,9 +116,18 @@ enum RunCloudSync {
     /// running log is at most a few hundred runs, this runs once, and one call
     /// per run sidesteps the batch change-tag pitfalls of a bulk create against
     /// records that may already exist.
-    static func backfill(_ runs: [Run]) async {
-        for run in runs { await upsert(run) }
-        Log.sync.notice("cloud backfill published \(runs.count) runs")
+    ///
+    /// Returns `true` only if every run landed, so the caller knows whether it
+    /// may mark the seeding as done. A partial backfill is retried whole on the
+    /// next launch; `upsert` is idempotent, so the runs that made it are simply
+    /// rewritten.
+    static func backfill(_ runs: [Run]) async -> Bool {
+        var published = 0
+        for run in runs {
+            if await upsert(run) { published += 1 }
+        }
+        Log.sync.notice("cloud backfill published \(published) of \(runs.count) runs")
+        return published == runs.count
     }
 
     // MARK: - Read (Apple TV)

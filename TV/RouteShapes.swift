@@ -1,14 +1,18 @@
 import SwiftUI
 
-/// The route and grid geometry, shared by the iPhone run detail and the Apple
-/// TV. It is pure `Shape` math — bounding-box normalisation of a GPS track, a
-/// pleasant default loop when there is none, and grid-paper lines — so it lives
-/// once here and both platforms draw an identical path. Only what genuinely
-/// varies between them (line spacing, stroke width) is a parameter of the
-/// wrapping view, not of the geometry.
+// The route and grid geometry for the TV's `TVRouteCard`: pure `Shape` math —
+// bounding-box normalisation of a GPS track, a pleasant default loop when there
+// is none, and grid-paper lines.
+//
+// The iPhone draws its route on a real dark `MKMapView` (`MapCard` in
+// `iOS/Charts.swift`), which the phone can pan and zoom by touch. The TV keeps
+// the drawn track instead: there is nothing to explore with a Siri Remote at
+// four metres, the shape is what carries across a room, and it renders with no
+// network at all. (MapKit *is* available on tvOS, so this is a choice, not a
+// limitation — see the note in docs/tvos-companion-plan.md.)
 
 /// A GPS track normalised into the rect, or a default loop when the run has no
-/// usable track. The single source of truth for how a route is drawn anywhere.
+/// usable track.
 struct RouteShape: Shape {
     var route: [Coordinate]?
 

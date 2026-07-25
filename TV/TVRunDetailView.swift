@@ -124,6 +124,10 @@ struct TVRunDetailView: View {
                         Text("\(Format.km(run.distanceKm, decimals: 1)) km")
                     }
                     .font(.stat(16, weight: .regular)).foregroundStyle(Theme.muted)
+                    // A trail run has a route like any other. The phone shows
+                    // one here too; leaving it off was the TV disagreeing with
+                    // the iPhone about the same run.
+                    TVRouteCard(run: run, height: 320).padding(.top, 12)
                 }
                 .frame(width: 640)
             }

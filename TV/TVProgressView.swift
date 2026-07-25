@@ -30,20 +30,27 @@ struct TVProgressView: View {
     // MARK: - Pace trend
 
     private var pacePanel: some View {
-        let series = RunAnalytics.weeklyAvgPace(runs: store.runs, weeks: 12, roadOnly: true)
+        let series = RunAnalytics.weeklyAvgPace(runs: store.allRuns, weeks: 12, roadOnly: true)
         let present = series.compactMap { $0 }
         let road12 = last12WeekRoad
         let avg = road12.km > 0 ? road12.time / road12.km : 0
-        let delta = (present.first ?? 0) - (present.last ?? 0)
+        // Newest minus oldest, so a negative number means faster — the same
+        // signed reading the iPhone shows. It used to be `-abs(delta)`, which
+        // claimed an improvement whichever way the runner had actually gone.
+        let change = (present.last ?? 0) - (present.first ?? 0)
         return VStack(alignment: .leading, spacing: 0) {
             TVSectionLabel(text: "AVG PACE · LAST 12 WEEKS")
             HStack(alignment: .firstTextBaseline, spacing: 14) {
                 Text(Format.pace(avg)).font(.stat(88)).kerning(-3)
                 Text("/km").font(.sg(26)).foregroundStyle(Theme.bright)
                 Spacer()
-                if !present.isEmpty {
-                    Text("\(Format.paceDelta(-abs(delta))) since \(sinceMonth)")
-                        .font(.stat(20)).foregroundStyle(Theme.signal)
+                if present.count >= 2 {
+                    // Signal marks an improvement and nothing else; a slower
+                    // twelve weeks is stated plainly rather than dressed in the
+                    // accent. Same rule as the iPhone's `trendDelta`.
+                    Text("\(Format.paceDelta(change)) since \(windowStartMonth)")
+                        .font(.stat(20))
+                        .foregroundStyle(change <= 0 ? Theme.signal : Theme.bright)
                 }
             }
             .padding(.top, 10)
@@ -105,16 +112,21 @@ struct TVProgressView: View {
 
     // MARK: - Helpers
 
-    private var sinceMonth: String {
-        let d = Calendar.current.date(byAdding: .month, value: -3, to: .now) ?? .now
-        return d.formatted(.dateTime.month(.abbreviated))
+    /// The month the twelve-week window actually starts in — not "three months
+    /// ago", which is a different month from the one the chart begins at.
+    private var windowStartMonth: String {
+        let start = Calendar.runWeek.date(byAdding: .weekOfYear, value: -11, to: .now) ?? .now
+        return start.formatted(.dateTime.month(.abbreviated))
     }
 
     private func shortMonth(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated)) }
 
+    /// `allRuns`, like every other figure on this screen and on the phone:
+    /// reading `runs` would make Progress the one place that ignores whatever
+    /// the iPhone imported from Health and mirrored up to the TV.
     private var last12WeekRoad: (km: Double, time: TimeInterval) {
         let cutoff = Calendar.current.date(byAdding: .weekOfYear, value: -12, to: .now) ?? .now
-        let runs = store.runs.filter { !$0.isTrail && $0.date >= cutoff }
+        let runs = store.allRuns.filter { !$0.isTrail && $0.date >= cutoff }
         return (runs.reduce(0) { $0 + $1.distanceKm }, runs.reduce(0) { $0 + $1.duration })
     }
 }

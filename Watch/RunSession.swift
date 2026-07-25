@@ -89,12 +89,18 @@ final class RunSession: NSObject, ObservableObject {
     private let locationManager = CLLocationManager()
 
     private var timer: AnyCancellable?
+    /// Seconds between ticks: 1 for a real or fast-forwarded run, smaller for
+    /// accelerated scenario playback (`beginScenario`).
+    private var tickInterval: TimeInterval = 1
     private var alertDismiss: Task<Void, Never>?
     /// Wall-clock start, so a paused run still reports when it actually began.
     private var startDate: Date?
     private var isSimulated = false
     /// When false, `begin` skips the 3-2-1 countdown (iPhone setting).
     var countdownEnabled = true
+    /// Gates the run start on the location prompt; resolved by the answer (the
+    /// authorization-change delegate) or a fallback timeout. See `requestLocationAccess`.
+    private var locationGate: PromptGate?
 
     // MARK: - Derived
 
@@ -126,6 +132,18 @@ final class RunSession: NSObject, ObservableObject {
     func begin(_ type: RunType) {
         self.type = type
         resetMetrics()
+
+        #if DEBUG && targetEnvironment(simulator)
+        // The watchOS simulator has no GPS, no barometer and no HealthKit
+        // distance, so an interactively started run there records nothing but
+        // an empty clock — a trail run in particular sits at 0 m climbed and
+        // 0 m/h forever. Drive it from the built-in demo model instead (the
+        // same simulated path the screenshot routes take), so tapping Trail →
+        // Start gives a live run with real pace, heart rate and climb.
+        // Device builds are untouched: `targetEnvironment(simulator)` is false
+        // there, so a real watch still records for real.
+        isSimulated = true
+        #endif
 
         guard !isSimulated else { return startRun() }
         // Settle Health before the clock starts. Distance and heart rate both
@@ -239,7 +257,7 @@ final class RunSession: NSObject, ObservableObject {
     }
 
     private func startTimer() {
-        timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+        timer = Timer.publish(every: tickInterval, on: .main, in: .common).autoconnect()
             .sink { [weak self] _ in self?.tick() }
     }
 
@@ -287,7 +305,30 @@ final class RunSession: NSObject, ObservableObject {
         }
 
         guard makeWorkoutSession() else { return block(.workoutFailed) }
+
+        // Location is asked for here rather than in `startLocationUpdates`,
+        // which runs after the countdown: the prompt used to land on top of a
+        // run that had already started, with the clock ticking behind it. It
+        // still never blocks — a refusal costs the route, the climb and the
+        // elevation, and the run records distance, pace and zones regardless.
+        await requestLocationAccess()
         return true
+    }
+
+    /// Raises the location prompt and waits for an answer, so the countdown
+    /// starts on a settled permission state — without ever hanging on it. The
+    /// gate is resolved the moment the runner answers (by the authorization
+    /// delegate below) or, if the sheet never appears at all, by the 10 s
+    /// fallback: a run must not be stuck behind a dialog that is not there.
+    private func requestLocationAccess() async {
+        locationManager.delegate = self
+        guard locationManager.authorizationStatus == .notDetermined else { return }
+        let gate = PromptGate()
+        locationGate = gate
+        await gate.wait(timeout: .seconds(10)) { [weak self] in
+            self?.locationManager.requestWhenInUseAuthorization()
+        }
+        locationGate = nil
     }
 
     @discardableResult
@@ -332,7 +373,25 @@ final class RunSession: NSObject, ObservableObject {
             ? gpsAccuracy.distanceFilter
             : kCLDistanceFilterNone
         locationManager.activityType = .fitness
-        locationManager.requestWhenInUseAuthorization()
+        // The wrist drops and the app leaves the foreground within seconds of
+        // the start — which is most of a run. Without this the fixes stop
+        // arriving there, and the route, the climb and the elevation profile
+        // end wherever the runner last looked at the watch. It requires the
+        // `location` background mode — on watchOS that is UIBackgroundModes in
+        // Watch/Info.plist, not WKBackgroundModes; setting this without that
+        // declaration is a runtime trap, so the two belong together.
+        //
+        // The watchOS *simulator* is never a backgroundable client, so this
+        // traps there ("Invalid parameter not satisfying:
+        // CLClientIsBackgroundable(...)") regardless of the declared mode — and
+        // background GPS is meaningless in the simulator anyway. Every prior
+        // simulator run took the simulated path and skipped this, so the trap
+        // only surfaced on the first real run start. Guard the simulator out;
+        // on device the workout session + the background mode make it valid.
+        #if !targetEnvironment(simulator)
+        locationManager.allowsBackgroundLocationUpdates = true
+        #endif
+        // Authorization was settled in `prepareRecording`, before the clock.
         locationManager.startUpdatingLocation()
         checkLocationAuthorization()
     }
@@ -346,6 +405,9 @@ final class RunSession: NSObject, ObservableObject {
 
     private func finishWorkout() {
         locationManager.stopUpdatingLocation()
+        // Hand the background assertion back — the run is over, and holding it
+        // would keep waking the app for fixes nobody reads.
+        locationManager.allowsBackgroundLocationUpdates = false
         guard let session = workoutSession, let builder = workoutBuilder else { return }
         session.end()
         builder.endCollection(withEnd: .now) { [routeBuilder] ended, error in
@@ -381,6 +443,9 @@ final class RunSession: NSObject, ObservableObject {
                 haptic(.start)
             }
         case .running:
+            #if DEBUG
+            if let simScenario { scenarioSecond(simScenario); return }
+            #endif
             if isSimulated {
                 simulateOneSecond()
             } else {
@@ -429,9 +494,23 @@ final class RunSession: NSObject, ObservableObject {
     fileprivate func integrate(_ location: CLLocation) {
         guard phase == .running else { return }
 
+        // Wall-clock offset from the start of the run, not `elapsed`.
+        //
+        // `elapsed` excludes paused time, so a track stamped with it claims
+        // the whole run happened without the pauses: every point after a stop
+        // is dated earlier than it occurred, and a five-minute break shows up
+        // in the exported GPX as five minutes of teleportation. The gap a
+        // pause leaves is real, and every tool that reads a GPX — Strava
+        // included — uses those stamps to derive moving time and speed.
+        //
+        // The fix's own timestamp rather than `now`: CoreLocation can deliver
+        // one a little late, and occasionally replays a cached fix from
+        // before the run, which the clamp catches.
+        let offset = max(location.timestamp.timeIntervalSince(startDate ?? .now), 0)
+
         metrics.ingestAltitude(location.altitude,
                                verticalAccuracy: location.verticalAccuracy,
-                               at: elapsed)
+                               at: offset)
 
         if location.horizontalAccuracy >= 0,
            location.horizontalAccuracy < RunMetrics.usableHorizontalAccuracy {
@@ -447,7 +526,7 @@ final class RunSession: NSObject, ObservableObject {
                                  longitude: location.coordinate.longitude,
                                  altitude: location.altitude,
                                  horizontalAccuracy: location.horizontalAccuracy,
-                                 at: elapsed)
+                                 at: offset)
     }
 
     // MARK: - Simulation (DEBUG screenshots / simulator demos only)
@@ -489,6 +568,81 @@ final class RunSession: NSObject, ObservableObject {
         if !keepAlert { kilometerAlert = nil }
         if paused { phase = .paused }
     }
+
+    // MARK: - Layer 2 · scenario playback (interactive bug-finding)
+
+    /// The scenario currently driving the run, if any. Set means `tick` pulls
+    /// each second from the scenario instead of the built-in demo model.
+    private var simScenario: RunScenario?
+    private var simDistanceKm = 0.0
+
+    /// Plays a `RunScenario` through the live UI at `speed`× real time, so a
+    /// whole marathon or trail run can be watched (and screenshotted) unfolding
+    /// on the watch. The same scenarios the headless `RunSimulator` asserts on.
+    func beginScenario(_ scenario: RunScenario, speed: Double = 30) {
+        prepareScenario(scenario)
+        tickInterval = 1 / max(speed, 0.1)
+        haptic(.start)
+        startTimer()
+    }
+
+    /// Instantly fast-forwards a scenario to a distance (km), or to its own end
+    /// when `toKm` is nil — for a screenshot of a long run's live screen deep in
+    /// (42 splits, five-glyph distance) or, via `end()`, its finished summary.
+    func debugJumpScenario(_ scenario: RunScenario, toKm: Double? = nil) {
+        prepareScenario(scenario)
+        while elapsed < Double(scenario.maxSeconds) {
+            if let toKm, simDistanceKm >= toKm { break }
+            if toKm == nil, scenario.stop.reached(elapsed: elapsed, distanceKm: simDistanceKm) { break }
+            scenarioSecond(scenario)
+        }
+        alertDismiss?.cancel()
+        kilometerAlert = nil
+    }
+
+    private func prepareScenario(_ scenario: RunScenario) {
+        isSimulated = true
+        type = scenario.type
+        resetMetrics()
+        simScenario = scenario
+        simDistanceKm = 0
+        elapsed = 0
+        startDate = .now
+        // A pacer scenario needs a target for its gauge and summary; take it
+        // from the pace it opens on, and its distance from the stop condition.
+        if scenario.type == .pacer {
+            pacerTarget = scenario.paceSecPerKm(0)
+            if case .afterDistance(let km) = scenario.stop { pacerDistanceKm = km }
+        }
+        phase = .running
+    }
+
+    /// One second driven by the scenario — the live-UI twin of `RunSimulator`'s
+    /// loop, updating the published state the screens read.
+    private func scenarioSecond(_ scenario: RunScenario) {
+        elapsed += 1
+        let pace = scenario.paceSecPerKm(elapsed)
+        if pace.isFinite, pace > 0 { simDistanceKm += 1 / pace }
+        distanceKm = simDistanceKm
+        heartRate = scenario.heartRate(elapsed)
+        if let altitude = scenario.altitude(elapsed) {
+            metrics.ingestAltitude(altitude, verticalAccuracy: scenario.verticalAccuracy, at: elapsed)
+        }
+        if scenario.hasGPS(elapsed) {
+            let c = scenario.coordinate(distanceKm: simDistanceKm)
+            metrics.ingestCoordinate(latitude: c.lat, longitude: c.lon,
+                                     altitude: scenario.altitude(elapsed) ?? 0,
+                                     horizontalAccuracy: scenario.horizontalAccuracy, at: elapsed)
+        }
+        if let split = metrics.tick(elapsed: elapsed, distanceKm: simDistanceKm,
+                                    heartRate: heartRate, zone: currentZone) {
+            raiseKilometerAlert(split)
+        }
+        // Live playback freezes at the finish line rather than running past it.
+        if tickInterval < 1, scenario.stop.reached(elapsed: elapsed, distanceKm: simDistanceKm) {
+            timer?.cancel()
+        }
+    }
     #endif
 
     /// A pinned debug profile owns the altitude — otherwise the simulation
@@ -518,24 +672,37 @@ final class RunSession: NSObject, ObservableObject {
         heartRate = simulatedHeartRate
         #endif
 
-        if type == .trail {
-            let climbing = sin(elapsed / 120) > -0.35
-            if climbing {
-                let rate = 420 + sin(elapsed / 60) * 140
-                metrics.addSimulatedClimb(rate / 3600, ratePerHour: rate + Double.random(in: -25...25))
-            } else {
-                metrics.addSimulatedDescent(700 / 3600)
-            }
-            if !debugPinnedAltitude {
-                metrics.setSimulatedAltitude(704 + metrics.climbMeters - metrics.descentMeters,
-                                             at: elapsed)
-            }
+        if type == .trail, !debugPinnedAltitude {
+            // A smooth mountain profile rather than a mechanical sawtooth. It is
+            // fed through the same altitude path a real GPS stream takes, so the
+            // climb, the descent, the elevation profile and the 10-minute climb
+            // rate all derive from one consistent series instead of three
+            // separately-set numbers that need not agree.
+            metrics.ingestAltitude(simulatedTrailAltitude(elapsed),
+                                   verticalAccuracy: 5, at: elapsed)
         }
 
         // Zone time and splits follow the same path a real second takes.
         let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
                                  heartRate: heartRate, zone: currentZone)
         if let split { raiseKilometerAlert(split) }
+    }
+
+    /// A deterministic, realistic trail elevation (m) for a simulated run.
+    /// One long arc — a climb to a summit past the middle of the run, then a
+    /// descent — with switchback-scale rolls and fine trail texture layered on,
+    /// so the drawn profile reads like a real mountain outing rather than a
+    /// regular zigzag. No randomness: the same second always yields the same
+    /// altitude, so screenshots and snapshots stay stable.
+    private func simulatedTrailAltitude(_ t: TimeInterval) -> Double {
+        let base = 420.0
+        // The big climb-and-descent: summit near t ≈ 2800 s (past mid-run).
+        let arc = 560 * (1 - cos(t / 900)) / 2
+        // Saddles and switchbacks along the way.
+        let rolling = sin(t / 380) * 30 + sin(t / 150) * 14
+        // Fine texture, so the line has grain rather than a clean sine.
+        let texture = sin(t / 41) * 6 + sin(t / 17) * 3
+        return base + arc + rolling + texture
     }
 
     private var simulatedHeartRate: Int {
@@ -621,6 +788,17 @@ extension RunSession: CLLocationManagerDelegate {
     }
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        Task { @MainActor in self.checkLocationAuthorization() }
+        Task { @MainActor in
+            self.checkLocationAuthorization()
+            // The runner has answered the location prompt — release the run
+            // start at once. This wiring was missing: the start then waited on
+            // the fallback timeout instead, and if the app was suspended during
+            // it, stalled on "Checking Health…" and never began the run.
+            // Read the session's own manager (main-actor state), not the
+            // non-Sendable delegate parameter, to stay clear of a data race.
+            if self.locationManager.authorizationStatus != .notDetermined {
+                self.locationGate?.signal()
+            }
+        }
     }
 }

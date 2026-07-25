@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 
 /// Weekday volume bars (Home). Rest days are a thin idle stub; the latest run
 /// day burns Signal.
@@ -108,17 +109,34 @@ struct WeekVolumeBars: View {
     }
 }
 
-/// A trend polyline over three gridlines with top/bottom value labels and an
-/// end dot. `values` oldest→newest; nil gaps are bridged.
+/// A trend polyline over three gridlines, with the band it is drawn into
+/// written at the edges. `values` oldest→newest; nil gaps are bridged.
+///
+/// The axis labels are derived here rather than passed in. They used to be
+/// the caller's own `min - 8` / `max + 8` while the line was normalised to
+/// exactly min…max, so the curve grazed both edges of a band the labels said
+/// it should not reach. One source for both is the only way they stay true to
+/// each other.
 struct TrendChart: View {
     var values: [TimeInterval?]
-    var topLabel: String
-    var bottomLabel: String
-    /// When true, lower value = higher on screen (pace: faster is better).
-    var invert: Bool = true
-    /// What the line is, and how to say one of its values, for VoiceOver.
+    /// Headroom above and below the data, in the values' own unit, so the
+    /// line never rides the frame's edge.
+    var headroom: Double = 8
+    /// Whether a falling line is the improvement (pace) or a rising one
+    /// (climb rate). Only affects what VoiceOver calls the direction.
+    var lowerIsBetter = true
     var accessibilityTitle: String = "Trend"
-    var describe: (TimeInterval) -> String = { Format.pace($0) }
+    /// An axis bound, written for the edge label.
+    var format: (Double) -> String = { Format.pace($0) }
+    /// One value, spoken as a phrase.
+    var describe: (TimeInterval) -> String = { "\(Format.pace($0)) per kilometre" }
+
+    /// The band the line is scaled into: the data plus its headroom.
+    private var band: (low: Double, high: Double) {
+        let present = values.compactMap { $0 }
+        guard let low = present.min(), let high = present.max() else { return (0, 1) }
+        return (low - headroom, high + headroom)
+    }
 
     /// Oldest and newest point plus the direction between them — the shape a
     /// sighted reader takes from the line at a glance.
@@ -127,21 +145,21 @@ struct TrendChart: View {
         guard let first = present.first, let last = present.last else {
             return "No data yet"
         }
-        let direction = last == first ? "unchanged" : (last < first ? "improving" : "slipping")
+        let improved = lowerIsBetter ? last < first : last > first
+        let direction = last == first ? "unchanged" : (improved ? "improving" : "slipping")
         return "\(present.count) weeks, from \(describe(first)) to \(describe(last)), \(direction)"
     }
 
     var body: some View {
-        let present = values.compactMap { $0 }
-        let hi = (present.max() ?? 1)
-        let lo = (present.min() ?? 0)
-        let span = max(hi - lo, 1)
+        let band = band
+        let span = max(band.high - band.low, 1)
+        // The larger value is always the higher one on screen. The trail chart
+        // used to pass `invert: false`, which drew its biggest climb week at
+        // the bottom while the label at the top claimed that number.
         let pts: [CGPoint] = values.enumerated().compactMap { i, v in
             guard let v else { return nil }
-            let x = Double(i) / Double(max(values.count - 1, 1))
-            let norm = (v - lo) / span            // 0 = lo, 1 = hi
-            let y = invert ? norm : 1 - norm       // pace: hi(slow) drawn low
-            return CGPoint(x: x, y: y)
+            return CGPoint(x: Double(i) / Double(max(values.count - 1, 1)),
+                           y: (v - band.low) / span)
         }
         return ZStack(alignment: .topLeading) {
             VStack(spacing: 0) {
@@ -162,9 +180,9 @@ struct TrendChart: View {
                     Circle().fill(Theme.signal).frame(width: 9, height: 9)
                         .position(last)
                 }
-                Text(topLabel).font(.stat(10, weight: .regular)).foregroundStyle(Theme.faint)
+                Text(format(band.high)).font(.stat(10, weight: .regular)).foregroundStyle(Theme.faint)
                     .position(x: 14, y: 6)
-                Text(bottomLabel).font(.stat(10, weight: .regular)).foregroundStyle(Theme.faint)
+                Text(format(band.low)).font(.stat(10, weight: .regular)).foregroundStyle(Theme.faint)
                     .position(x: 14, y: proxy.size.height - 6)
             }
         }
@@ -214,28 +232,154 @@ struct SplitBars: View {
     }
 }
 
-/// Route map placeholder — grid paper with the run's path.
+/// The run's recorded GPS track on a real map.
+///
+/// This used to be grid paper with the word MAP in the corner — and when a
+/// run had no track at all it drew a decorative bézier loop, so a treadmill
+/// session came with an invented route through an imaginary park. A drawing
+/// of a run that did not happen is worse than no drawing.
 struct MapCard: View {
     var run: Run
     var height: CGFloat = 160
+    @State private var isExpanded = false
+
+    private var route: [CLLocationCoordinate2D] {
+        (run.route ?? []).map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lon) }
+    }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            GridShape(step: 34).stroke(Color(hex: 0x1A1A1A), lineWidth: 1)
-            RouteShape(route: run.route)
-                .stroke(Theme.signal, style: .init(lineWidth: 3, lineCap: .round, lineJoin: .round))
-                .padding(20)
-            Text("MAP")
-                .font(.sg(10, weight: .medium)).kerning(1)
-                .foregroundStyle(Color(hex: 0x4A4A4A))
-                .padding([.bottom, .trailing], 14)
+        Group {
+            if route.count > 1 {
+                RouteMap(route: route, region: region)
+            } else {
+                empty
+            }
         }
         .frame(height: height)
-        .background(Color(hex: 0x111111))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Theme.cardBorder, lineWidth: 1))
+        .overlay(alignment: .bottomTrailing) {
+            if route.count > 1 {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 26, height: 26)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .padding(8)
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 20))
+        .onTapGesture { if route.count > 1 { isExpanded = true } }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(run.route?.isEmpty == false ? "Route map" : "Route map, no GPS track recorded")
+        .accessibilityLabel(route.count > 1 ? "Route map" : "No GPS track recorded")
+        .accessibilityAddTraits(route.count > 1 ? .isButton : [])
+        .fullScreenCover(isPresented: $isExpanded) {
+            RouteMapFullScreen(route: route, region: region)
+        }
+    }
+
+    /// Said plainly, because it has a cause the user can act on: a run records
+    /// without location, it just loses the route.
+    private var empty: some View {
+        ZStack {
+            Theme.card
+            VStack(spacing: 6) {
+                Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                    .font(.system(size: 22)).foregroundStyle(Theme.faint)
+                Text("No GPS track for this run")
+                    .font(.sg(13)).foregroundStyle(Theme.muted)
+            }
+        }
+    }
+
+    /// The track's bounding box with a margin, so the line never runs into
+    /// the card's edge. The floor keeps a lap around a single block from
+    /// filling the frame with one street.
+    private var region: MKCoordinateRegion {
+        let lats = route.map(\.latitude), lons = route.map(\.longitude)
+        guard let minLat = lats.min(), let maxLat = lats.max(),
+              let minLon = lons.min(), let maxLon = lons.max() else {
+            return MKCoordinateRegion()
+        }
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2,
+                                           longitude: (minLon + maxLon) / 2),
+            span: MKCoordinateSpan(latitudeDelta: max((maxLat - minLat) * 1.35, 0.003),
+                                   longitudeDelta: max((maxLon - minLon) * 1.35, 0.003))
+        )
+    }
+}
+
+/// `MKMapView` rather than SwiftUI's `Map`.
+///
+/// The map has to be dark: everything around it is `#0A0A0A`, and a daylight
+/// map in the middle of a run detail reads as a different app. SwiftUI's `Map`
+/// has no way to say so — `mapColorScheme` does not exist on iOS, and MapKit
+/// ignores `\.colorScheme` because it is UIKit underneath. Even the root
+/// view's `preferredColorScheme(.dark)` does not reach it. `MKMapView` takes
+/// the instruction directly.
+private struct RouteMap: UIViewRepresentable {
+    var route: [CLLocationCoordinate2D]
+    var region: MKCoordinateRegion
+    /// The card embedded in a scrolling detail screen locks scroll/zoom, so
+    /// panning doesn't fight the page; the full-screen presentation is the
+    /// one place that turns them back on.
+    var interactive: Bool = false
+
+    func makeUIView(context: Context) -> MKMapView {
+        let view = MKMapView()
+        view.delegate = context.coordinator
+        view.overrideUserInterfaceStyle = .dark
+        view.pointOfInterestFilter = .excludingAll
+        view.showsCompass = false
+        view.showsScale = false
+        view.isRotateEnabled = false
+        view.isPitchEnabled = false
+        view.isScrollEnabled = interactive
+        view.isZoomEnabled = interactive
+        view.addOverlay(MKPolyline(coordinates: route, count: route.count))
+        view.setRegion(region, animated: false)
+        return view
+    }
+
+    func updateUIView(_ view: MKMapView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, MKMapViewDelegate {
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            guard let line = overlay as? MKPolyline else { return MKOverlayRenderer(overlay: overlay) }
+            let renderer = MKPolylineRenderer(polyline: line)
+            renderer.strokeColor = UIColor(Theme.signal)
+            renderer.lineWidth = 3
+            renderer.lineCap = .round
+            renderer.lineJoin = .round
+            return renderer
+        }
+    }
+}
+
+/// The route, expanded to fill the screen so it can be zoomed and panned —
+/// tapped open from the `MapCard`, which keeps its own map locked to a
+/// scroll-safe preview.
+private struct RouteMapFullScreen: View {
+    var route: [CLLocationCoordinate2D]
+    var region: MKCoordinateRegion
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Theme.bg.ignoresSafeArea()
+            RouteMap(route: route, region: region, interactive: true)
+                .ignoresSafeArea()
+            TopScrim {
+                HStack {
+                    GlassIconButton(systemImagePath: .close) { dismiss() }
+                    Spacer()
+                }
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 

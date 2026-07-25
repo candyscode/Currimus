@@ -6,11 +6,13 @@ import SwiftUI
 /// `benchmarkHolders` — the same grouping and PR tags the iPhone shows.
 struct TVLogView: View {
     @EnvironmentObject private var store: RunStore
+    @State private var path: [Run] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 let holders = store.benchmarkHolders
+                let fastestOfMonth = store.fastestPaceOfMonthHolders
                 LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
                     header
 
@@ -20,10 +22,9 @@ struct TVLogView: View {
                             .padding(.top, 40).padding(.bottom, 8).padding(.horizontal, 28)
 
                         ForEach(group.runs) { run in
-                            NavigationLink {
-                                TVRunDetailView(run: run)
-                            } label: {
-                                TVLogRow(run: run, prTag: holders[run.id])
+                            NavigationLink(value: run) {
+                                TVLogRow(run: run, prTag: holders[run.id],
+                                         isFastestPaceOfMonth: fastestOfMonth.contains(run.id))
                             }
                             .buttonStyle(.plain)
                         }
@@ -32,6 +33,18 @@ struct TVLogView: View {
                 .padding(.horizontal, 52)
                 .padding(.vertical, 60)
             }
+            .navigationDestination(for: Run.self) { TVRunDetailView(run: $0) }
+        }
+        // DEBUG screenshot routing (`-push detailRoad` / `detailTrail`), the
+        // same switch the iPhone's TabRoot honours. Release ignores it.
+        .onAppear { path = Self.debugPath(store) }
+    }
+
+    private static func debugPath(_ store: RunStore) -> [Run] {
+        switch DebugFlags.push {
+        case "detailRoad": return store.allRuns.first { !$0.isTrail }.map { [$0] } ?? []
+        case "detailTrail": return store.allRuns.first { $0.isTrail }.map { [$0] } ?? []
+        default: return []
         }
     }
 

@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Pre-push gate for Currimus: the unit + run-simulation tests. Fast, headless,
+# deterministic — blocks a push only on a real test failure.
+#
+# The UI snapshot check is deliberately NOT here: it is too flaky to gate a push
+# automatically (date-relative demo data, non-deterministic MapKit maps,
+# occasional xcodebuild crashes). Run it by hand on any UI change instead:
+#
+#     scripts/ui-snapshot.sh verify <ios|watch|all>
+#
+#   Enable this hook once per clone:  git config core.hooksPath .githooks
+#   Bypass a single push:             git push --no-verify
+#
+# bash 3.2-safe.
+set -o pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT" || exit 1
+IOS_SIM="${IOS_SIM:-iPhone 17 Pro}"
+
+echo "▶ pre-push · unit + simulation tests…"
+if ! xcodebuild test -project Currimus.xcodeproj -scheme CurrimusTests -configuration Debug \
+       -destination "platform=iOS Simulator,name=$IOS_SIM" -derivedDataPath build -quiet \
+       >/tmp/currimus-prepush-tests.log 2>&1; then
+  tail -30 /tmp/currimus-prepush-tests.log >&2
+  echo "" >&2
+  echo "✗ pre-push blocked: tests failed (full log: /tmp/currimus-prepush-tests.log)" >&2
+  echo "  bypass this push with:  git push --no-verify" >&2
+  exit 1
+fi
+echo "✓ pre-push · tests passed"

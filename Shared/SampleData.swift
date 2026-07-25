@@ -4,15 +4,23 @@ import Foundation
 /// Types, climb and altitude are shaped so the auto-classifier, records,
 /// prediction and grade-adjusted pace all have realistic inputs.
 enum SampleData {
+    #if DEBUG
     static let runs: [Run] = generate()
 
-    static let race = Race(
+    static let race: Race? = Race(
         name: "Freiburg Marathon",
         distance: .marathon,
         date: Calendar.current.date(byAdding: .day, value: 42, to: Calendar.current.startOfDay(for: .now))!,
         goalTime: 3 * 3600 + 59 * 60   // 3:59:00
     )
+    #else
+    /// A shipped app cannot reach the flag that seeds this, so the generator
+    /// and its whole marathon build-up stay out of the release binary.
+    static let runs: [Run] = []
+    static let race: Race? = nil
+    #endif
 
+    #if DEBUG
     private enum Kind { case easy, tempo, intervals, long, trail }
 
     private struct Slot {
@@ -112,8 +120,34 @@ enum SampleData {
             splits: splits,
             zoneSeconds: zones.map { $0 * duration },
             climbMeters: climb, descentMeters: descent, highPointMeters: high,
-            altitudeSamples: alt
+            altitudeSamples: alt,
+            route: route(km: km, duration: duration, altitudes: alt)
         )
+    }
+
+    /// A synthetic GPS track, so demo builds and screenshots exercise the real
+    /// map rather than its empty state. A loop out of Freiburg, scaled to the
+    /// run's distance — roughly a degree of latitude per 111 km.
+    private static func route(km: Double, duration: TimeInterval,
+                              altitudes: [Double]) -> [Coordinate] {
+        let origin = (lat: 47.9959, lon: 7.8522)
+        let radius = km / 111 / .pi / 2          // circumference ≈ the distance
+        let points = max(Int(km * 8), 24)
+        return (0..<points).map { i in
+            let t = Double(i) / Double(points - 1)
+            let angle = t * 2 * .pi
+            // A squashed, wandering loop reads as a route rather than a circle.
+            let wobble = 1 + sin(angle * 3) * 0.18
+            return Coordinate(
+                lat: origin.lat + sin(angle) * radius * wobble,
+                lon: origin.lon + cos(angle) * radius * 1.45 * wobble
+                    / cos(origin.lat * .pi / 180),
+                elevation: altitudes.isEmpty
+                    ? 260
+                    : altitudes[min(Int(t * Double(altitudes.count - 1)), altitudes.count - 1)],
+                t: t * duration
+            )
+        }
     }
 
     /// A synthetic elevation profile → climb/descent/high point + samples.
@@ -151,4 +185,5 @@ enum SampleData {
             altitudeSamples: (0..<60).map { 260 + sin(Double($0) / 6) * 6 }
         )
     }
+    #endif
 }

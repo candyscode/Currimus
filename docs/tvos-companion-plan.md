@@ -287,10 +287,9 @@ SwiftUI, dark theme, `Theme.signal` accent — same design language. Screens:
 - **Progress / Records:** monthly bars (`MonthBars`), records
   (`RunStore.records`), 4-week readiness (`WeekVolumeBars`), trend
   (`TrendChart`).
-- **Run detail:** stats, splits (`SplitBars`), zone strip, **route map** and
-  **elevation** (`ElevationProfile`). MapKit is available on tvOS — the current
-  iOS detail only draws a `RoutePath` placeholder (`MapCard`), so the TV can use
-  either the same vector path or a real `Map`.
+- **Run detail:** stats, splits (`SplitBars`), zone strip, **route** and
+  **elevation** (`ElevationProfile`). MapKit is available on tvOS, but the TV
+  draws the vector track rather than a map — see `TV/RouteShapes.swift`.
 
 Build for the **focus engine** and 10-foot readability; do not reuse the iPhone
 `TabView`/`NavigationStack` scaffolding verbatim.
@@ -383,9 +382,11 @@ platform-guarded — lowest risk for the shipping iOS and watchOS apps.
   CKDatabase APIs, cursor paging, client-side sort (no custom index needed),
   cached `CKContainer`, `serverRecordChanged` upsert recovery, `unknownItem`-
   tolerant delete.
-- `Shared/RouteShapes.swift` — `RouteShape` + `GridShape`, the shared route/grid
-  geometry both the iPhone (`MapCard`) and the TV (`TVRouteCard`) draw, so the
-  normalisation lives once.
+- `TV/RouteShapes.swift` — `RouteShape` + `GridShape`, the drawn-track geometry
+  behind `TVRouteCard`. TV-only: the iPhone's `MapCard` draws a real dark
+  `MKMapView`, which it can pan and zoom by touch. MapKit exists on tvOS, so the
+  TV could too — it deliberately does not: there is nothing to explore with a
+  Siri Remote at four metres, and the drawn track needs no network.
 - `TV/TVApp.swift` — `@main`, tab shell (Home · Log · Progress), loading /
   signed-out / empty states, quiet refresh spinner overlay.
 - `TV/TVSync.swift` — `@MainActor` loading-state driver around `RunCloudSync` +
@@ -415,49 +416,70 @@ so it extracts into `Localizable.xcstrings` like the rest of the app.
 - `Shared/HealthImport.swift` — pure `merging(_:with:)` hoisted out of the
   HealthKit guard (tvOS `RunStore` still dedupes); everything `HK*` guarded.
 - `Shared/HeartRateProfile.swift` — whole file HealthKit-guarded.
-- `iOS/Charts.swift` — `MapCard` now draws the shared `RouteShape` / `GridShape`
-  instead of iOS-local `RoutePath` / `GridPattern` (both removed).
+- `Shared/AppDefaults.swift` — tvOS reads `.standard` instead of the app-group
+  suite. The TV has no widget to share with and no app-group entitlement, so the
+  group suite resolved to a container it cannot write and the offline cache of
+  the mirrored log never survived a launch.
 - `Shared/RunStore.swift` — tvOS-only `replaceAllFromCloud(_:)` (rebuilds the
   own/imported split from `Run.imported`, repopulates `RunSampleStore` so the
   detail map/elevation work); iOS-only `backfillCloud()` + `cloudUpsert` /
   `cloudDelete` / `cloudSyncImportedDelta` hooked into `add` / `deleteRuns` /
   `refreshImportedRuns` via detached tasks; no-op stubs elsewhere.
-- `iOS/CurrimusApp.swift` — one-time `backfillCloud()` behind a
-  `cloudBackfilled` UserDefaults flag.
+- `iOS/CurrimusApp.swift` — one-time `backfillCloudIfNeeded()`; the store owns
+  the flag, and only sets it once the backfill has actually landed.
 - `iOS/Currimus.entitlements` — added CloudKit container.
-- `project.yml` — `tvOS: "26.0"` deployment target + `CurrimusTV` target
-  (sources `TV` + `Shared`, Fonts + xcstrings resources, shared bundle id for
-  Universal Purchase, CloudKit entitlement).
+- `TV/Assets.xcassets` — the layered tvOS icon and both Top Shelf banners,
+  rendered by `Assets/make_tv_icon.swift` from the same mark as the phone icon.
+- `project.yml` — `tvOS: "26.0"` deployment target + `CurrimusTV` target and
+  scheme (sources `TV` + `Shared`, Fonts + xcstrings + privacy manifest, shared
+  bundle id for Universal Purchase, CloudKit entitlement, brand-asset icon).
 
-**Verified without Xcode**
-- `project.yml` is valid YAML; both entitlements pass `plutil -lint`.
-- No unguarded `HK*` / `WCSession` symbols remain in `Shared/` (all inside
-  `#if` blocks); `TV/` uses only shared types and cross-platform SwiftUI APIs.
+**Verified in Xcode / the simulator** *(merge of `main` into this branch)*
+- All four targets build (Xcode 26.5, iOS 26.5 / watchOS 26.5 / tvOS 26.5 SDKs)
+  and the 97-case suite passes.
+- The TV app runs on an Apple TV 4K (3rd generation) simulator: dashboard, log,
+  progress and both run details render, and the icon shows on the home screen.
+  `-demo 1` (seeded store, no CloudKit) and `-tab` / `-push` routing make each
+  screen reachable without an iCloud account, which the tvOS simulator has not.
+- Three defects the branch could not have seen without a build: `CKContainer`
+  traps in a bundle with no iCloud entitlement, which crashed all seven
+  `RunStoreTests` (the store now takes an explicit `mirrorsToCloud`); the
+  `cloudBackfilled` flag was set before the backfill succeeded, so one offline
+  first launch hid the whole history from the TV forever; and the app-group
+  defaults suite is not writable on tvOS.
 
-**Still needs Xcode / a Mac with the toolchain (could not be done here)**
-1. `xcodegen generate` to regenerate `Currimus.xcodeproj` with the new target.
-   *(XcodeGen is not installed in this environment.)*
-2. **Build all four targets** — the Swift was written but never compiled here.
-   Watch especially for Swift 6 strict-concurrency diagnostics around the
-   `Task.detached` cloud calls (values passed are `Sendable` value types, but
-   confirm) and the `RunSync` tvOS stub's `@MainActor` closure properties.
-3. **CloudKit dashboard:** the container `iCloud.com.currimus.app` must exist and
+**Still open**
+1. **CloudKit dashboard:** the container `iCloud.com.currimus.app` must exist and
    the `Run` record type's schema is created on first write (development
    environment) — deploy the schema to production before release. The reader
    relies only on the default `recordName` queryable index; no custom index is
-   required.
-4. **Signing:** set the development team for `CurrimusTV`; CloudKit needs a real
-   provisioning profile, same as HealthKit does for the phone/watch.
-5. **End-to-end test:** run the iOS app signed into iCloud, confirm records
+   required. *Not exercised here: the simulator has no iCloud account, so every
+   run against real CloudKit is still untested.*
+2. **Signing:** `CurrimusTV` inherits `DEVELOPMENT_TEAM` from `settings.base`,
+   but CloudKit needs a real provisioning profile, same as HealthKit does for
+   the phone and watch. Simulator builds do not prove this.
+3. **End-to-end test:** run the iOS app signed into iCloud, confirm records
    appear in the CloudKit Console, then run `CurrimusTV` on the same account and
    confirm the log, totals and a run's route/elevation match the phone.
-6. **Focus / remote navigation:** the dashboard and progress panels are now
-   `scrollFocusable()` so the remote can scroll them, but confirm on a device
-   that focus moves sensibly between panels and that nothing below the first
-   screenful is stranded — this is the one UX area most likely to need tuning.
-7. **10-foot legibility:** the type sizes are considered guesses; check them from
-   across a room and adjust. The `.tabItem` tab bar is functional but generic —
-   it does not use the iPhone's design glyphs.
+4. **Focus / remote navigation:** the dashboard and progress panels carry
+   `scrollFocusable()` so the remote can scroll them, and the log rows are
+   `NavigationLink`s. This was *not* driven with a remote — automating the
+   simulator's arrow keys needs macOS accessibility permission that was not
+   granted — so confirm by hand that focus moves sensibly between panels and
+   that nothing below the first screenful is stranded.
+5. **10-foot legibility:** the type sizes are still guesses; check them from
+   across a room. The `.tabItem` tab bar is functional but generic — it does not
+   use the iPhone's design glyphs.
+6. **UI snapshots:** `scripts/ui-snapshot.sh` has no tvOS routes yet. The debug
+   routing added here (`-demo 1 -tab … -push …`) is what a `tv-routes.txt` would
+   need.
+7. **String catalogue:** the TV's copy ("Sign in to iCloud", "Can't reach
+   iCloud", …) is `LocalizedStringKey`, but `Resources/Localizable.xcstrings`
+   does not list it yet — `xcodebuild` extracts into the build directory and
+   only the IDE writes the source catalogue back. Open the project in Xcode and
+   build `CurrimusTV` once to fold the keys in. Harmless until then: the
+   catalogue has no translations at all yet, so every key falls back to its
+   English source either way.
 8. **Optional:** a `CKQuerySubscription` for push-driven refresh — today the TV
    polls on foreground, which is enough for a first version.
 

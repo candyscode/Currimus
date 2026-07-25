@@ -8,8 +8,7 @@ struct TrailRunPager: View {
 
     private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
     private var palette: RunPalette { RunPalette(dimmed: dimmed) }
-    @State private var page = (UserDefaults.standard.string(forKey: "screen") ?? "")
-        .hasPrefix("elevation") ? 1 : 0
+    @State private var page = (DebugFlags.screen ?? "").hasPrefix("elevation") ? 1 : 0
 
     var body: some View {
         // Hand-rolled pager instead of TabView: TabView reserves ~20pt at the

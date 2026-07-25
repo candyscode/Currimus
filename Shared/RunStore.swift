@@ -25,11 +25,13 @@ final class RunStore: ObservableObject {
     @Published var pacerDefaultDistanceKm: Double? = 10 { didSet { persistSettings(); pushSettings() } }
     @Published var kilometerAlert = true { didSet { persistSettings(); pushSettings() } }
     @Published var countdownEnabled = true { didSet { persistSettings(); pushSettings() } }
-    @Published var usesKilometers = true { didSet { persistSettings() } }
     /// GPS fidelity the watch records with — the run's dominant battery cost.
     @Published var gpsAccuracy: GPSAccuracy = .high { didSet { persistSettings(); pushSettings() } }
     /// Dim and simplify the run screen while the wrist is down.
     @Published var alwaysOnReduced = true { didSet { persistSettings(); pushSettings() } }
+    /// Whether there is a watch to record on. iPhone side only; the watch is
+    /// obviously its own answer.
+    @Published private(set) var watchState: WatchAvailability = .unknown
 
     /// Where this store reads and writes. Injected so tests get a scratch
     /// suite instead of scribbling on the real app group. `nonisolated(unsafe)`
@@ -37,19 +39,32 @@ final class RunStore: ObservableObject {
     private nonisolated(unsafe) let defaults: UserDefaults
     /// Demo builds keep everything in memory — no disk writes at all.
     private let isDemo: Bool
+    /// Whether this store mirrors its log into CloudKit for the Apple TV.
+    ///
+    /// Injected, and off by default outside a real app: `CKContainer(identifier:)`
+    /// traps — not throws — in a bundle whose code signature carries no iCloud
+    /// entitlement, and the XCTest bundle is exactly such a bundle. Leaving it
+    /// on took the whole `RunStoreTests` suite down with a crash on the first
+    /// `add`. Only the iPhone app ever turns it on, and only the iPhone app
+    /// carries the entitlement that makes it legal.
+    private let mirrorsToCloud: Bool
     private var isLoading = true
 
     /// Encoding the log used to happen synchronously inside `didSet`, i.e. on
     /// the main thread on every single mutation. It is off the main thread now.
     private static let ioQueue = DispatchQueue(label: "com.currimus.app.store-io", qos: .utility)
 
-    init(seeded: Bool = UserDefaults.standard.bool(forKey: "demo"),
+    init(seeded: Bool = DebugFlags.seedsDemoContent,
          defaults: UserDefaults = AppDefaults.shared,
-         isDemo: Bool? = nil) {
+         isDemo: Bool? = nil,
+         mirrorsToCloud: Bool = false) {
         self.defaults = defaults
         // Seeded runs and demo mode are the same thing everywhere except in
         // tests, which want the sample log without the "never persist" rule.
         self.isDemo = isDemo ?? seeded
+        // Opt-in, not opt-out: see `mirrorsToCloud`. A demo build never
+        // publishes its sample log, whatever the caller asked for.
+        self.mirrorsToCloud = mirrorsToCloud && !(isDemo ?? seeded)
 
         if seeded {
             runs = SampleData.runs
@@ -67,6 +82,9 @@ final class RunStore: ObservableObject {
 
         RunSync.shared.onReceive = { [weak self] run in self?.add(run) }
         RunSync.shared.onSettings = { [weak self] settings in self?.apply(settings) }
+        #if os(iOS)
+        RunSync.shared.onWatchState = { [weak self] state in self?.watchState = state }
+        #endif
         RunSync.shared.activate()
         pushSettings()
     }
@@ -89,12 +107,14 @@ final class RunStore: ObservableObject {
     private var cachedRecords: [RecordEntry]?
     private var cachedHolders: [UUID: String]?
     private var cachedLatestBenchmark: LatestBenchmark??
+    private var cachedFastestPaceOfMonth: Set<UUID>?
 
     private func invalidateAggregates() {
         cachedAllRuns = nil
         cachedRecords = nil
         cachedHolders = nil
         cachedLatestBenchmark = nil
+        cachedFastestPaceOfMonth = nil
     }
 
     var lastRun: Run? { allRuns.first }
@@ -144,9 +164,26 @@ final class RunStore: ObservableObject {
     #endif
 
     func deleteRuns(at offsets: IndexSet, in subset: [Run]) {
+        remove(offsets.map { subset[$0] })
+    }
+
+    /// Deletes one run — what the log's own delete action calls, since the
+    /// screen is a hand-built scroll view and has no `IndexSet` to offer.
+    func delete(_ run: Run) { remove([run]) }
+
+    /// Writes back an edited run. Imported runs are Health's, not ours.
+    func update(_ run: Run) {
+        guard !run.isImported,
+              let index = runs.firstIndex(where: { $0.id == run.id }) else { return }
+        // The log holds metadata only — an edit must not put the track back in.
+        runs[index] = run.strippingSamples
+    }
+
+    private func remove(_ candidates: [Run]) {
         // Imported runs live in Health, not here — deleting one locally would
         // only make it come back on the next refresh.
-        let ids = offsets.map { subset[$0] }.filter { !$0.isImported }.map(\.id)
+        let ids = candidates.filter { !$0.isImported }.map(\.id)
+        guard !ids.isEmpty else { return }
         runs.removeAll { ids.contains($0.id) }
         for id in ids {
             sampleCache[id] = nil
@@ -190,31 +227,47 @@ final class RunStore: ObservableObject {
     /// the sync is best-effort (`RunCloudSync` logs its own failures).
 
     #if os(iOS)
+    /// Whether the one-time seeding of the existing log into CloudKit has been
+    /// done. Lives in the store's own suite, not `UserDefaults.standard`, so a
+    /// test on a scratch suite — and a demo build — never inherits a real
+    /// launch's answer.
+    private nonisolated static let backfilledKey = "cloudBackfilled"
+
     /// Publish existing runs to CloudKit once, e.g. on first launch after the
     /// feature ships, so a TV signed into the same account sees history — not
-    /// just runs recorded from now on. Idempotent, so calling it again is safe.
-    func backfillCloud() {
+    /// just runs recorded from now on. Afterwards `add` keeps the mirror current.
+    ///
+    /// The "already done" flag is only set once the backfill actually lands.
+    /// Setting it up front meant a first launch in a lift or on a plane marked
+    /// the log as mirrored, and every run before that day was invisible to the
+    /// TV forever — the one failure this feature cannot recover from on its own.
+    func backfillCloudIfNeeded() {
+        guard mirrorsToCloud, !defaults.bool(forKey: Self.backfilledKey) else { return }
         // Hand over metadata only and hydrate inside the task: `hydrated` reads
         // a sidecar JSON file per run, and doing that for the whole log on the
         // main actor would stall launch. `RunSampleStore.load` is nonisolated,
         // so the detached task can rebuild each run's samples off the main
         // thread. Imported runs carry no samples, so `load` simply returns nil.
         let metadata = allRuns
-        Task.detached {
-            let hydrated = metadata.map { run in
-                RunSampleStore.load(run.id).map(run.merging) ?? run
-            }
-            await RunCloudSync.backfill(hydrated)
+        Task { [weak self] in
+            let published = await Task.detached {
+                let hydrated = metadata.map { run in
+                    RunSampleStore.load(run.id).map(run.merging) ?? run
+                }
+                return await RunCloudSync.backfill(hydrated)
+            }.value
+            guard published, let self else { return }
+            defaults.set(true, forKey: Self.backfilledKey)
         }
     }
 
     private func cloudUpsert(_ run: Run) {
-        guard !isDemo else { return }
+        guard mirrorsToCloud else { return }
         Task.detached { await RunCloudSync.upsert(run) }
     }
 
     private func cloudDelete(_ id: UUID) {
-        guard !isDemo else { return }
+        guard mirrorsToCloud else { return }
         Task.detached { await RunCloudSync.delete(id: id) }
     }
 
@@ -225,7 +278,7 @@ final class RunStore: ObservableObject {
     /// any run whose value differs from the one we last held, keyed by id.
     /// Imported runs carry no samples, so the metadata is enough.
     private func cloudSyncImportedDelta(from previous: [Run], to current: [Run]) {
-        guard !isDemo else { return }
+        guard mirrorsToCloud else { return }
         let previousByID = Dictionary(previous.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let currentIDs = Set(current.map(\.id))
         // New or changed (Run is Equatable): republish. Unchanged: skip.
@@ -237,9 +290,9 @@ final class RunStore: ObservableObject {
         }
     }
     #else
-    func cloudUpsert(_ run: Run) {}
-    func cloudDelete(_ id: UUID) {}
-    func cloudSyncImportedDelta(from previous: [Run], to current: [Run]) {}
+    private func cloudUpsert(_ run: Run) {}
+    private func cloudDelete(_ id: UUID) {}
+    private func cloudSyncImportedDelta(from previous: [Run], to current: [Run]) {}
     #endif
 
     // MARK: - Apple Health
@@ -285,6 +338,28 @@ final class RunStore: ObservableObject {
         if updated != zones { zones = updated }
     }
     #endif
+
+    /// What can honestly be said about the Apple Health connection.
+    ///
+    /// Not whether access was granted — Health hides read authorization by
+    /// design, returning an empty result for a denied type rather than an
+    /// error, precisely so that a refusal cannot be used to infer a medical
+    /// condition. "Connected" is therefore not a question this app can ask.
+    /// What it can report is evidence: whether anything actually came back.
+    enum HealthAccess: Equatable {
+        case unavailable
+        case reading(runs: Int)
+        case nothingRead
+    }
+
+    var healthAccess: HealthAccess {
+        #if canImport(HealthKit)
+        guard HealthImport.isAvailable else { return .unavailable }
+        return importedRuns.isEmpty ? .nothingRead : .reading(runs: importedRuns.count)
+        #else
+        return .unavailable
+        #endif
+    }
 
     // MARK: - Persistence
 
@@ -387,7 +462,6 @@ final class RunStore: ObservableObject {
             Log.store.error("could not save settings: \(error.localizedDescription, privacy: .public)")
         }
         defaults.set(weeklyGoalKm, forKey: AppDefaults.goalKey)
-        defaults.set(usesKilometers, forKey: AppDefaults.unitsKey)
         defaults.set(gpsAccuracy.rawValue, forKey: AppDefaults.gpsAccuracyKey)
     }
 
@@ -406,9 +480,6 @@ final class RunStore: ObservableObject {
         }
         if defaults.object(forKey: AppDefaults.goalKey) != nil {
             weeklyGoalKm = defaults.double(forKey: AppDefaults.goalKey)
-        }
-        if defaults.object(forKey: AppDefaults.unitsKey) != nil {
-            usesKilometers = defaults.bool(forKey: AppDefaults.unitsKey)
         }
         if let raw = defaults.string(forKey: AppDefaults.gpsAccuracyKey),
            let accuracy = GPSAccuracy(rawValue: raw) {
@@ -459,9 +530,11 @@ final class RunStore: ObservableObject {
     // MARK: - Aggregates
 
     private var calendar: Calendar { Calendar.current }
+    /// Weeks are Monday-first everywhere, whatever the device's locale says.
+    private var weekCalendar: Calendar { .runWeek }
 
     func runs(inWeekOf date: Date = .now) -> [Run] {
-        allRuns.filter { calendar.isDate($0.date, equalTo: date, toGranularity: .weekOfYear) }
+        allRuns.filter { weekCalendar.isDate($0.date, equalTo: date, toGranularity: .weekOfYear) }
     }
 
     func runs(inMonthOf date: Date) -> [Run] {
@@ -473,8 +546,8 @@ final class RunStore: ObservableObject {
     var weekGoalFraction: Double { weeklyGoalKm > 0 ? weekKm / weeklyGoalKm : 0 }
 
     var lastWeekKmToDate: Double {
-        guard let lastWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: .now),
-              let cutoff = calendar.date(byAdding: .day, value: -7, to: .now) else { return 0 }
+        guard let lastWeek = weekCalendar.date(byAdding: .weekOfYear, value: -1, to: .now),
+              let cutoff = weekCalendar.date(byAdding: .day, value: -7, to: .now) else { return 0 }
         return runs(inWeekOf: lastWeek).filter { $0.date <= cutoff }.reduce(0) { $0 + $1.distanceKm }
     }
 
@@ -484,7 +557,9 @@ final class RunStore: ObservableObject {
     var weekByDay: [Double] {
         var days = [Double](repeating: 0, count: 7)
         for run in runs(inWeekOf: .now) {
-            let weekday = calendar.component(.weekday, from: run.date) // 1 = Sun
+            // Weekday numbering is fixed (1 = Sun) whatever the week starts on;
+            // this maps it onto the M…S slots the bars are labelled with.
+            let weekday = weekCalendar.component(.weekday, from: run.date)
             days[(weekday + 5) % 7] += run.distanceKm
         }
         return days
@@ -531,7 +606,7 @@ final class RunStore: ObservableObject {
     /// (week label, km) for the last 4 weeks (race readiness), oldest first.
     func last4Weeks() -> [(label: String, km: Double)] {
         (0..<4).reversed().compactMap { offset in
-            guard let weekDate = calendar.date(byAdding: .weekOfYear, value: -offset, to: .now) else { return nil }
+            guard let weekDate = weekCalendar.date(byAdding: .weekOfYear, value: -offset, to: .now) else { return nil }
             let km = runs(inWeekOf: weekDate).reduce(0) { $0 + $1.distanceKm }
             return (offset == 0 ? "now" : "W\(4 - offset)", km)
         }
@@ -568,11 +643,14 @@ final class RunStore: ObservableObject {
                 return RecordEntry(kind: kind, value: Format.clock(time),
                                    date: recordDate(km: km, in: runs))
             }
+            // Nothing set over this distance yet. Say which distance is
+            // missing rather than printing an em dash that reads as a fault.
             let isTarget = race?.distance.km == km
             let note = isTarget
                 ? String(localized: "race day in \(race?.daysUntil() ?? 0) days")
-                : "—"
-            return RecordEntry(kind: kind, value: "—", date: .now,
+                : kind.emptyHint
+            return RecordEntry(kind: kind, value: String(localized: "Not yet"),
+                               isUnset: true, date: .now,
                                delta: note, isRaceCountdown: isTarget)
         }
         if let longest = longestRun {
@@ -618,9 +696,10 @@ final class RunStore: ObservableObject {
         let candidates: [(km: Int, label: String)] = [(5, "5K"), (10, "10K")]
         // Freshest first: a 10K PR set last week leads over a 5K PR from May.
         let held = candidates.compactMap { candidate -> LatestBenchmark? in
-            guard let holder = RunAnalytics.fastestWindowHolder(km: candidate.km, runs: runs) else { return nil }
-            let previous = RunAnalytics.fastestWindow(
-                km: candidate.km, runs: runs.filter { $0.id != holder.run.id })
+            let km = Double(candidate.km)
+            guard let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) else { return nil }
+            let previous = RunAnalytics.bestEffortHolder(
+                km: km, runs: runs.filter { $0.id != holder.run.id })?.seconds
             return LatestBenchmark(
                 label: candidate.label,
                 value: Format.clock(holder.seconds),
@@ -637,8 +716,8 @@ final class RunStore: ObservableObject {
         if let cachedHolders { return cachedHolders }
         var map: [UUID: String] = [:]
         let runs = allRuns
-        for (km, label) in [(5, "5K PR"), (10, "10K PR")] {
-            if let holder = RunAnalytics.fastestWindowHolder(km: km, runs: runs) {
+        for (km, label) in [(5.0, "5K PR"), (10.0, "10K PR")] {
+            if let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) {
                 map[holder.run.id] = label
             }
         }
@@ -647,12 +726,27 @@ final class RunStore: ObservableObject {
         return map
     }
 
-    /// Attribute a PR to the run that holds the fastest window.
-    private func recordDate(km: Double, in runs: [Run]) -> Date {
-        if km <= 10, let holder = RunAnalytics.fastestWindowHolder(km: Int(km), runs: runs) {
-            return holder.run.date
+    /// Which run holds the fastest pace within its own calendar month — the
+    /// log's accent color leads with "fastest this month", not a fixed
+    /// threshold that meant nothing without knowing the runner's level.
+    /// Trail is excluded: its pace isn't comparable to road/pacer pace, so it
+    /// never earns the accent.
+    var fastestPaceOfMonthHolders: Set<UUID> {
+        if let cachedFastestPaceOfMonth { return cachedFastestPaceOfMonth }
+        let eligible = allRuns.filter { !$0.isTrail && $0.hasUsableDistance && $0.paceSecPerKm > 0 }
+        let byMonth = Dictionary(grouping: eligible) {
+            calendar.dateInterval(of: .month, for: $0.date)?.start ?? $0.date
         }
-        return runs.filter { $0.distanceKm >= km - 0.4 }
-            .min { $0.paceSecPerKm < $1.paceSecPerKm }?.date ?? .now
+        let built = Set(byMonth.values.compactMap { runs in
+            runs.min { $0.paceSecPerKm < $1.paceSecPerKm }?.id
+        })
+        cachedFastestPaceOfMonth = built
+        return built
+    }
+
+    /// Attribute a PR to the run that holds it — the same lookup the record
+    /// itself came from, so the row's date always belongs to the row's time.
+    private func recordDate(km: Double, in runs: [Run]) -> Date {
+        RunAnalytics.bestEffortHolder(km: km, runs: runs)?.run.date ?? .now
     }
 }

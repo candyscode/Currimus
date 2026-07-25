@@ -66,10 +66,10 @@ final class RunStoreTests: XCTestCase {
     func testRecordsProduceRealBenchmarks() {
         let store = makeStore(seeded: true)
         let records = store.records
-        XCTAssertTrue(records.contains { $0.kind == .tenK && $0.value != "—" })
+        XCTAssertTrue(records.contains { $0.kind == .tenK && !$0.isUnset })
         XCTAssertTrue(records.contains { $0.kind == .longest })
-        // Marathon has no effort yet in the build-up → em dash + race note.
-        XCTAssertEqual(store.record(.marathon)?.value, "—")
+        // Marathon has no effort yet in the build-up → "Not yet" + race note.
+        XCTAssertEqual(store.record(.marathon)?.isUnset, true)
     }
 
     func testPredictionExistsForMarathonBuildUp() throws {
@@ -107,7 +107,7 @@ final class RunStoreTests: XCTestCase {
 
     func testRecordsRefreshWhenARunIsAdded() {
         let store = makeStore()
-        XCTAssertEqual(store.record(.fiveK)?.value, "—")
+        XCTAssertEqual(store.record(.fiveK)?.isUnset, true)
         store.add(run("5K", km: 5, minutes: 25, splits: Array(repeating: 300, count: 5)))
         XCTAssertEqual(store.record(.fiveK)?.value, Format.clock(1500))
     }

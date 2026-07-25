@@ -13,13 +13,7 @@
     "—" : {
 
     },
-    "." : {
-
-    },
     "/km" : {
-
-    },
-    "%@ · " : {
 
     },
     "%@ · %@" : {
@@ -48,6 +42,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ /km · %2$@"
+          }
+        }
+      }
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
           }
         }
       }
@@ -94,12 +98,12 @@
     "%@ vs avg" : {
 
     },
-    "%@%lld since %@" : {
+    "%@%@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$@%2$lld since %3$@"
+            "value" : "%1$@%2$@"
           }
         }
       }
@@ -107,8 +111,15 @@
     "%lld" : {
 
     },
-    "%lld " : {
-
+    "%lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld %2$@"
+          }
+        }
+      }
     },
     "%lld bpm" : {
 
@@ -150,7 +161,13 @@
     "10 km" : {
 
     },
-    "21.1" : {
+    "Already have runs? Bring them in" : {
+
+    },
+    "Appears after a trail run that recorded elevation" : {
+
+    },
+    "Appears once a few easy runs sit at a similar pace" : {
 
     },
     "at %@ → finish " : {
@@ -168,6 +185,9 @@
     "Calculate from Apple Health" : {
 
     },
+    "Cancel" : {
+
+    },
     "Checking Health…" : {
 
     },
@@ -177,13 +197,10 @@
     "CLIMBED" : {
 
     },
-    "Climbing costs you less" : {
-
-    },
-    "Connected" : {
-
-    },
     "Countdown before run" : {
+
+    },
+    "Covering %@" : {
 
     },
     "CURRIMUS" : {
@@ -198,6 +215,21 @@
     "DEFAULT" : {
 
     },
+    "Default distance" : {
+
+    },
+    "Default pace per kilometre" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete run" : {
+
+    },
+    "Delete this run?" : {
+
+    },
     "Done" : {
 
     },
@@ -208,6 +240,9 @@
 
     },
     "Edit race" : {
+
+    },
+    "Edit run" : {
 
     },
     "ELEVATION" : {
@@ -225,6 +260,9 @@
     "Evening Run" : {
 
     },
+    "Every number in Currimus is set in Space Grotesk, by Florian Karsten." : {
+
+    },
     "FAST" : {
 
     },
@@ -237,6 +275,9 @@
     "goal %lld km" : {
 
     },
+    "Goal time" : {
+
+    },
     "GPX / CSV" : {
 
     },
@@ -246,13 +287,19 @@
     "Half marathon" : {
 
     },
+    "Half marathon, 21.1 kilometres" : {
+
+    },
     "Health access needed" : {
 
     },
     "Health is not reporting distance for this run, so it cannot be saved. Check that Distance is allowed for Currimus." : {
 
     },
-    "Heart rate at 5:30 pace" : {
+    "Heart rate at %@ pace" : {
+
+    },
+    "Heart rate at your steady pace" : {
 
     },
     "Heart rate zone" : {
@@ -262,6 +309,9 @@
 
     },
     "Home" : {
+
+    },
+    "Home goes back to your weekly volume. Your runs and records are untouched." : {
 
     },
     "Intervals" : {
@@ -279,9 +329,6 @@
     "Kilometer alert" : {
 
     },
-    "Kilometers" : {
-
-    },
     "Kilometre %lld" : {
 
     },
@@ -292,6 +339,9 @@
 
     },
     "LAST 4 WEEKS" : {
+
+    },
+    "Licensed under the SIL Open Font License 1.1." : {
 
     },
     "Location off" : {
@@ -318,10 +368,10 @@
     "m/h" : {
 
     },
-    "MAP" : {
+    "Marathon" : {
 
     },
-    "Marathon" : {
+    "Marathon, 42.2 kilometres" : {
 
     },
     "Max" : {
@@ -357,6 +407,15 @@
     "Next" : {
 
     },
+    "no 1 km effort yet" : {
+
+    },
+    "no 5 km effort yet" : {
+
+    },
+    "no 10 km effort yet" : {
+
+    },
     "No account. No ads. No tracking." : {
 
     },
@@ -369,7 +428,19 @@
     "No distance was recorded, so this run was not saved." : {
 
     },
+    "No GPS track for this run" : {
+
+    },
+    "No GPS track recorded" : {
+
+    },
+    "no half marathon yet" : {
+
+    },
     "No Health data" : {
+
+    },
+    "no marathon yet" : {
 
     },
     "No race set." : {
@@ -378,7 +449,25 @@
     "no reading yet" : {
 
     },
+    "no runs yet" : {
+
+    },
+    "no trail runs yet" : {
+
+    },
+    "Not yet" : {
+
+    },
+    "Nothing else. Currimus has no third-party code in it — no analytics, no networking, no SDKs." : {
+
+    },
+    "Nothing set yet" : {
+
+    },
     "Off" : {
+
+    },
+    "Off, open-ended" : {
 
     },
     "on schedule" : {
@@ -423,16 +512,22 @@
     "Race name" : {
 
     },
-    "Race, zones and pacer defaults live in Settings." : {
+    "Raise bound" : {
 
     },
-    "Raise bound" : {
+    "Reading Apple Health…" : {
 
     },
     "Recalculate from Apple Health" : {
 
     },
     "RECENT" : {
+
+    },
+    "Recorded by %@" : {
+
+    },
+    "Recorded by %@. Delete it in Apple Health." : {
 
     },
     "Recording problem: %@. %@" : {
@@ -451,6 +546,12 @@
     "Recovery" : {
 
     },
+    "Remove race" : {
+
+    },
+    "Remove this race?" : {
+
+    },
     "Resting heart rate" : {
 
     },
@@ -460,10 +561,10 @@
     "Route map" : {
 
     },
-    "Route map, no GPS track recorded" : {
+    "Run" : {
 
     },
-    "Run" : {
+    "Run name" : {
 
     },
     "Runs" : {
@@ -472,19 +573,25 @@
     "Same effort, less work" : {
 
     },
+    "Save" : {
+
+    },
     "Save race" : {
 
     },
-    "Simple.\nBeautiful.\n" : {
+    "Set up race, zones and pacer" : {
+
+    },
+    "Simple.\nBeautiful.\n%@" : {
 
     },
     "SLOW" : {
 
     },
-    "Start" : {
+    "SPACE GROTESK" : {
 
     },
-    "Start on your Apple Watch" : {
+    "Start" : {
 
     },
     "Steady" : {
@@ -505,6 +612,9 @@
     "The workout session did not start. Another app may be recording a workout already." : {
 
     },
+    "This run came from Apple Health. Currimus counts it towards every total, but the run itself belongs to the app that recorded it — edit or delete it there." : {
+
+    },
     "This watch has no Health data, so a run cannot record heart rate or distance." : {
 
     },
@@ -520,7 +630,7 @@
     "TIME IN ZONES" : {
 
     },
-    "Today" : {
+    "Today%@" : {
 
     },
     "trail" : {
@@ -545,6 +655,9 @@
     "Trail run" : {
 
     },
+    "Trail runs are measured by climb and grade-adjusted pace rather than pace alone." : {
+
+    },
     "Training toward a race? Set it up" : {
 
     },
@@ -552,6 +665,9 @@
 
     },
     "Weekly volume, last four weeks" : {
+
+    },
+    "What your trail pace is worth on the flat" : {
 
     },
     "Without location there is no route, climb or elevation. Heart rate and distance still record." : {

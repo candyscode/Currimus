@@ -2,18 +2,42 @@ import SwiftUI
 
 struct RunDetailView: View {
     @EnvironmentObject private var store: RunStore
+    @Environment(\.pushRoute) private var push
     private let storedRun: Run
 
     init(run: Run) { storedRun = run }
 
-    /// The log carries metadata only — the elevation series and the GPS track
-    /// come out of the store's sidecar files, cached after the first ask.
-    private var run: Run { store.hydrated(storedRun) }
+    /// Looked up by id rather than held from the push, so an edit made one
+    /// screen further in is reflected on the way back out. The log carries
+    /// metadata only, so the track and elevation series come from the store's
+    /// sidecar files, cached after the first ask.
+    private var run: Run {
+        store.hydrated(store.runs.first { $0.id == storedRun.id } ?? storedRun)
+    }
 
     var body: some View {
         PushedScreen(title: run.isTrail ? "Trail run" : "Run") {
-            if run.isTrail { trail } else { road }
+            VStack(alignment: .leading, spacing: 0) {
+                if run.isTrail { trail } else { road }
+                editCard
+            }
         }
+    }
+
+    private var editCard: some View {
+        Button { push(.runEdit(storedRun)) } label: {
+            GlassCard(cornerRadius: 20, padding: EdgeInsets(top: 18, leading: 22, bottom: 18, trailing: 22)) {
+                HStack {
+                    Text("Edit run").font(.sg(16, weight: .semibold))
+                    Spacer()
+                    Text(run.isImported ? "Imported" : run.classification.label)
+                        .font(.sg(15)).foregroundStyle(Theme.bright)
+                    Chevron()
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 30)
     }
 
     // MARK: - Road
@@ -35,6 +59,10 @@ struct RunDetailView: View {
                 DetailStat(value: "\(Int(run.climbMeters ?? 0)) m", label: "CLIMB")
             }
             .padding(.top, 18)
+
+            if isFastestPaceOfMonth {
+                fastestPaceOfMonthLine.padding(.top, 12)
+            }
 
             MapCard(run: run, height: 160).padding(.top, 22)
 
@@ -65,6 +93,8 @@ struct RunDetailView: View {
                 DetailStat(value: "\(Int(climbRate))", label: "CLIMB M/H")
             }
             .padding(.top, 18)
+
+            MapCard(run: run, height: 160).padding(.top, 22)
 
             sectionLabel("ELEVATION").padding(.top, 28).padding(.bottom, 12)
             ElevationProfile(samples: run.altitudeSamples ?? [], height: 120)
@@ -97,16 +127,28 @@ struct RunDetailView: View {
 
     // MARK: - Shared
 
+    /// Trail is excluded upstream — its pace never earns the accent, so this
+    /// is only ever true on the road branch.
+    private var isFastestPaceOfMonth: Bool { store.fastestPaceOfMonthHolders.contains(run.id) }
+
+    private var fastestPaceOfMonthLine: some View {
+        let month = run.date.formatted(.dateTime.month(.wide))
+        let year = run.date.formatted(.dateTime.year(.twoDigits))
+        return HStack(spacing: 6) {
+            Image(systemName: "bolt.fill").font(.system(size: 11, weight: .semibold))
+            Text("Fastest pace in \(month) \(year)").font(.sg(13, weight: .semibold))
+        }
+        .foregroundStyle(Theme.signal)
+    }
+
     private var dateLine: some View {
         let stamp = run.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)).uppercased()
             + " · " + run.date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
-        return (
-            Text(stamp).foregroundStyle(Theme.bright)
-            + (run.isTrail
-               ? Text(" · TRAIL").foregroundStyle(Theme.signal).fontWeight(.semibold)
-               : Text(verbatim: ""))
-        )
-        .font(.sg(13, weight: .medium)).kerning(13 * 0.12)
+        let tag = run.isTrail
+            ? Text(" · TRAIL").foregroundStyle(Theme.signal).fontWeight(.semibold)
+            : Text(verbatim: "")
+        return Text("\(Text(stamp).foregroundStyle(Theme.bright))\(tag)")
+            .font(.sg(13, weight: .medium)).kerning(13 * 0.12)
         .lineLimit(1).minimumScaleFactor(0.8)
     }
 

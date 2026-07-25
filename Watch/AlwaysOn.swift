@@ -51,13 +51,5 @@ enum AlwaysOn {
     /// The watch simulator has no always-on state and `simctl` cannot set
     /// `isLuminanceReduced`, so `-aod 1` forces the reduced appearance to make
     /// it reviewable. The 1 Hz cadence itself only exists on real hardware.
-    static var forcedForDebug: Bool {
-        #if DEBUG
-        // Read as a string like `-screen`: `bool(forKey:)` does not pick the
-        // value up out of the launch-argument domain here.
-        return UserDefaults.standard.string(forKey: "aod") == "1"
-        #else
-        return false
-        #endif
-    }
+    static var forcedForDebug: Bool { DebugFlags.forcesAlwaysOnReduced }
 }

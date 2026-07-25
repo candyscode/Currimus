@@ -64,12 +64,15 @@ struct WatchRootView: View {
                 }
             )
         case .pacerPace:
-            PacerPaceView(session: session) {
+            // Cancel from the first step drops back to Home — there was no way
+            // out of pacer setup before except to start a run and end it.
+            PacerPaceView(session: session, onCancel: { session.reset() }) {
                 store.pacerTargetSecPerKm = session.pacerTarget
                 session.confirmPacerPace()
             }
         case .pacerDistance:
-            PacerDistanceView(session: session) {
+            // Back returns to the pace step with the chosen pace intact.
+            PacerDistanceView(session: session, onBack: { session.setupPacer() }) {
                 start(.pacer)
             }
         case .preparing:
@@ -138,7 +141,23 @@ struct WatchRootView: View {
         #if DEBUG
         session.zones = store.zones
         session.pacerTarget = store.pacerTargetSecPerKm
-        switch UserDefaults.standard.string(forKey: "screen") {
+
+        // Layer 2 · scenario playback. `-simulate <key>` plays a RunScenario
+        // through the live UI: bare or with -speed for a watchable run, -at N
+        // to jump to km N, -finish 1 for the summary.
+        if let key = DebugFlags.simulate, let scenario = RunScenario.named(key) {
+            if DebugFlags.simFinish {
+                session.debugJumpScenario(scenario)
+                finishedRun = session.end()
+            } else if let km = DebugFlags.simAtKm {
+                session.debugJumpScenario(scenario, toKm: km)
+            } else {
+                session.beginScenario(scenario, speed: DebugFlags.simSpeed ?? 30)
+            }
+            return
+        }
+
+        switch DebugFlags.screen {
         case "run": session.debugFastForward(.quick, seconds: 2537)
         // Long run: five-glyph KM value ("16.xx") — the grid's width edge.
         case "run-long": session.debugFastForward(.quick, seconds: 5537)
@@ -156,7 +175,13 @@ struct WatchRootView: View {
             session.pacerDistanceKm = 10
             session.debugFastForward(.pacer, seconds: 3146)
             finishedRun = session.end()
-        case "trail", "elevation", "elevation-noroute":
+        // Mid-climb, so the glance shows a live climb rate rather than the zero
+        // a descent reads once the summit is behind you.
+        case "trail":
+            session.debugFastForward(.trail, seconds: 2700)
+        // Longer, so the profile carries the whole shape — climb, summit and the
+        // way back down — which is what the elevation page is there to show.
+        case "elevation", "elevation-noroute":
             session.debugFastForward(.trail, seconds: 4500)
         // Deterministic no-route profiles — the Y axis measured against known
         // numbers rather than a live simulation.
