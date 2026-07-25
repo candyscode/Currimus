@@ -23,8 +23,10 @@ account, no feed — just the numbers that matter.
 
 ## For developers
 
-Two Xcode targets share one `Shared/` module: a watchOS app that owns
-recording, and an iOS app that only reads. The watch is the sole source of
+Three Xcode app targets share one `Shared/` module: a watchOS app that owns
+recording, an iOS app that only reads, and a tvOS app that only reads what the
+iPhone mirrored to CloudKit (see [The Apple TV](#the-apple-tv-read-only)). The
+watch is the sole source of
 truth for a run — HealthKit supplies heart rate, distance and energy,
 CoreLocation supplies the GPS route and altitude — and syncs a finished run
 to the iPhone over WatchConnectivity; the iPhone never records, it only
@@ -37,7 +39,7 @@ the only external data store.
 
 ### Build
 
-Requires Xcode 26 or later (for the iOS 26 / watchOS 11 SDKs) and
+Requires Xcode 26 or later (for the iOS 26 / watchOS 11 / tvOS 26 SDKs) and
 [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 `Currimus.xcodeproj` is generated, not source of truth — `project.yml` is:
 
@@ -46,7 +48,7 @@ xcodegen generate      # after cloning, and after any project.yml edit
 open Currimus.xcodeproj
 ```
 
-Or build the two app targets from the CLI, the same way the pre-push hook
+Or build the three app targets from the CLI, the same way the pre-push hook
 and the UI snapshot script do:
 
 ```bash
@@ -54,6 +56,21 @@ xcodebuild -project Currimus.xcodeproj -scheme Currimus \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 xcodebuild -project Currimus.xcodeproj -scheme CurrimusWatch \
   -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 3 (49mm)' build
+xcodebuild -project Currimus.xcodeproj -scheme CurrimusTV \
+  -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' build
+```
+
+A fresh Xcode installs only the iOS platform. The other two are separate
+downloads — `xcodebuild -downloadPlatform watchOS` and
+`xcodebuild -downloadPlatform tvOS` — and without them `xcodebuild` reports
+the destination as missing rather than the platform.
+
+The tvOS app icon is a layered image stack, not a flat square, and lives in
+`TV/Assets.xcassets`. Regenerate it (and the two Top Shelf banners) from the
+same mark as the phone icon with:
+
+```bash
+swift Assets/make_tv_icon.swift TV/Assets.xcassets
 ```
 
 Signing is automatic; the team lives in `project.yml`
@@ -153,6 +170,7 @@ with `IOS_SIM="iPhone 16 Pro" git push`.
 |---|---|---|
 | `Watch/` | `CurrimusWatch` (watchOS app, embedded) | All screens above; `RunSession` drives the recording lifecycle (HealthKit + CoreLocation, simulation only in DEBUG screenshot routes) |
 | `iOS/` | `Currimus` (iOS app) | Home (week, day bars, last run), Log → Run detail → Edit, Progress → Records, Settings → Pacer target, first-launch state |
+| `TV/` | `CurrimusTV` (tvOS app) | Read-only 10-foot dashboard: week volume, log, progress, run detail with route + elevation. Reads the log from CloudKit (`RunCloudSync`), reusing every `RunStore` aggregate the phone computes |
 | `WatchWidgets/` | `CurrimusWatchWidgets` (WidgetKit) | Circular complication, Smart Stack card, inline |
 | `Shared/` | all targets | Theme, models, formatters, zones, `RunStore` (persisted), `RunSync` (WatchConnectivity), `RunMetrics` (the run's arithmetic), `RunSampleStore` (GPS tracks + altitude series) |
 | `Tests/` | `CurrimusTests` | `PromptGate`, `RecordingPolicy`, `RunAnalytics`, `RunExport`, `RunMetrics`, `RunSimulation`, `RunStore` — 97 cases, each on a throwaway defaults suite; `UISnapshots/` holds the screenshot-regression references (see [Test](#test)) |
@@ -177,6 +195,46 @@ climb, time in zones, and the sampling of altitude and route. It is pure, so
 it is unit-tested; `RunSession` is the HealthKit and CoreLocation lifecycle
 around it. When a sample buffer fills it halves its resolution rather than
 dropping from the front, so a four-hour run keeps its start.
+
+### The Apple TV (read-only)
+
+`CurrimusTV` shows the same log on a television. tvOS is **not** a watch-style
+companion — it is a standalone app that shares nothing device-local with the
+phone (App Groups do not cross devices, and tvOS has neither HealthKit nor
+WatchConnectivity). So the phone mirrors its log into the user's **private
+CloudKit database** and the TV reads it: same iCloud account, no server, no
+data leaves the account.
+
+- **Phone (writer):** `RunStore` publishes through `RunCloudSync` — `upsert` on
+  every added run, `delete` on removal, a one-time `backfillCloudIfNeeded()` to
+  seed the existing log. It syncs `allRuns` (Currimus' own runs *and* the ones
+  it imported from Health) so the TV's totals match the phone, which the TV
+  cannot derive itself. A run is stored as a JSON blob of its metadata plus a
+  `CKAsset` for the GPS track and altitude series — the same split as
+  `RunSampleStore`.
+- **TV (reader):** `TVSync` fetches on launch/foreground and hands the runs to a
+  `RunStore` via `replaceAllFromCloud`, so every aggregate, record and chart is
+  the phone's logic unchanged — the TV owns only its 10-foot SwiftUI layer.
+
+Only the iPhone writes, and it says so out loud: `RunStore(mirrorsToCloud:)` is
+opt-in and off by default. `CKContainer(identifier:)` *traps* in a bundle whose
+signature carries no iCloud entitlement, which is what the XCTest bundle is — a
+store that mirrored unconditionally took the whole suite down.
+
+The shared bundle id (`com.currimus.app`) puts iOS and tvOS under one App Store
+record (Universal Purchase). `RunSync` (WatchConnectivity), `HealthImport` and
+`HeartRateProfile` (HealthKit) are `#if canImport(...)`-guarded so `Shared/`
+compiles on tvOS, which links neither framework.
+
+The tvOS simulator has no iCloud account, so the app would otherwise only ever
+show "Sign in to iCloud" there. `-demo 1` seeds the sample log and puts `TVSync`
+into its no-cloud mode, and `-tab` / `-push` open a given screen — the same
+DEBUG routing the iPhone and watch use:
+
+```bash
+xcrun simctl launch "Apple TV 4K (3rd generation)" com.currimus.app \
+  -demo 1 -tab log -push detailTrail
+```
 
 ### When recording cannot work
 

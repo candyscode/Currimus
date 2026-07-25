@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(WatchConnectivity)
 import WatchConnectivity
+#endif
 
 /// Settings the iPhone owns and the watch consumes at the start of a run.
 struct WatchSettings: Codable, Equatable {
@@ -23,6 +25,10 @@ struct WatchSettings: Codable, Equatable {
 /// says so — the first-launch screen most of all — is a dead end for someone
 /// with no watch paired, or with one that does not have Currimus on it, and
 /// the app had no way of telling the difference.
+///
+/// Outside the WatchConnectivity guard on purpose: it is a plain enum, and
+/// `RunStore.watchState` is declared on every platform — including tvOS, where
+/// it stays `.unknown` forever.
 enum WatchAvailability: Equatable {
     /// Paired, and Currimus is installed on it.
     case ready
@@ -33,6 +39,8 @@ enum WatchAvailability: Equatable {
     /// This device cannot pair a watch at all, or the state is not known yet.
     case unknown
 }
+
+#if canImport(WatchConnectivity)
 
 /// Watch ↔ iPhone transfer.
 /// - Runs: watch → iPhone via `transferUserInfo` (queued, guaranteed delivery).
@@ -153,3 +161,25 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     private func publishWatchState(_ session: WCSession) {}
     #endif
 }
+
+#else
+
+/// tvOS has no WatchConnectivity: there is no watch to pair with and no phone
+/// session to join. The TV is a pure CloudKit reader (see `RunCloudSync`), so
+/// this stub keeps `RunStore`'s call sites (`RunSync.shared.activate()`,
+/// `onReceive`, `onSettings`, `send(_:)`, `send(settings:)`) compiling and
+/// inert on the platform. Every method is a no-op.
+final class RunSync: @unchecked Sendable {
+    static let shared = RunSync()
+
+    @MainActor var onReceive: ((Run) -> Void)?
+    @MainActor var onSettings: ((WatchSettings) -> Void)?
+
+    private init() {}
+
+    func activate() {}
+    func send(_ run: Run) {}
+    func send(settings: WatchSettings) {}
+}
+
+#endif

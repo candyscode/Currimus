@@ -2,7 +2,9 @@ import SwiftUI
 
 @main
 struct CurrimusApp: App {
-    @StateObject private var store = RunStore()
+    // The iPhone is the only writer to CloudKit — and the only bundle here
+    // signed with the iCloud entitlement that makes the calls legal.
+    @StateObject private var store = RunStore(mirrorsToCloud: true)
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -25,7 +27,15 @@ struct CurrimusApp: App {
                 // screen, where there is room to say what it is for. Raising
                 // it here meant a cold start opened onto a Health dialog
                 // before the app had shown a single word about itself.
-                .task { await store.refreshImportedRuns() }
+                .task {
+                    await store.refreshImportedRuns()
+                    // Seed CloudKit once so an Apple TV signed into the same
+                    // account sees the existing log, not just future runs.
+                    // Afterwards `RunStore.add` keeps the mirror current.
+                    // The store decides whether it is needed; it owns the
+                    // "already done" flag and the demo-build opt-out.
+                    store.backfillCloudIfNeeded()
+                }
                 .onChange(of: scenePhase) { _, phase in
                     guard phase == .active else { return }
                     Task { await store.refreshImportedRuns() }

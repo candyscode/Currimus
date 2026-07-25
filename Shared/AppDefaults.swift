@@ -22,6 +22,13 @@ enum AppDefaults {
     /// pinning the store to an actor it does not need or silencing strict
     /// concurrency project-wide.
     nonisolated(unsafe) static let shared: UserDefaults = {
+        #if os(tvOS)
+        // The TV has no widget to share with and carries no app-group
+        // entitlement, so the group suite would resolve to a container the
+        // process cannot write — the offline cache of the CloudKit log would
+        // silently never survive a launch. Its own defaults are the whole store.
+        return .standard
+        #else
         guard let shared = UserDefaults(suiteName: appGroup) else {
             Log.store.error("app group unavailable — falling back to standard defaults")
             return .standard
@@ -35,5 +42,6 @@ enum AppDefaults {
             }
         }
         return shared
+        #endif
     }()
 }
