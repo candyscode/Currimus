@@ -137,7 +137,7 @@ Nur Apple Watch: Im abgedunkelten Modus (isLuminanceReduced), soll bitte weiterh
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-5
+https://github.com/candyscode/Currimus/commit/63a8b92
 
 ### CUR-6: Vibration-based heart rate zone indication
 
