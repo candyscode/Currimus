@@ -122,10 +122,22 @@ https://github.com/candyscode/Currimus/commit/01ec12e
 ### CUR-5: Show heart rate zone indicator also when user is not looking
 
 [ ] In Specification
-[X] Open
+[ ] Open
 [ ] WIP
-[ ] Done 
-Nur Apple Watch: Im abgedunkelten Modus (isLuminanceReduced), soll bitte weiterhin die Pulszonenanzeige hell bleiben und auch der Indicator (weiße Nadel) soll weiter angezeigt werden. 
+[X] Done
+
+Nur Apple Watch: Im abgedunkelten Modus (isLuminanceReduced), soll bitte weiterhin die Pulszonenanzeige hell bleiben und auch der Indicator (weiße Nadel) soll weiter angezeigt werden.
+
+#### Agent Comments
+
+- The **needle** is drawn with the wrist down again. It was hidden on the argument that heart rate arrives sparsely there, so a parked needle claims a position it no longer holds — but that is exactly the glance the mode exists for, and a needle a few seconds old still answers "high or low in the zone" better than no needle at all.
+- The **bar** keeps full brightness: the active segment, its border, the Z1–Z4 heat when zone 5 burns, the resting track, and the zone number under it. All of those used to step down through `RunPalette` when the wrist dropped.
+- One thing still steps back in always-on: the **glow** around a burning zone 5. It lights pixels beside the bar rather than in it, which is decoration — say the word if it should stay lit too.
+- New snapshot route `run-aod` (`-screen run -aod 1`) captures the dimmed run screen; nothing covered it before.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-5
 
 ### CUR-6: Vibration-based heart rate zone indication
 

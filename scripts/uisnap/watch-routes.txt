@@ -21,6 +21,7 @@ blocked-health  | strict | -screen blocked-health
 
 kmalert         | medium | -screen kmalert
 run             | medium | -screen run
+run-aod         | medium | -screen run -aod 1
 run-long        | medium | -screen run-long
 trail           | medium | -screen trail
 pacer-run       | medium | -screen pacer-run

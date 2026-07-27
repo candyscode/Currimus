@@ -56,8 +56,9 @@ struct ZoneFooter: View {
                 Text(zone > 0 ? "\(zone)" : "–")
                     .font(.stat(7.5))
                     // Signal is reserved for zone 5 — the number turning red
-                    // means max effort, nothing else.
-                    .foregroundStyle(zone == 5 ? palette.signal : palette.hero)
+                    // means max effort, nothing else. Full strength with the
+                    // wrist down, like the bar above it.
+                    .foregroundStyle(zone == 5 ? Theme.signal : palette.hero)
             }
             .padding(.top, 4.5)   // design 9 px
         }
@@ -95,12 +96,14 @@ struct ZonePointerBar: View {
             // Overlay, not ZStack: the taller pointer must not stretch the
             // 6 pt track. Centered vertically, it overshoots 2.5 pt each side.
             //
-            // Hidden entirely when dimmed rather than frozen: with the wrist
-            // down heart rate arrives sparsely, and a parked needle would read
-            // as a live BPM position it no longer is. The widened segment
-            // still carries the zone.
+            // Shown with the wrist down too. It used to be hidden there, on
+            // the argument that sparse heart rate makes a parked needle read
+            // as a position it no longer holds — but the wrist-down glance is
+            // exactly when the zone is what you are running by, and a needle
+            // that is a few seconds old still answers "high or low in the
+            // zone" better than no needle at all.
             .overlay(alignment: .leading) {
-                if zone > 0, !palette.dimmed {
+                if zone > 0 {
                     RoundedRectangle(cornerRadius: pointerW / 2)
                         .fill(Theme.ink)
                         // CSS `0 0 8px` ≈ 2 pt of SwiftUI shadow radius.
@@ -127,6 +130,11 @@ struct ZonePointerBar: View {
         return snapped
     }
 
+    /// The bar itself keeps full brightness with the wrist down — it is the
+    /// one thing on a reduced screen that is still being read, and a zone you
+    /// have to lift your arm for is a zone you are not running by. Only the
+    /// zone-5 glow steps back: it lights pixels around the bar rather than in
+    /// it, which is decoration, and decoration is what always-on should drop.
     @ViewBuilder
     private func segment(_ i: Int) -> some View {
         let z = i + 1
@@ -134,23 +142,18 @@ struct ZonePointerBar: View {
         if zone == 5 {
             if z == 5 {
                 // CSS `0 0 14px` ≈ 3.5 pt — big enough to burn, small enough
-                // to keep the gap to zone 4 legible. The glow lights extra
-                // pixels for decoration, so it goes when dimmed.
-                shape.fill(palette.signal)
+                // to keep the gap to zone 4 legible.
+                shape.fill(Theme.signal)
                     .shadow(color: palette.dimmed ? .clear : Theme.signal.opacity(0.5), radius: 3.5)
             } else {
-                shape.fill(palette.signal.opacity(heat[i]))
+                shape.fill(Theme.signal.opacity(heat[i]))
             }
         } else if z == zone {
             shape.fill(Theme.signal.opacity(palette.activeZoneFill))
-                // The design's border sits inside the segment (border-box);
-                // it is chrome, so it drops out of the reduced screen.
-                .overlay(
-                    shape.strokeBorder(
-                        palette.dimmed ? .clear : Theme.signal.opacity(0.45), lineWidth: 0.5)
-                )
+                // The design's border sits inside the segment (border-box).
+                .overlay(shape.strokeBorder(Theme.signal.opacity(0.45), lineWidth: 0.5))
         } else {
-            shape.fill(palette.track)
+            shape.fill(Theme.track)
         }
     }
 }
