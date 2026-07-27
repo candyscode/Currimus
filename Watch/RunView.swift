@@ -87,11 +87,12 @@ struct RunView: View {
                             size: 30, labelSize: 11, labelGap: 4,
                             valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    // Pace gives up its orange when dimmed — the reduced screen
-                    // keeps exactly one accent, and it belongs to the zone —
-                    // but not its brightness: it is still a number you read.
+                    // Pace is white, like every other number on the screen.
+                    // It used to burn orange, which read as a warning about a
+                    // pace nobody had set a target for — the one accent on a
+                    // run screen belongs to the zone, which does mean something.
                     BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
-                            valueColor: dimmed ? palette.hero : Theme.signal,
+                            valueColor: palette.hero,
                             size: 30, labelSize: 11, labelGap: 4,
                             valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)

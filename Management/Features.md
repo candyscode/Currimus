@@ -100,11 +100,24 @@ https://github.com/candyscode/Currimus/commit/b8b5a3d
 ### CUR-4: Remove feature in run mode to  change pace color to orange
 
 [ ] In Specification
-[X] Open
+[ ] Open
 [ ] WIP
-[ ] Done
+[X] Done
 
 Apple Watch: Im Run-Modus wird die Pace, die dort angezeigt wird, manchmal rot. Dieses Feature versteht man nicht als Kunde. Bitte ausbauen, die Pace soll einfach immer weiß angezeigt werden.
+
+#### Agent Comments
+
+Two places coloured the live pace, both gone:
+
+- **Run**: pace was orange the whole time (white only with the wrist down), so it read as a warning about a number nobody had set a target for.
+- **Pacer**: pace turned orange whenever the runner was more than 6 s/km *fast*. That is the "sometimes" in the ticket. The gauge and the FAST/SLOW caption under it still say the same thing, in a shape built to say it — only the number stopped shouting.
+
+Trail already showed white. Left alone on purpose (say the word if these should follow): the post-run **summary** screens still show avg pace in signal orange, as does the run detail on iPhone — there it is a stable accent, not a state that comes and goes.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-4
 
 ### CUR-5: Show heart rate zone indicator also when user is not looking
 

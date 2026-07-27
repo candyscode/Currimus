@@ -234,14 +234,16 @@ struct PacerRunView: View {
     private func body(elapsed: TimeInterval) -> some View {
         RunScaffold {
             VStack(alignment: .leading, spacing: 0) {
-                // Live pace stays put and re-ticks at 1 Hz, but gives up its
-                // orange when dimmed — the haptics carry the correction.
+                // Live pace stays put, re-ticks at 1 Hz, and stays white. It
+                // used to turn orange when the pace ran fast, which nobody
+                // asked for and nobody read as "fast" — the gauge below says
+                // fast or slow, in a shape built to say it.
                 Text(Format.pace(session.rollingPace))
                     .font(.stat(52))
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)   // match Run/Trail hero metrics exactly
-                    .foregroundStyle(dimmed ? palette.hero : (state == .fast ? Theme.signal : Theme.ink))
+                    .foregroundStyle(palette.hero)
                 statusLine
                     .padding(.top, 4)
 
