@@ -75,7 +75,7 @@ Wir berechnen ja aktuell die Pulszonen auf Basis von einigen Eckdaten aus Apple 
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-2
+https://github.com/candyscode/Currimus/commit/940260d
 
 ### CUR-3: Minor UI improvements in run detail view
 
