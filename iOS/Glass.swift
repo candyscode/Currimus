@@ -80,6 +80,46 @@ struct SlidersGlyph: Shape {
     }
 }
 
+// MARK: - Notice
+
+/// A quiet piece of news: something the app did on its own that the runner
+/// should know about, and that must not interrupt anything to say it. No
+/// alert, no sheet — a card that sits at the top of a screen until it is
+/// dismissed, optionally leading to the screen it is about.
+struct NoticeCard: View {
+    var systemImage: String
+    var text: String
+    var action: (() -> Void)?
+    var onDismiss: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Theme.signal)
+                .padding(.top, 2)
+            Text(text)
+                .font(.sg(13)).foregroundStyle(Theme.bright)
+                .lineSpacing(3).multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: 30, height: 30)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss")
+        }
+        .padding(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 6))
+        .background(Theme.glassCardFill, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.glassCardStroke, lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture { action?() }
+    }
+}
+
 // MARK: - Segmented chips (Log filter, Progress road/trail, Race Setup)
 
 struct SegmentChips<T: Hashable>: View {

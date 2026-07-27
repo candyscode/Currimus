@@ -298,6 +298,44 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertEqual(HRZones(maxHR: 190, restingHR: 10).bounds, HRZones(maxHR: 190).bounds)
     }
 
+    func testZonesStayAutomaticUntilTheRunnerDecidesOtherwise() {
+        XCTAssertTrue(HRZones(maxHR: 190).isAutomatic)
+
+        var overridden = HRZones(maxHR: 190)
+        overridden.overrides = [120, 140, 160, 175]
+        XCTAssertFalse(overridden.isAutomatic, "a hand-set boundary is a decision")
+
+        var handSetMax = HRZones(maxHR: 190)
+        handSetMax.derivation = HRDerivation(maxSource: .manual)
+        XCTAssertFalse(handSetMax.isAutomatic, "so is a hand-set max")
+
+        var derived = HRZones(maxHR: 190)
+        derived.derivation = HRDerivation(maxSource: .measured)
+        XCTAssertTrue(derived.isAutomatic, "one Currimus derived itself stays its own")
+    }
+
+    func testAZoneChangeIsReportedByTheBoundaryThatMovedFurthest() throws {
+        let before = HRZones(maxHR: 190)                    // 115 / 133 / 152 / 171
+        let after = HRZones(maxHR: 190, restingHR: 50)      // 134 / 148 / 162 / 176
+        let summary = try XCTUnwrap(HRZones.changeSummary(from: before, to: after))
+        // Z1 moved 19 bpm, more than any other boundary — that is the news.
+        XCTAssertTrue(summary.contains("Zone 1"), summary)
+        XCTAssertTrue(summary.contains("134"), summary)
+        XCTAssertTrue(summary.contains("115"), summary)
+    }
+
+    func testUnchangedZonesAreNotWorthANotice() {
+        let zones = HRZones(maxHR: 190, restingHR: 50)
+        XCTAssertNil(HRZones.changeSummary(from: zones, to: zones))
+        // A max that moved without moving a single boundary is possible with
+        // hand-set overrides, and is still worth one line.
+        var pinned = HRZones(maxHR: 190)
+        pinned.overrides = [120, 140, 160, 175]
+        var raised = pinned
+        raised.maxHR = 195
+        XCTAssertNotNil(HRZones.changeSummary(from: pinned, to: raised))
+    }
+
     func testZoneLookupStaysConsistentWithReserveBounds() {
         let zones = HRZones(maxHR: 190, restingHR: 50)
         XCTAssertEqual(zones.zone(for: 100), 1)

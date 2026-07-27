@@ -452,8 +452,24 @@ struct HRZonesView: View {
 
                 Text(zoneExplanation)
                     .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 18)
+
+                Text("HOW THESE ARE KEPT CURRENT").kicker(13, color: Theme.bright, tracking: 0.12)
+                    .padding(.top, 30)
+                Text(maintenanceExplanation)
+                    .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 10)
             }
         }
+    }
+
+    /// Zones are re-read from Health on every launch, which is invisible by
+    /// design — so the one place that owns these numbers has to say it out
+    /// loud, along with what stops it.
+    private var maintenanceExplanation: String {
+        let base = String(localized: "Currimus reads your max heart rate and your resting heart rate from Apple Health every time it opens, and rebuilds the boundaries from them — fitness moves, and zones built on last year's numbers describe last year's runner. Max comes from the third-highest daily peak of the past year (one sensor glitch must not set your ceiling), resting from Health's own 60-day average.")
+        if !store.zones.isAutomatic {
+            return base + String(localized: " These are yours right now — you changed them by hand, so the automatic update leaves them alone until you tap Recalculate.")
+        }
+        return base + String(localized: " Change anything here by hand and the automatic update stops, until you tap Recalculate.")
     }
 
     /// Says plainly where the boundaries came from — a personalised number the

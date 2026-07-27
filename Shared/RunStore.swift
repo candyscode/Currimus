@@ -232,9 +232,14 @@ final class RunStore: ObservableObject {
     /// Re-derives the zones from Health. Never touches zones the user has
     /// tuned by hand — a measured number is better than a formula, but not
     /// better than a decision.
+    ///
+    /// Runs on every launch and every return to the foreground: a max heart
+    /// rate and a resting pulse are not settings, they are measurements that
+    /// move with the runner, and zones built on last year's numbers quietly
+    /// mis-describe every run recorded against them.
     @MainActor
     func refreshHeartRateZones(force: Bool = false, requestingAccess: Bool = false) async {
-        guard force || zones.overrides == nil else { return }
+        guard force || zones.isAutomatic else { return }
         if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
         guard let result = await HeartRateProfile.derive(healthStore) else { return }
         var updated = zones
@@ -242,9 +247,20 @@ final class RunStore: ObservableObject {
         updated.restingHR = result.restingHR
         updated.derivation = result.derivation
         if force { updated.overrides = nil }
-        if updated != zones { zones = updated }
+        guard updated != zones else { return }
+        // Only news when there was something to change from, and only when the
+        // app changed it by itself: the very first derivation is Currimus
+        // learning the runner, and a forced recalculation is already on screen.
+        if !force, zones.derivation != nil {
+            zoneNotice = HRZones.changeSummary(from: zones, to: updated)
+        }
+        zones = updated
     }
     #endif
+
+    /// Set when a launch found the heart-rate zones had moved. Read by Home,
+    /// which says so once and quietly, and cleared when it is dismissed.
+    @Published var zoneNotice: String?
 
     /// What can honestly be said about the Apple Health connection.
     ///

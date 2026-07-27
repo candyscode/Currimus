@@ -108,7 +108,7 @@ struct RootView: View {
     private func applyDemoStateOverrides() {
         // Health has no data in the simulator, so the derived zone state can
         // only be seen by injecting one.
-        if DebugFlags.zones == "derived" {
+        if DebugFlags.zones == "derived" || DebugFlags.zones == "updated" {
             store.zones = HRZones(
                 maxHR: 187, overrides: nil, restingHR: 48,
                 derivation: HRDerivation(
@@ -116,6 +116,14 @@ struct RootView: View {
                     maxDate: Calendar.current.date(byAdding: .day, value: -12, to: .now),
                     age: 38, restingHR: 48, restingSampleDays: 60
                 )
+            )
+        }
+        // The zones-moved notice needs Health to have changed its mind between
+        // two launches, which no simulator will ever do on its own.
+        if DebugFlags.zones == "updated" {
+            store.zoneNotice = HRZones.changeSummary(
+                from: HRZones(maxHR: 182, restingHR: 52),
+                to: store.zones
             )
         }
         switch DebugFlags.home {

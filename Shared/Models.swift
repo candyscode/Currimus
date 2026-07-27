@@ -310,6 +310,31 @@ struct HRZones: Codable, Equatable {
 
     var usesReserve: Bool { overrides == nil && restingHR != nil }
 
+    /// Whether these zones are still Currimus' to maintain. A boundary or a
+    /// max the runner set by hand is a decision, and a decision outranks a
+    /// measurement — the explicit "Recalculate from Apple Health" button is
+    /// how it gets handed back.
+    var isAutomatic: Bool { overrides == nil && derivation?.maxSource != .manual }
+
+    /// One line saying what actually moved, or nil when nothing did.
+    ///
+    /// Zones are re-derived from Health on every launch, so they drift with
+    /// the runner's fitness — quietly, which is wrong: someone whose zone 2
+    /// suddenly ends 5 bpm higher has earned that number and should be told.
+    static func changeSummary(from old: HRZones, to new: HRZones) -> String? {
+        let oldBounds = old.bounds, newBounds = new.bounds
+        guard oldBounds != newBounds || old.maxHR != new.maxHR else { return nil }
+        // The boundary that moved furthest carries the news. Naming all four
+        // would be a table, and a table is not a notice.
+        let moved = zip(oldBounds, newBounds).enumerated()
+            .map { (zone: $0.offset + 1, from: $0.element.0, to: $0.element.1) }
+            .filter { $0.from != $0.to }
+        guard let biggest = moved.max(by: { abs($0.to - $0.from) < abs($1.to - $1.from) }) else {
+            return String(localized: "Heart rate zones updated from Apple Health — your max heart rate is now \(new.maxHR) bpm instead of \(old.maxHR).")
+        }
+        return String(localized: "Heart rate zones updated from Apple Health. Zone \(biggest.zone) now ends at \(biggest.to) bpm instead of \(biggest.from).")
+    }
+
     static let zoneNames = [
         String(localized: "Recovery"), String(localized: "Easy"),
         String(localized: "Steady"), String(localized: "Threshold"),

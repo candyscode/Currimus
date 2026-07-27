@@ -201,23 +201,8 @@ struct LogView: View {
     }
 
     private func healthNotice(_ text: String) -> some View {
-        Button { store.healthNotice = nil } label: {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "heart.slash")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Theme.signal)
-                    .padding(.top, 1)
-                Text(text).font(.sg(13)).foregroundStyle(Theme.bright)
-                    .lineSpacing(3).multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
-            }
-            .padding(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
-            .background(Theme.glassCardFill, in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.glassCardStroke, lineWidth: 1))
+        NoticeCard(systemImage: "heart.slash", text: text) { store.healthNotice = nil }
             .padding(.top, 18)
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint("Dismisses this notice")
     }
 
     // MARK: - Actions

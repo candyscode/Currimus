@@ -13,6 +13,16 @@ struct HomeView: View {
             }
         } content: {
             VStack(alignment: .leading, spacing: 0) {
+                // Zones are re-derived from Health on every launch. When they
+                // actually moved, this is where the runner finds out — first
+                // thing on the first screen, and gone with one tap.
+                if let notice = store.zoneNotice {
+                    NoticeCard(systemImage: "heart.text.square", text: notice,
+                               action: { push(.hrZones) },
+                               onDismiss: { store.zoneNotice = nil })
+                        .padding(.bottom, 24)
+                }
+
                 if let race = store.race, !race.isPast {
                     if race.isToday { raceDayHeadline(race) } else { raceHeadline(race) }
                     Divider().overlay(Theme.hairline).padding(.vertical, 24)

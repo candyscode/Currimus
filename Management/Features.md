@@ -59,11 +59,23 @@ https://github.com/candyscode/Currimus/commit/b9d9424
 ### CUR-2: Re-calculate heart rate zones on app start
 
 [ ] In Specification
-[X] Open
+[ ] Open
 [ ] WIP
-[ ] Done
+[X] Done
 
 Wir berechnen ja aktuell die Pulszonen auf Basis von einigen Eckdaten aus Apple Health. Das kann sich ja verändern über die Zeit. Vielleicht wird die Person ja fitter oder weniger fit.  Dementsprechend bitte bei jedem Aufstart der App das Ganze einmal neu ziehen und neu berechnen und neu anpassen, dass die Pulszonen einfach immer aktuell sind mit den Informationen, die von der Apple Watch aufgezeichnet werden, wie maximale Herzfrequenz, hohe Herzfrequenz und so weiter, wie wir das halt auch immer momentan berechnen. Zeige dem Nutzer beim Aufstand und wenn sich die Pulszonen tatsächlich verändert haben (z.B. Zone 2 geht jetzt bis 160 BPM statt 155 BPM) einen kurzen nicht-invasiven Hinweis an, dass die Pulszonen geupdated wurden. Baue auch in die Pulszonen-Seite in den Einstellungen einen kurzen Hinweis-Text ein, wie sich die Pulszonen berechnen (aus welchen Werten aus Health und dass diese regelmäßig geupdated werden). Achte dabei darauf, dass die UI-Changes ins Look & Feel der App und zum Design System passen.
+
+#### Agent Comments
+
+- The re-derivation on every launch and every return to the foreground was already wired up (`RunStore.refreshImportedRuns` → `refreshHeartRateZones`); what was missing is everything around it.
+- **The notice.** `HRZones.changeSummary(from:to:)` names the boundary that moved furthest — "Heart rate zones updated from Apple Health. Zone 4 now ends at 173 bpm instead of 169." It shows as a dismissible `NoticeCard` at the top of Home and taps through to the zones screen. Suppressed for the very first derivation (that is the app learning the runner, not an update) and for a forced recalculation (those numbers are already on screen).
+- **One correction to existing behaviour:** a max heart rate the runner had set by hand was being overwritten by the automatic refresh, because only hand-set *boundaries* were protected. `HRZones.isAutomatic` now covers both. "Recalculate from Apple Health" is how control is handed back.
+- **The zones screen** gained a "HOW THESE ARE KEPT CURRENT" section naming the two Health values and where each comes from (third-highest daily peak of the past year; Health's own 60-day resting average), that they are re-read on every launch, and what stops that.
+- `-zones updated` (DEBUG) injects the notice — the simulator has no Health data, so the banner is otherwise unreachable.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-2
 
 ### CUR-3: Minor UI improvements in run detail view
 
