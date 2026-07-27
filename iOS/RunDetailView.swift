@@ -110,10 +110,19 @@ struct RunDetailView: View {
 
             MapCard(run: run, height: 160).padding(.top, 22)
 
-            sectionLabel("SPLITS /KM").padding(.top, 26).padding(.bottom, 14)
-            SplitBars(splits: run.splits)
+            splitsSection
 
             zonesSection.padding(.top, 26)
+        }
+    }
+
+    /// Nothing to fold down below two kilometres — and an imported run brings
+    /// no splits at all, which used to render as a heading over empty space.
+    @ViewBuilder
+    private var splitsSection: some View {
+        if run.splits.count >= 2 {
+            sectionLabel("SPLITS").padding(.top, 26).padding(.bottom, 14)
+            SplitsSummary(splits: run.splits)
         }
     }
 
@@ -198,16 +207,8 @@ struct RunDetailView: View {
 
     private var zonesSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sectionLabel("TIME IN ZONES").padding(.bottom, 14)
-            ZoneHeatStrip(zoneSeconds: run.zoneSeconds, height: 12)
-            HStack {
-                ForEach(0..<5, id: \.self) { z in
-                    Text("Z\(z + 1) · \(Int(run.zoneSeconds[z] / 60))m")
-                        .font(.stat(12, weight: .regular)).foregroundStyle(Theme.muted)
-                    if z < 4 { Spacer() }
-                }
-            }
-            .padding(.top, 10)
+            sectionLabel("TIME IN ZONES").padding(.bottom, 16)
+            ZoneBreakdown(zoneSeconds: run.zoneSeconds)
         }
     }
 

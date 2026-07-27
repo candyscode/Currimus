@@ -80,11 +80,22 @@ https://github.com/candyscode/Currimus/commit/940260d
 ### CUR-3: Minor UI improvements in run detail view
 
 [ ] In Specification
-[X] Open
+[ ] Open
 [ ] WIP
-[ ] Done
+[X] Done
 
 iOS App Run Detail Ansicht: Stelle die Zeit in den Pulszonen nicht mehr als einen einzelnen horizontalen Indicator mit prozentualen Anteilen der Zeit in den Pulszonen, sondern anstelle das als fünf horizontale Balken untereinander dar, wo man dann Zone 1 bis 5 untereinander aufgeschlüsselt sieht. Auf der Apple Watch gibt es ja auch diesen einen Pulszonen Übersichts-Balken (den wir auf iOS ersetzen). Auf der Apple Watch soll er bleiben. Dann bezüglich der Splits, die Verbrauchen aktuell bei langen Runs sehr viel Platz. (Halbmarathon = mind. 21 Balken untereinander). Dementsprechend überleg dir für die Splits eine Möglichkeit, nur das Allerwichtigste bezüglich den Splits des Runs anzuzeigen, also vielleicht irgendwie durchschnittliche Split-Zeit und schnellste Split-Zeit oder so (deine Entscheidung, was für einen Läufer halt sinnvoll ist). Und das Ganze als Button, wo man dann drauf tippen kann und dann bekommt man die Anzeige mit den ganzen Splits, die wir aktuell schon haben. Einfach, dass wir im Run Detail View weniger Platz verschenken. Achte dabei darauf, dass die UI-Changes ins Look & Feel der App und zum Design System passen.
+
+#### Agent Comments
+
+- **Zones**: `ZoneBreakdown` (iPhone only) replaces the proportional strip with five bars off a common baseline — `Z2 · Easy [bar] 1h 05` — and hours once a zone passes 60 minutes, so an ultra reads "4h 12" and not "252m". Runs without heart-rate data say so in one line instead of drawing five empty bars. The watch keeps `ZoneHeatStrip` (a stacked list does not fit a 49 mm screen), as does the Home summary card.
+- **Splits**: `SplitsSummary` folds them into one card — AVG /KM, FASTEST, SLOWEST, plus a line on how the second half ran against the first ("Second half 4 s/km faster — a negative split"), which is the judgement the bar chart made you count out by eye. Tapping expands to the full per-kilometre list, unchanged.
+- The section only renders from two kilometres up: an imported run carries no splits and used to show a heading over empty space.
+- Net effect on the demo half marathon: the whole road detail now fits in roughly one screen instead of three.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-3
 
 ### CUR-4: Remove feature in run mode to  change pace color to orange
 

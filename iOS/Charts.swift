@@ -193,6 +193,137 @@ struct TrendChart: View {
     }
 }
 
+/// Time in each heart-rate zone, one bar per zone (Run Detail, iPhone).
+///
+/// The single proportional strip this replaces was honest but unreadable: it
+/// showed five slices of one bar, so a zone with 6 % of the run was a sliver
+/// with a number underneath it, and comparing two zones meant comparing two
+/// sliver widths. Five bars off a common baseline is the same data, read at a
+/// glance. The strip stays on the watch, where a stacked list would not fit.
+struct ZoneBreakdown: View {
+    var zoneSeconds: [TimeInterval]
+
+    private var total: TimeInterval { zoneSeconds.reduce(0, +) }
+
+    var body: some View {
+        if total < 1 {
+            // No heart rate reached the recording — say so rather than draw
+            // five empty bars that look like five zones of nothing.
+            Text("No heart rate was recorded for this run.")
+                .font(.sg(13)).foregroundStyle(Theme.muted)
+        } else {
+            VStack(spacing: 12) {
+                ForEach(0..<5, id: \.self) { index in row(index) }
+            }
+        }
+    }
+
+    private func row(_ index: Int) -> some View {
+        let seconds = zoneSeconds[index]
+        let share = total > 0 ? seconds / total : 0
+        return HStack(spacing: 12) {
+            Text("Z\(index + 1) · \(HRZones.zoneNames[index])")
+                .font(.sg(12)).foregroundStyle(Theme.muted)
+                // "Z4 · Threshold" is the longest of the five and fills this
+                // column; it shrinks rather than truncates at larger type.
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(width: 106, alignment: .leading)
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.trackIdle)
+                    Capsule().fill(Theme.zoneHeat[index])
+                        .frame(width: max(proxy.size.width * share, share > 0 ? 3 : 0))
+                }
+            }
+            .frame(height: 12)
+            Text(Self.duration(seconds))
+                .font(.stat(13, weight: .regular))
+                .foregroundStyle(seconds > 0 ? Theme.ink : Theme.faint)
+                .frame(width: 52, alignment: .trailing)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Zone \(index + 1), \(HRZones.zoneNames[index])")
+        .accessibilityValue("\(Self.duration(seconds)), \(Int((share * 100).rounded())) percent")
+    }
+
+    /// Minutes, or hours and minutes once a zone has held for an hour — a
+    /// six-hour ultra spends "4h 12" in zone 2, not "252m".
+    static func duration(_ seconds: TimeInterval) -> String {
+        let minutes = Int(seconds / 60)
+        guard minutes >= 60 else { return "\(minutes)m" }
+        return "\(minutes / 60)h \(String(format: "%02d", minutes % 60))"
+    }
+}
+
+/// The splits, folded down to what a runner reads first — and the full list
+/// one tap away.
+///
+/// A half marathon is 21 bars, a marathon 42; they pushed everything below
+/// them off the screen and buried the three numbers people actually look for.
+/// Average, fastest and slowest carry the shape of the run, and the second
+/// half against the first says whether it was run evenly, which is the one
+/// judgement the bar chart makes you count out by eye.
+struct SplitsSummary: View {
+    var splits: [TimeInterval]
+    @State private var isExpanded = false
+
+    private var average: TimeInterval { splits.reduce(0, +) / Double(splits.count) }
+    private var fastest: TimeInterval { splits.min() ?? 0 }
+    private var slowest: TimeInterval { splits.max() ?? 0 }
+
+    /// How the second half ran against the first. Needs enough kilometres for
+    /// the two halves to mean something; an odd middle kilometre is left out
+    /// of both rather than counted twice.
+    private var halves: String? {
+        guard splits.count >= 6 else { return nil }
+        let half = splits.count / 2
+        let first = splits.prefix(half).reduce(0, +) / Double(half)
+        let second = splits.suffix(half).reduce(0, +) / Double(half)
+        let delta = second - first
+        guard abs(delta) >= 2 else {
+            return String(localized: "Held an even pace from half to half.")
+        }
+        let seconds = Int(abs(delta).rounded())
+        return delta < 0
+            ? String(localized: "Second half \(seconds) s/km faster — a negative split.")
+            : String(localized: "Second half \(seconds) s/km slower.")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.snappy(duration: 0.25)) { isExpanded.toggle() }
+            } label: {
+                GlassCard(cornerRadius: 20,
+                          padding: EdgeInsets(top: 18, leading: 20, bottom: 18, trailing: 18)) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(alignment: .top, spacing: 18) {
+                            DetailStat(value: Format.pace(average), label: "AVG /KM")
+                            DetailStat(value: Format.pace(fastest), label: "FASTEST", accent: true)
+                            DetailStat(value: Format.pace(slowest), label: "SLOWEST")
+                            Spacer(minLength: 0)
+                            Chevron()
+                                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                                .padding(.top, 4)
+                        }
+                        if let halves {
+                            Text(halves).font(.sg(13)).foregroundStyle(Theme.muted)
+                        }
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(isExpanded ? "Hides every kilometre" : "Shows every kilometre")
+
+            if isExpanded {
+                SplitBars(splits: splits)
+                    .padding(.top, 20)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+}
+
 /// Per-km split bars (Run Detail). Fastest km burns Signal.
 struct SplitBars: View {
     var splits: [TimeInterval]
