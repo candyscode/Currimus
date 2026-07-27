@@ -287,6 +287,10 @@ iOS 18 is the sweet spot — it recovers the whole supported device range for tw
 
 **Effort:** roughly half a day including the manual pass.
 
+#### Link to completed work
+
+Proposal only: https://github.com/candyscode/Currimus/commit/04a0a83
+
 
 ### CUR-12: iOS Widgets
  [X] In Specification
@@ -340,6 +344,10 @@ Trail Summary's profile shows "1.024…" where the Ultra shows the full "1.024 m
 **Effort:** about a day, most of it in step 3 and the re-read.
 
 **Not proposed:** any change to spacing, type scale or layout proportions. The 40 mm screens are tight but correct, and shrinking type to buy margin would cost the glance-ability the whole watch UI is built for. These are three overflow bugs, not a design problem.
+
+#### Link to completed work
+
+Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 
 
 ### CUR-14: Hiking mode
