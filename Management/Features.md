@@ -95,7 +95,7 @@ iOS App Run Detail Ansicht: Stelle die Zeit in den Pulszonen nicht mehr als eine
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-3
+https://github.com/candyscode/Currimus/commit/b8b5a3d
 
 ### CUR-4: Remove feature in run mode to  change pace color to orange
 
