@@ -121,8 +121,25 @@ enum SampleData {
             zoneSeconds: zones.map { $0 * duration },
             climbMeters: climb, descentMeters: descent, highPointMeters: high,
             altitudeSamples: alt,
-            route: route(km: km, duration: duration, altitudes: alt)
+            route: route(km: km, duration: duration, altitudes: alt),
+            // Quicker steps at quicker paces, as a real runner's cadence goes
+            // — and a demo long run that sits under the mark, so the form hint
+            // has something to fire on.
+            cadenceSpm: cadence(for: slot)
         )
+    }
+
+    /// Deterministic cadence per session type: the long run deliberately
+    /// short-strides nobody and over-strides a little, which is the state the
+    /// run detail's "next time" hint exists for.
+    private static func cadence(for slot: Slot) -> Int {
+        switch slot.kind {
+        case .intervals: return 178
+        case .tempo: return 174
+        case .easy: return 166
+        case .long: return 158
+        case .trail: return 162
+        }
     }
 
     /// A synthetic GPS track, so demo builds and screenshots exercise the real

@@ -97,10 +97,16 @@ struct RunDetailView: View {
             }
             .padding(.top, 18)
 
-            HStack(alignment: .top, spacing: 28) {
+            // Cadence joins the row when the run measured it — a fourth column
+            // rather than a replacement, since which of these three you came
+            // for depends on the run.
+            HStack(alignment: .top, spacing: run.cadenceSpm == nil ? 28 : 20) {
                 DetailStat(value: Format.clock(run.duration), label: "TIME")
                 DetailStat(value: Format.pace(run.paceSecPerKm), label: "AVG /KM", accent: true)
                 DetailStat(value: "\(Int(run.climbMeters ?? 0)) m", label: "CLIMB")
+                if let cadence = run.cadenceSpm {
+                    DetailStat(value: "\(cadence)", label: "SPM")
+                }
             }
             .padding(.top, 18)
 
@@ -113,6 +119,35 @@ struct RunDetailView: View {
             splitsSection
 
             zonesSection.padding(.top, 26)
+            hintsSection
+        }
+    }
+
+    /// What the run says about how it was run, rather than how fast.
+    ///
+    /// Absent whenever there is nothing to say, which is most runs — a section
+    /// that finds a correction every single time is one people stop reading.
+    /// The list is whatever `RunHints` returns, so a second hint (or a written
+    /// one) arrives here without this screen changing.
+    @ViewBuilder
+    private var hintsSection: some View {
+        let hints = RunHints.all(for: run)
+        if !hints.isEmpty {
+            sectionLabel("NEXT TIME").padding(.top, 30).padding(.bottom, 14)
+            VStack(spacing: 12) {
+                ForEach(hints) { hint in
+                    GlassCard(cornerRadius: 20,
+                              padding: EdgeInsets(top: 18, leading: 20, bottom: 18, trailing: 20)) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(hint.title).font(.sg(16, weight: .semibold))
+                            Text(hint.body)
+                                .font(.sg(13)).foregroundStyle(Theme.bright).lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
         }
     }
 

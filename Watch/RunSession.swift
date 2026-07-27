@@ -56,6 +56,8 @@ final class RunSession: NSObject, ObservableObject {
     }
     @Published private(set) var distanceKm: Double = 0
     @Published private(set) var heartRate: Int = 0
+    /// Steps the workout has counted so far — cadence's only ingredient.
+    @Published private(set) var steps: Double = 0
     @Published private(set) var metrics = RunMetrics()
     /// Non-fatal recording problems. The run screen shows the first one; the
     /// summary repeats it so it survives a glance mid-run.
@@ -120,6 +122,13 @@ final class RunSession: NSObject, ObservableObject {
     /// 0 = no heart-rate reading yet — the zone bar stays unlit.
     var currentZone: Int { heartRate > 0 ? zones.zone(for: heartRate) : 0 }
     var averagePace: TimeInterval { distanceKm > 0.05 ? elapsed / distanceKm : 0 }
+    /// Steps per minute over the run so far. nil until there is enough of a
+    /// run to divide by — and for a treadmill session Health never counted
+    /// steps for, which is a missing measurement, not a cadence of zero.
+    var cadenceSpm: Int? {
+        guard steps > 0, elapsed >= 60 else { return nil }
+        return Int((steps / (elapsed / 60)).rounded())
+    }
     var averageHR: Int { metrics.averageHR > 0 ? metrics.averageHR : heartRate }
     /// Pacer: + means slower than target.
     var paceDelta: TimeInterval { rollingPace > 0 ? rollingPace - pacerTarget : 0 }
@@ -235,7 +244,8 @@ final class RunSession: NSObject, ObservableObject {
             descentMeters: metrics.descentMeters.rounded(),
             highPointMeters: metrics.altitudeProfile.max().map { $0.rounded() },
             altitudeSamples: metrics.altitudeProfile.isEmpty ? nil : metrics.altitudeProfile,
-            route: metrics.coordinates.isEmpty ? nil : metrics.coordinates
+            route: metrics.coordinates.isEmpty ? nil : metrics.coordinates,
+            cadenceSpm: cadenceSpm
         )
 
         finishWorkout()
@@ -264,6 +274,7 @@ final class RunSession: NSObject, ObservableObject {
         elapsed = 0
         distanceKm = 0
         heartRate = 0
+        steps = 0
         metrics = RunMetrics()
         kilometerAlert = nil
         issues = []
@@ -297,6 +308,7 @@ final class RunSession: NSObject, ObservableObject {
             HKQuantityType(.heartRate),
             HKQuantityType(.distanceWalkingRunning),
             HKQuantityType(.activeEnergyBurned),
+            HKQuantityType(.stepCount),
         ]
         do {
             try await healthStore.requestAuthorization(toShare: share, read: read)
@@ -362,7 +374,12 @@ final class RunSession: NSObject, ObservableObject {
         do {
             let session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
             let builder = session.associatedWorkoutBuilder()
-            builder.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: configuration)
+            let source = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: configuration)
+            // Steps are not in the default set for a running workout, and
+            // cadence — the one thing about form this app can measure — is
+            // nothing but steps over time.
+            source.enableCollection(for: HKQuantityType(.stepCount), predicate: nil)
+            builder.dataSource = source
             session.delegate = self
             builder.delegate = self
             workoutSession = session
@@ -852,6 +869,11 @@ extension RunSession: HKLiveWorkoutBuilderDelegate {
             case HKQuantityType(.distanceWalkingRunning):
                 let meters = statistics.sumQuantity()?.doubleValue(for: .meter()) ?? 0
                 Task { @MainActor in self.distanceKm = meters / 1000 }
+            case HKQuantityType(.stepCount):
+                // Steps are only ever read as a total; cadence is that total
+                // over the run's own moving time, worked out at the finish.
+                let steps = statistics.sumQuantity()?.doubleValue(for: .count()) ?? 0
+                Task { @MainActor in self.steps = steps }
             default:
                 break
             }

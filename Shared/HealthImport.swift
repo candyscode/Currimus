@@ -20,6 +20,7 @@ enum HealthImport {
             HKQuantityType(.heartRate),
             HKQuantityType(.restingHeartRate),
             HKQuantityType(.distanceWalkingRunning),
+            HKQuantityType(.stepCount),
             HKCharacteristicType(.dateOfBirth),
         ]
     }
@@ -202,6 +203,17 @@ enum HealthImport {
             .doubleValue(for: .count().unitDivided(by: .minute()))
         let climb = (workout.metadata?[HKMetadataKeyElevationAscended] as? HKQuantity)?
             .doubleValue(for: .meter())
+        // Cadence is steps over moving time. Most apps write the step count
+        // with the workout; the ones that do not simply have no cadence, which
+        // is a missing measurement rather than a zero.
+        let steps = workout
+            .statistics(for: HKQuantityType(.stepCount))?
+            .sumQuantity()?
+            .doubleValue(for: .count())
+        let cadence = steps.flatMap { steps -> Int? in
+            guard steps > 0, workout.duration >= 60 else { return nil }
+            return Int((steps / (workout.duration / 60)).rounded())
+        }
 
         return Run(
             // The workout's own UUID keeps the identity stable across imports.
@@ -215,7 +227,8 @@ enum HealthImport {
             splits: [],
             zoneSeconds: [0, 0, 0, 0, 0],
             climbMeters: climb,
-            imported: true
+            imported: true,
+            cadenceSpm: cadence
         )
     }
 }

@@ -198,15 +198,38 @@ https://github.com/candyscode/Currimus/commit/baeb68e
 ### CUR-8: Show hints to improve running style in run detail view
 
 [ ] In Specification
-[X] Open
+[ ] Open
 [ ] WIP
-[ ] Done
+[X] Done
 
 This, for now, only applies to the Run and Pacer mode, not the trailrun mode (so all modes which track more or less horizontal runs not on a mountain). Create a section in the run detail view that shows hints to the user on how to improve next time. If there is nothing to improve, the section is not shown. For now, there is only one hint to be shown. The app shall tell the user when the cadence (steps per minute) is too slow for the avg. pace he had during this run. Find the ideal cadences yourself (do an internet research). The hint shall be like "Good work! To further improve your running style and to save your joints try to do more and smaller steps. Try to think you are running on a slippery surface like ice, this may help" (of cource find a better wording!)
 
 In the future, we will include more hint types and might even integrate AI-generated hints, so make the UI hint section extensible. Make sure the UI changes fit into the look and feel of the app and the design system.
 
 Also, show the avg. cadence also in run detail view, regardless if there is a hint or not. 
+
+#### Agent Comments
+
+**Cadence had to be measured first.** Nothing in the app counted steps. The watch now enables step collection on the live workout (`HKLiveWorkoutDataSource.enableCollection(for: .stepCount)`, not in the default set for running), and a run carries `cadenceSpm` — steps over its own moving time. Runs another app recorded get it from the workout's step total in Health, when that app wrote one. Runs recorded before this ticket have no cadence and are simply left alone.
+
+**Where it shows.** SPM joins TIME · AVG /KM · CLIMB as a fourth stat in the run detail, always, hint or no hint. Also in the CSV export (empty, not 0, for runs without it — a zero would read as a runner who took no steps).
+
+**The hint.** `Shared/RunHints.swift` — `RunHints.all(for:)` returns a list, the detail screen renders whatever is in it, and an empty list draws nothing. A second hint, or an AI-written one, needs no change to the screen.
+
+**The research** ([TrainingPeaks](https://www.trainingpeaks.com/blog/finding-your-perfect-run-cadence/), [E3 Rehab](https://e3rehab.com/running-cadence/), [Heiderscheit et al. 2011](https://pmc.ncbi.nlm.nih.gov/articles/PMC3022995/), [12-week cadence retraining, PeerJ 2020](https://peerj.com/articles/9813/)):
+
+- There is no single right cadence. The famous 180 spm came from watching elites *race*; studies of recreational runners find preferred cadence spread widely at any given ability, and the cadence–economy relationship is not linear. So the app uses a floor, not a target.
+- Cadence rises with speed, so the floor ramps: ~158 spm at 7:00/km, 162 at 6:00, 168 at 5:00, 178 at 4:00, capped at 182. Below ~160 is the range typical of overstriding.
+- Raising cadence 5–10 % at the same pace shortens the stride and cuts the energy the knee absorbs per step by roughly 20–40 % (Heiderscheit 2011). That is what the hint asks for — five per cent above what the runner actually held, so the next run has a reachable number.
+
+**Deliberately reluctant.** The hint needs a 5 spm margin below the floor before it says anything, needs at least 2 km, and skips trail entirely (cadence on a mountain is set by the ground, and telling someone to take quicker steps up a scramble is advice about a run they did not do). Pacer and Run both qualify, as specified.
+
+**Demo data** now carries a cadence per session type, with the long run deliberately short of the mark so the hint can be seen at all.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-8
+
 
 ### CUR-9: Coaching Mode (for beginners)
  [X] In Specification

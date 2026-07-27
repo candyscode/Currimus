@@ -101,6 +101,10 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// persisted before it existed — i.e. wipe the log. New fields stay
     /// optional; read it through `isImported`.
     var imported: Bool?
+    /// Average steps per minute over the run. Optional like every field added
+    /// later — and genuinely absent for runs recorded before Currimus counted
+    /// steps, and for those another app recorded without them.
+    var cadenceSpm: Int?
     /// Set when the runner disagrees with the auto-classification, which is a
     /// heuristic over splits and zones and is wrong often enough to be worth
     /// correcting — it is the label every log row leads with. Optional for the

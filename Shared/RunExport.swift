@@ -5,7 +5,7 @@ import Foundation
 enum RunExport {
 
     static func csv(_ runs: [Run]) -> String {
-        var lines = ["date,type,name,distance_km,duration_s,avg_pace_s_per_km,avg_hr,climb_m,descent_m"]
+        var lines = ["date,type,name,distance_km,duration_s,avg_pace_s_per_km,avg_hr,climb_m,descent_m,cadence_spm"]
         let iso = ISO8601DateFormatter()
         for run in runs.sorted(by: { $0.date < $1.date }) {
             let fields: [String] = [
@@ -18,6 +18,9 @@ enum RunExport {
                 String(run.avgHR),
                 String(Int((run.climbMeters ?? 0).rounded())),
                 String(Int((run.descentMeters ?? 0).rounded())),
+                // Empty rather than 0 for a run that never measured it — a
+                // zero would read as a runner who took no steps.
+                run.cadenceSpm.map(String.init) ?? "",
             ]
             lines.append(fields.joined(separator: ","))
         }
