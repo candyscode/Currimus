@@ -136,6 +136,7 @@
 		C2486B37815CA4713B1A972F /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
 		C3408FCD4D821DCB249C039C /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
 		C402C57F16B22CD36FCDBC7E /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
+		C469BBBED55020F61200FDB1 /* RunDeletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24BA6EB73B5C718D67DDA32 /* RunDeletion.swift */; };
 		CA1AED99715D51D64C75A9FB /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */; };
 		CB051C7B414C753DA3945E3A /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
@@ -259,6 +260,7 @@
 		A6CFB5CC07067218F2414163 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A7798A4301C39FF833B1EBEF /* CurrimusTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CurrimusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A7FBB797F1648FC729833297 /* HeartRateProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateProfile.swift; sourceTree = "<group>"; };
+		B24BA6EB73B5C718D67DDA32 /* RunDeletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunDeletion.swift; sourceTree = "<group>"; };
 		B81AF2D50A1295819CF2F665 /* RunScaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunScaffold.swift; sourceTree = "<group>"; };
 		BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CurrimusWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB4A80647FF8D963E8F48FFA /* CurrimusWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatch.entitlements; sourceTree = "<group>"; };
@@ -364,6 +366,7 @@
 				2093769E1832392AF743C8EC /* ProgressTabView.swift */,
 				EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */,
 				3C9CB42153EFED5140123404 /* RecordsView.swift */,
+				B24BA6EB73B5C718D67DDA32 /* RunDeletion.swift */,
 				CBF32E948B3DF95D2F5BD7CF /* RunDetailView.swift */,
 				5CD6D8198237FDA19530FD50 /* RunEditView.swift */,
 				65AEBA896B9201B26676F060 /* Scaffold.swift */,
@@ -737,6 +740,7 @@
 				489D187DA8A40C27BC216EDE /* RecordingIssue.swift in Sources */,
 				B1750243611A3E10BDCD574D /* RecordsView.swift in Sources */,
 				898A0FE20D45DAF944B06D0A /* RunAnalytics.swift in Sources */,
+				C469BBBED55020F61200FDB1 /* RunDeletion.swift in Sources */,
 				8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */,
 				F207E95C76E6E6A33A9B4859 /* RunEditView.swift in Sources */,
 				6905CDB7A68F0AF8003D5E95 /* RunExport.swift in Sources */,

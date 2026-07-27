@@ -270,4 +270,65 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(store.importedRuns.count, 1,
                        "Health owns it — deleting locally would just resurrect it")
     }
+
+    // MARK: - Deleting
+
+    func testDeletingSeveralRunsAtOnceLeavesTheRest() {
+        let store = makeStore()
+        let day = 86_400.0
+        let first = run("A", km: 5, minutes: 25, date: .now)
+        let second = run("B", km: 8, minutes: 40, date: .now.addingTimeInterval(-day))
+        let third = run("C", km: 12, minutes: 60, date: .now.addingTimeInterval(-2 * day))
+        store.runs = [first, second, third]
+
+        store.delete([first, third])
+        XCTAssertEqual(store.runs.map(\.id), [second.id])
+    }
+
+    func testDeletingAMixedSelectionKeepsTheImportedRuns() {
+        let store = makeStore()
+        let mine = run("Currimus", km: 5, minutes: 25)
+        let theirs = run("Fitness", km: 6, minutes: 30,
+                         date: .now.addingTimeInterval(-86_400), imported: true)
+        store.runs = [mine]
+        store.importedRuns = [theirs]
+
+        // Marking mode can hand over whatever is on screen; only what Currimus
+        // owns may go, and the rest must survive the same call.
+        store.delete([mine, theirs])
+        XCTAssertTrue(store.runs.isEmpty)
+        XCTAssertEqual(store.importedRuns.count, 1)
+    }
+
+    func testDeletingOnlyImportedRunsChangesNothing() {
+        let store = makeStore()
+        let mine = run("Currimus", km: 5, minutes: 25)
+        store.runs = [mine]
+        store.importedRuns = [run("Fitness", km: 6, minutes: 30, imported: true)]
+
+        store.delete(store.importedRuns)
+        XCTAssertEqual(store.runs.count, 1)
+        XCTAssertEqual(store.importedRuns.count, 1)
+    }
+
+    // MARK: - Matching a run to its workout in Health
+
+    func testAWorkoutStartingWithTheRunIsTheSameOuting() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let mine = run("Morning Run", km: 10, minutes: 50, date: start)
+        XCTAssertTrue(HealthImport.isSameOuting(start: start, as: mine))
+        // The watch stamps the run and begins the workout in the same breath,
+        // so a few seconds of drift is all there ever is.
+        XCTAssertTrue(HealthImport.isSameOuting(start: start.addingTimeInterval(3), as: mine))
+        XCTAssertTrue(HealthImport.isSameOuting(start: start.addingTimeInterval(-3), as: mine))
+    }
+
+    func testANeighbouringWorkoutIsNotTheSameOuting() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let mine = run("Morning Run", km: 10, minutes: 50, date: start)
+        // A second recording later the same morning must never be the one that
+        // gets deleted — a wrong delete here is unrecoverable.
+        XCTAssertFalse(HealthImport.isSameOuting(start: start.addingTimeInterval(600), as: mine))
+        XCTAssertFalse(HealthImport.isSameOuting(start: start.addingTimeInterval(-600), as: mine))
+    }
 }

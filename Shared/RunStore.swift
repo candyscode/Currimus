@@ -117,12 +117,50 @@ final class RunStore: ObservableObject {
     }
 
     func deleteRuns(at offsets: IndexSet, in subset: [Run]) {
-        remove(offsets.map { subset[$0] })
+        delete(offsets.map { subset[$0] })
     }
 
     /// Deletes one run — what the log's own delete action calls, since the
     /// screen is a hand-built scroll view and has no `IndexSet` to offer.
-    func delete(_ run: Run) { remove([run]) }
+    func delete(_ run: Run) { delete([run]) }
+
+    /// Deletes runs here and in Apple Health.
+    ///
+    /// The log goes first and synchronously: the list must close over the row
+    /// the moment the runner confirms, not when a Health query comes back.
+    /// Health follows in the background, and only says anything if it refused
+    /// — see `healthNotice`.
+    func delete(_ runs: [Run]) {
+        let mine = runs.filter { !$0.isImported }
+        guard !mine.isEmpty else { return }
+        healthNotice = nil
+        remove(mine)
+        #if canImport(HealthKit)
+        guard !isDemo else { return }
+        Task { await deleteFromHealth(mine) }
+        #endif
+    }
+
+    /// Set when a delete could not be carried through to Apple Health, so the
+    /// log can say so. Nil the rest of the time: a delete that worked needs no
+    /// announcement.
+    @Published var healthNotice: String?
+
+    #if canImport(HealthKit)
+    private func deleteFromHealth(_ runs: [Run]) async {
+        switch await HealthImport.deleteWorkouts(for: runs, in: healthStore) {
+        case .removed(let count):
+            Log.store.notice("removed \(count) workout(s) from Health")
+        case .nothingFound, .unavailable:
+            break
+        case .refused:
+            healthNotice = String(localized: "Deleted here. Apple Health did not allow Currimus to remove the workout — turn on \"Workouts\" under Settings › Apps › Health › Data Access & Devices › Currimus.")
+        case .failed(let reason):
+            Log.store.error("health delete failed: \(reason, privacy: .public)")
+            healthNotice = String(localized: "Deleted here. The workout could not be removed from Apple Health.")
+        }
+    }
+    #endif
 
     /// Writes back an edited run. Imported runs are Health's, not ours.
     func update(_ run: Run) {

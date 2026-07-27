@@ -4,8 +4,13 @@ struct LogView: View {
     @EnvironmentObject private var store: RunStore
     @Environment(\.pushRoute) private var push
     @State private var filter: RunStore.LogFilter = .all
-    /// Set by the row's delete action; the confirmation reads it back.
-    @State private var pendingDelete: Run?
+    /// Set by a delete action; the confirmation reads it back. One run or many
+    /// — the marking mode deletes in bulk and asks the same question.
+    @State private var pendingDelete: PendingDelete?
+    /// Which row currently has its delete action swiped open, if any.
+    @State private var openRow: UUID?
+    @State private var isSelecting = DebugFlags.opensLogSelection
+    @State private var selection: Set<UUID> = []
 
     var body: some View {
         // Cached in the store — this used to recompute the fastest 5 K and
@@ -22,11 +27,18 @@ struct LogView: View {
                 }
                 .padding(.top, 6)
 
-                SegmentChips(options: [(.all, "All"), (.road, "Road"), (.trail, "Trail")],
-                             selection: $filter)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: 250, alignment: .leading)
-                    .padding(.top, 18)
+                HStack(spacing: 10) {
+                    SegmentChips(options: [(.all, "All"), (.road, "Road"), (.trail, "Trail")],
+                                 selection: $filter)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 250, alignment: .leading)
+                    Spacer(minLength: 8)
+                    selectChip
+                }
+                .padding(.top, 18)
+
+                if let notice = store.healthNotice { healthNotice(notice) }
+                if isSelecting, showsImportedFootnote { importedFootnote }
 
                 ForEach(store.runsByMonth(filter), id: \.month) { group in
                     Text(monthLabel(group).uppercased())
@@ -34,46 +46,213 @@ struct LogView: View {
                         .padding(.top, 26).padding(.bottom, 12)
                         .overlay(alignment: .bottom) { Theme.hairline.frame(height: 1) }
                     ForEach(group.runs) { run in
-                        Button { push(.runDetail(run)) } label: {
-                            LogRow(run: run, prTag: holders[run.id],
-                                   isFastestPaceOfMonth: fastestOfMonth.contains(run.id))
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu { deleteAction(run) }
+                        row(run, prTag: holders[run.id],
+                            isFastestPaceOfMonth: fastestOfMonth.contains(run.id))
                     }
                 }
             }
+            // Room for the floating delete bar, so the last run of the log is
+            // never parked underneath it.
+            .padding(.bottom, isSelecting ? 80 : 0)
         }
+        // The bar takes the tab bar's place while marking, the way a selection
+        // mode does everywhere else on the phone. "Done" gives it back.
+        .toolbar(isSelecting ? .hidden : .visible, for: .tabBar)
+        .overlay(alignment: .bottom) { if isSelecting { deleteBar } }
+        .animation(.snappy(duration: 0.25), value: isSelecting)
         .confirmationDialog(
-            "Delete this run?",
+            DeletePrompt.title(pendingDelete?.runs ?? []),
             isPresented: Binding(get: { pendingDelete != nil },
                                  set: { if !$0 { pendingDelete = nil } }),
             presenting: pendingDelete
-        ) { run in
-            Button("Delete", role: .destructive) {
-                store.delete(run)
-                pendingDelete = nil
-            }
+        ) { pending in
+            Button("Delete", role: .destructive) { confirm(pending) }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
-        } message: { run in
-            Text("\(Format.km(run.distanceKm)) km, \(run.date.formatted(.dateTime.day().month(.wide))). "
-                 + "Every total and record is recalculated without it. The workout stays in Apple Health.")
+        } message: { pending in
+            Text(DeletePrompt.message(pending.runs))
         }
     }
 
+    // MARK: - Rows
+
     /// A mis-recorded run — a forgotten stop, a drive home still counting —
     /// used to be permanent, and it distorts every total, chart and record it
-    /// touches. Long press rather than swipe: the log is a hand-built scroll
-    /// view, not a `List`, and a hand-rolled swipe would fight the scroll.
+    /// touches. Three ways to reach the same delete: a swipe for one run, the
+    /// marking mode for many, and the long press that was here first.
     @ViewBuilder
-    private func deleteAction(_ run: Run) -> some View {
-        if run.isImported {
-            // Currimus is only reading this one; it belongs to whoever wrote it.
-            Text("Recorded by \(run.name). Delete it in Apple Health.")
+    private func row(_ run: Run, prTag: String?, isFastestPaceOfMonth: Bool) -> some View {
+        let content = LogRow(run: run, prTag: prTag, isFastestPaceOfMonth: isFastestPaceOfMonth)
+        if isSelecting {
+            selectableRow(run) { content }
+        } else if run.isImported {
+            // Currimus is only reading this one; it belongs to whoever wrote
+            // it, and HealthKit will not let another app delete it. Offering a
+            // swipe here would be offering something that cannot happen.
+            Button { push(.runDetail(run)) } label: { content }
+                .buttonStyle(.plain)
+                .contextMenu { Text("Recorded by \(run.name). Delete it in Apple Health.") }
         } else {
-            Button(role: .destructive) { pendingDelete = run } label: {
-                Label("Delete run", systemImage: "trash")
+            SwipeToRevealRow(id: run.id, label: "Delete", systemImage: "trash",
+                             openRow: $openRow,
+                             action: { ask(for: [run]) }) {
+                Button { tapped(run) } label: { content }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button(role: .destructive) { ask(for: [run]) } label: {
+                            Label("Delete run", systemImage: "trash")
+                        }
+                    }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func selectableRow(_ run: Run, @ViewBuilder content: () -> some View) -> some View {
+        let selected = selection.contains(run.id)
+        Button { toggle(run) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: mark(for: run, selected: selected))
+                    .font(.system(size: 22))
+                    .foregroundStyle(markColor(for: run, selected: selected))
+                content()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(run.isImported)
+        // Dimmed rather than hidden: the log still has to add up to what the
+        // month totals say, even while some of it cannot be selected.
+        .opacity(run.isImported ? 0.45 : 1)
+    }
+
+    private func mark(for run: Run, selected: Bool) -> String {
+        if run.isImported { return "circle.slash" }
+        return selected ? "checkmark.circle.fill" : "circle"
+    }
+
+    private func markColor(for run: Run, selected: Bool) -> Color {
+        if run.isImported { return Theme.track }
+        return selected ? Theme.signal : Theme.chipStroke
+    }
+
+    // MARK: - Marking mode
+
+    private var selectChip: some View {
+        Button {
+            withAnimation(.snappy(duration: 0.25)) {
+                isSelecting.toggle()
+                selection = []
+                openRow = nil
+            }
+        } label: {
+            Text(isSelecting ? "Done" : "Select")
+                .font(.sg(14, weight: .semibold))
+                .foregroundStyle(isSelecting ? Theme.bg : Theme.bright)
+                .padding(.horizontal, 16)
+                .frame(height: 42)
+                .background {
+                    if isSelecting {
+                        Capsule().fill(Theme.ink)
+                    } else {
+                        Capsule().fill(Theme.chipFill)
+                            .overlay(Capsule().stroke(Theme.chipStroke, lineWidth: 1))
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+    }
+
+    private var deleteBar: some View {
+        HStack(spacing: 14) {
+            Text(selection.isEmpty
+                 ? String(localized: "Pick the runs to delete")
+                 : String(localized: "\(selection.count) selected"))
+                .font(.sg(15)).foregroundStyle(Theme.bright)
+            Spacer(minLength: 8)
+            Button { ask(for: selectedRuns) } label: {
+                // Dimmed-out signal orange over glass reads as a smudge, so
+                // the inactive state is a quiet filled capsule instead.
+                Text("Delete").font(.sg(16, weight: .bold))
+                    .foregroundStyle(selection.isEmpty ? Theme.muted : Theme.bg)
+                    .padding(.horizontal, 22).frame(height: 44)
+                    .background(selection.isEmpty ? Theme.track : Theme.signal, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(selection.isEmpty)
+        }
+        .padding(.leading, 22).padding(.trailing, 8).padding(.vertical, 8)
+        .glassEffect(.regular, in: Capsule())
+        .padding(.horizontal, 20)
+        .padding(.bottom, 12)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    /// Only shown while marking, and only when there is actually something in
+    /// the log the mode cannot touch.
+    private var showsImportedFootnote: Bool {
+        store.filteredRuns(filter).contains { $0.isImported }
+    }
+
+    private var importedFootnote: some View {
+        Text("Runs from Apple Health belong to the app that recorded them — delete those there.")
+            .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+            .padding(.top, 16)
+    }
+
+    private func healthNotice(_ text: String) -> some View {
+        Button { store.healthNotice = nil } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "heart.slash")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.signal)
+                    .padding(.top, 1)
+                Text(text).font(.sg(13)).foregroundStyle(Theme.bright)
+                    .lineSpacing(3).multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+            }
+            .padding(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
+            .background(Theme.glassCardFill, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.glassCardStroke, lineWidth: 1))
+            .padding(.top, 18)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Dismisses this notice")
+    }
+
+    // MARK: - Actions
+
+    private var selectedRuns: [Run] {
+        store.allRuns.filter { selection.contains($0.id) }
+    }
+
+    private func tapped(_ run: Run) {
+        // A swiped-open row is a question, not a link: the tap that follows
+        // puts it away rather than navigating out from under it.
+        if openRow != nil {
+            withAnimation(.snappy(duration: 0.25)) { openRow = nil }
+        } else {
+            push(.runDetail(run))
+        }
+    }
+
+    private func toggle(_ run: Run) {
+        guard !run.isImported else { return }
+        if selection.contains(run.id) { selection.remove(run.id) } else { selection.insert(run.id) }
+    }
+
+    private func ask(for runs: [Run]) {
+        guard !runs.isEmpty else { return }
+        pendingDelete = PendingDelete(runs: runs)
+    }
+
+    private func confirm(_ pending: PendingDelete) {
+        store.delete(pending.runs)
+        pendingDelete = nil
+        withAnimation(.snappy(duration: 0.25)) {
+            openRow = nil
+            selection = []
+            if isSelecting { isSelecting = false }
         }
     }
 
@@ -81,6 +260,12 @@ struct LogView: View {
         let name = group.month.formatted(.dateTime.month(.wide))
         let km = group.runs.reduce(0) { $0 + $1.distanceKm }
         return "\(name) · \(Format.km(km, decimals: 1)) km"
+    }
+
+    /// A delete the runner has asked for and not yet confirmed.
+    private struct PendingDelete: Identifiable {
+        var runs: [Run]
+        var id: [UUID] { runs.map(\.id) }
     }
 }
 

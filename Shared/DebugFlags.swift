@@ -47,4 +47,7 @@ enum DebugFlags {
     static var push: String? { string("push") }
     static var zones: String? { string("zones") }
     static var home: String? { string("home") }
+    /// iOS: open the log already in its marking mode, which is a tab state
+    /// rather than a route and so cannot be reached with `-push`.
+    static var opensLogSelection: Bool { isSet("select") }
 }

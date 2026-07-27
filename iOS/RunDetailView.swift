@@ -3,6 +3,8 @@ import SwiftUI
 struct RunDetailView: View {
     @EnvironmentObject private var store: RunStore
     @Environment(\.pushRoute) private var push
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmingDelete = false
     private let storedRun: Run
 
     init(run: Run) { storedRun = run }
@@ -20,7 +22,22 @@ struct RunDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 if run.isTrail { trail } else { road }
                 editCard
+                deleteAction
             }
+        }
+        .confirmationDialog(
+            DeletePrompt.title([run]),
+            isPresented: $confirmingDelete
+        ) {
+            Button("Delete", role: .destructive) {
+                store.delete(run)
+                // Nothing is left to show — the screen reads a run that is no
+                // longer in the log, so it leaves with it.
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) { confirmingDelete = false }
+        } message: {
+            Text(DeletePrompt.message([run]))
         }
     }
 
@@ -38,6 +55,33 @@ struct RunDetailView: View {
         }
         .buttonStyle(.plain)
         .padding(.top, 30)
+    }
+
+    /// The last resort for a run that should never have been logged. Outlined
+    /// rather than filled: it is the one thing on this screen that cannot be
+    /// undone, so it does not get to look like the primary action.
+    @ViewBuilder
+    private var deleteAction: some View {
+        if run.isImported {
+            // Health owns it, and HealthKit will not let another app delete
+            // another app's workout. Say where it can be done instead.
+            Text("Recorded by \(run.name). This run belongs to Apple Health — delete it in the app that recorded it.")
+                .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+                .padding(.top, 18)
+        } else {
+            Button { confirmingDelete = true } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "trash").font(.system(size: 15, weight: .semibold))
+                    Text("Delete run").font(.sg(16, weight: .semibold))
+                }
+                .foregroundStyle(Theme.signal)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(Theme.glassCardFill, in: Capsule())
+                .overlay(Capsule().stroke(Theme.signal.opacity(0.35), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 14)
+        }
     }
 
     // MARK: - Road
