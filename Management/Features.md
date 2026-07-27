@@ -192,7 +192,7 @@ As a runner, I want to track my progress on my pace while running in zone 2. So 
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-7
+https://github.com/candyscode/Currimus/commit/baeb68e
 
 
 ### CUR-8: Show hints to improve running style in run detail view
