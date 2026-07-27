@@ -175,11 +175,25 @@ https://github.com/candyscode/Currimus/commit/44c1cc1
 ### CUR-7: Show progress over pace in heart rate zone 2
 
 [ ] In Specification
-[X] Open
+[ ] Open
 [ ] WIP
-[ ] Done
+[X] Done
 
 As a runner, I want to track my progress on my pace while running in zone 2. So additional to the graph for avg. pace in the last 12 months, which we already have, I want another graph showing the avg. pace but only the paces are counted which were achieved while running in heart rate zone 2. For both of those graphs also runs from other running apps stored in Apple Health shall be taken into account. Make sure the UI changes fit into the look and feel of the app and the design system. Also make sure, that the two graphs stacked over each other in the progress tab look nice. If they don't, you are free to redesign the progress view.
+
+#### Agent Comments
+
+- The zone-2 chart sits directly under the overall pace chart and **shares its month axis** — the pair covers the same twelve weeks, and reading the second against the first is the point of stacking them. Its headline is set at 40 pt against the hero's 64 pt, so the two blocks read as a lead and a follow-up rather than as two competing heroes. No redesign of the rest of Progress was needed.
+- **Both charts already read `allRuns`**, so runs from other apps were counted in the overall pace before this ticket; the new chart counts them too — placed by the average heart rate Health carries, since another app's workout has no zone breakdown.
+- **The honest limit** (`RunAnalytics.isRun(_:mostlyIn:zones:)`): a run stores how long it spent in each zone, not what pace it held *while* in each of them. So the unit is the whole run — one that spent at least half its time in zone 2 counts, and its average pace is that week's zone-2 pace. True per-zone pace would need per-second pace and zone stored together, which no run in the log has. Doable from now on if you want it: it would mean recording a new series during the run.
+- A run with no heart rate at all is left out rather than guessed at, and a week without an easy run is a gap in the line rather than a zero.
+- Below two data points the chart is replaced by one line of explanation — a near-empty chart reads as a fault rather than as a log that has not filled up yet.
+- The existing chart is **12 weeks, not 12 months** (the ticket says months). Left as is so the two share an axis; say the word and both can go to twelve months.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-7
+
 
 ### CUR-8: Show hints to improve running style in run detail view
 

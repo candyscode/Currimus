@@ -216,6 +216,72 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertEqual(series.last!!, 300, accuracy: 0.5) // trail excluded
     }
 
+    // MARK: Zone-2 pace
+
+    /// Zones at max 190 without a resting rate: 115 / 133 / 152 / 171, so
+    /// zone 2 is 116–133 bpm.
+    private var testZones: HRZones { HRZones(maxHR: 190) }
+
+    private func zoneRun(_ seconds: [TimeInterval], avgHR: Int = 0,
+                         km: Double = 10, duration: TimeInterval = 3000) -> Run {
+        Run(date: .now, name: "run", distanceKm: km, duration: duration,
+            avgHR: avgHR, zoneSeconds: seconds)
+    }
+
+    func testARunIsPlacedByWhereItSpentItsTime() {
+        // 70 % of the run in zone 2 — that is a zone 2 run.
+        let easy = zoneRun([200, 2100, 700, 0, 0])
+        XCTAssertTrue(RunAnalytics.isRun(easy, mostlyIn: 2, zones: testZones))
+        XCTAssertFalse(RunAnalytics.isRun(easy, mostlyIn: 3, zones: testZones))
+    }
+
+    func testARunSplitAcrossZonesBelongsToNone() {
+        // Leading zone, but not the majority of the run: a session that spent
+        // 40 % easy and 35 % hard is not an easy run.
+        let mixed = zoneRun([0, 1200, 1050, 750, 0])
+        XCTAssertFalse(RunAnalytics.isRun(mixed, mostlyIn: 2, zones: testZones))
+        XCTAssertFalse(RunAnalytics.isRun(mixed, mostlyIn: 3, zones: testZones))
+    }
+
+    func testAnImportedRunIsPlacedByItsAverageHeartRate() {
+        // Another app recorded it, so there is no zone breakdown — only the
+        // average heart rate Health carries.
+        var imported = zoneRun([0, 0, 0, 0, 0], avgHR: 125)
+        imported.imported = true
+        XCTAssertTrue(RunAnalytics.isRun(imported, mostlyIn: 2, zones: testZones))
+
+        var hard = imported; hard.avgHR = 160
+        XCTAssertTrue(RunAnalytics.isRun(hard, mostlyIn: 4, zones: testZones))
+    }
+
+    func testARunWithNoHeartRateAtAllIsLeftOutRatherThanGuessed() {
+        let blind = zoneRun([0, 0, 0, 0, 0], avgHR: 0)
+        for zone in 1...5 {
+            XCTAssertFalse(RunAnalytics.isRun(blind, mostlyIn: zone, zones: testZones))
+        }
+    }
+
+    func testTheZoneTwoTrendCountsOnlyEasyRunsIncludingImportedOnes() throws {
+        let easy = zoneRun([100, 2600, 300, 0, 0], km: 10, duration: 3000)      // 5:00 /km
+        let hard = zoneRun([0, 200, 400, 2000, 400], km: 10, duration: 2400)    // 4:00 /km
+        var imported = zoneRun([0, 0, 0, 0, 0], avgHR: 124, km: 10, duration: 3600)
+        imported.imported = true                                                // 6:00 /km
+
+        let overall = RunAnalytics.weeklyAvgPace(runs: [easy, hard, imported], weeks: 1)
+        let zoneTwo = RunAnalytics.weeklyAvgPace(runs: [easy, hard, imported], weeks: 1,
+                                                 inZone: 2, zones: testZones)
+        // 30 km in 9000 s overall; 20 km in 6600 s once the hard session drops
+        // out and the imported easy run stays in.
+        XCTAssertEqual(try XCTUnwrap(overall.last!), 300, accuracy: 0.5)
+        XCTAssertEqual(try XCTUnwrap(zoneTwo.last!), 330, accuracy: 0.5)
+    }
+
+    func testAWeekWithoutAnEasyRunHasNoZoneTwoPoint() {
+        let hard = zoneRun([0, 100, 400, 2100, 400])
+        let series = RunAnalytics.weeklyAvgPace(runs: [hard], weeks: 1, inZone: 2, zones: testZones)
+        XCTAssertNil(series.last!, "an empty week is a gap in the line, not a zero")
+    }
+
     // MARK: Sync codecs
 
     func testWatchSettingsRoundTrips() throws {

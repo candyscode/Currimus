@@ -160,10 +160,18 @@ enum RunAnalytics {
 
     /// Average pace (s/km) per ISO week for the last `weeks`, oldest first.
     /// nil weeks (no runs) are dropped from the polyline but reserve their slot.
+    /// `inZone` narrows the source to runs actually spent in one heart-rate
+    /// zone — the aerobic-base read: zone 2 pace getting faster at the same
+    /// heart rate is the whole point of easy running, and it is invisible in
+    /// an overall average that mixes in every tempo and interval session.
     static func weeklyAvgPace(runs: [Run], weeks: Int, roadOnly: Bool = true,
+                              inZone zone: Int? = nil, zones: HRZones = HRZones(),
                               now: Date = .now) -> [TimeInterval?] {
         let cal = Calendar.runWeek
-        let source = roadOnly ? runs.filter { !$0.isTrail } : runs
+        var source = roadOnly ? runs.filter { !$0.isTrail } : runs
+        if let zone {
+            source = source.filter { isRun($0, mostlyIn: zone, zones: zones) }
+        }
         return (0..<weeks).reversed().map { offset -> TimeInterval? in
             guard let weekDate = cal.date(byAdding: .weekOfYear, value: -offset, to: now) else { return nil }
             let inWeek = source.filter { cal.isDate($0.date, equalTo: weekDate, toGranularity: .weekOfYear) }
@@ -172,6 +180,29 @@ enum RunAnalytics {
             let time = inWeek.reduce(0) { $0 + $1.duration }
             return km > 0 ? time / km : nil
         }
+    }
+
+    /// Whether a run was *spent* in one heart-rate zone, rather than merely
+    /// touching it.
+    ///
+    /// The honest limit, stated once here rather than implied everywhere: a
+    /// run stores how long it spent in each zone, not what pace it held while
+    /// it was in each of them. So the unit is the whole run — one the runner
+    /// spent the majority of in the zone, whose average pace is then that
+    /// zone's pace, near enough. Splitting pace by zone properly would need
+    /// per-second pace and zone stored together, which no run in the log has.
+    ///
+    /// Runs another app recorded carry no zone breakdown at all, only an
+    /// average heart rate — so they are placed by that. Without it they cannot
+    /// be placed, and are left out rather than guessed at.
+    static func isRun(_ run: Run, mostlyIn zone: Int, zones: HRZones) -> Bool {
+        guard zone >= 1, zone <= 5 else { return false }
+        let total = run.zoneSeconds.reduce(0, +)
+        if total > 0 {
+            return run.zoneSeconds[zone - 1] / total >= 0.5
+        }
+        guard run.avgHR > 0 else { return false }
+        return zones.zone(for: run.avgHR) == zone
     }
 
     /// Average climb rate (m/h) per week for the last `weeks`, trail only.

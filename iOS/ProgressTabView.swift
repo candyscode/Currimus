@@ -98,6 +98,11 @@ struct ProgressScreen: View {
                        format: { Format.pace($0) },
                        describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 18)
+
+            // The two charts share one axis rather than repeating it: they
+            // cover the same twelve weeks, and reading the second against the
+            // first is the point of stacking them.
+            zoneTwoBlock
             monthAxis.padding(.top, 4)
 
             divider
@@ -109,6 +114,47 @@ struct ProgressScreen: View {
                       unit: "km") { "\(Int($0))" }
 
             recordsCard(title: "Records", value: fiveKSummary)
+        }
+    }
+
+    /// The same twelve weeks, over easy runs only.
+    ///
+    /// An overall average mixes tempo, intervals and easy running together, so
+    /// it moves with what the week happened to contain rather than with
+    /// fitness. Zone 2 pace does not: same heart rate, same effort, and a line
+    /// that falls means the aerobic base is growing. It sits directly under
+    /// the overall pace, sharing its axis, because the pair is the read.
+    @ViewBuilder
+    private var zoneTwoBlock: some View {
+        let series = RunAnalytics.weeklyAvgPace(runs: store.allRuns, weeks: 12,
+                                                roadOnly: true, inZone: 2, zones: store.zones)
+        let present = series.compactMap { $0 }
+        let change = (present.last ?? 0) - (present.first ?? 0)
+        let average = present.isEmpty ? 0 : present.reduce(0, +) / Double(present.count)
+
+        Text("IN ZONE 2 · EASY RUNS").kicker(13, color: Theme.bright, tracking: 0.12)
+            .padding(.top, 26)
+        if present.count >= 2 {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(Format.pace(average)).font(.stat(40)).kerning(-1.6)
+                Text("/km").font(.sg(15)).foregroundStyle(Theme.bright)
+                Spacer()
+                trendDelta(Format.paceDelta(change), improved: change <= 0)
+            }
+            .padding(.top, 6)
+            TrendChart(values: series, headroom: 8, lowerIsBetter: true,
+                       accessibilityTitle: "Average pace in zone 2 per week, last 12 weeks",
+                       format: { Format.pace($0) },
+                       describe: { "\(Format.pace($0)) per kilometre" })
+                .padding(.top, 14)
+        } else {
+            // One week of easy running is a data point, not a trend, and a
+            // near-empty chart reads as a fault rather than as a log that has
+            // not filled up yet.
+            Text("Appears once a few runs have been spent mostly in zone 2. Runs from other apps count too, placed by their average heart rate.")
+                .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
         }
     }
 
