@@ -31,6 +31,11 @@ Whenever you commit, commit the Features.md file as well, if changes are made.
 ### Skills and documentation
 When you learn something that you believe you will need again (e.g how to run the tests for Currimus, how to access GitHub etc.), create a Skill or some other note for that information in Markdown format and also commit this the next time you commit. The goal is to save tokens which are needlessly spent when having to re-read the codebase or the chat history instead of having an agent knowledgebase in the form of md files.
 
+**Read [docs/AGENT-NOTES.md](docs/AGENT-NOTES.md) before you start.** It is that knowledgebase: build and test commands and how to read their output, how to put one screen on the simulator and screenshot it, the UI-snapshot policy, and the HealthKit / watchOS haptics facts that are expensive to rediscover. Add to it whenever something costs you more than a couple of minutes to work out.
+
+### UI snapshots
+Do **not** run `scripts/ui-snapshot.sh verify` as a routine step (Andi, 2026-07-27: it costs a lot of tokens for little return, because a failure always ends in reading diff images). After deliberately changing or adding a screen, run `scripts/ui-snapshot.sh record ios|watch` once so the committed references stay current — that is text output only.
+
 ### Feel free to improve the app & process
 
 When you notice it would be beneficial to change the Claude.md or structure of the Features.md file, feel free to do so. Don't do that for the sake of it, but when you notice that over a longer time some part of those files aren't helpful as they are, change it. Both files are versioned, so you cannot do much harm.
