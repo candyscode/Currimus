@@ -228,7 +228,7 @@ Also, show the avg. cadence also in run detail view, regardless if there is a hi
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-8
+https://github.com/candyscode/Currimus/commit/3d03070
 
 
 ### CUR-9: Coaching Mode (for beginners)
