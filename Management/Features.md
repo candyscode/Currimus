@@ -169,7 +169,7 @@ Entferne alle Tonsignale, die die Apple Watch von sich gibt. Da haben wir aktuel
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-6
+https://github.com/candyscode/Currimus/commit/44c1cc1
 
 
 ### CUR-7: Show progress over pace in heart rate zone 2
