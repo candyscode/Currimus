@@ -117,7 +117,7 @@ Trail already showed white. Left alone on purpose (say the word if these should 
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-4
+https://github.com/candyscode/Currimus/commit/01ec12e
 
 ### CUR-5: Show heart rate zone indicator also when user is not looking
 
