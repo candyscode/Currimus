@@ -54,7 +54,7 @@ Untested by machine: the swipe gesture itself (no UI-test target — the harness
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-1
+https://github.com/candyscode/Currimus/commit/b9d9424
 
 ### CUR-2: Re-calculate heart rate zones on app start
 
