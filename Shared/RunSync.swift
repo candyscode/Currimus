@@ -15,6 +15,9 @@ struct WatchSettings: Codable, Equatable {
     var restingHR: Int?
     var gpsAccuracy: GPSAccuracy?
     var alwaysOnReduced: Bool?
+    /// Zone the watch should hold the runner in by vibration alone (1…5);
+    /// nil = off, which is also what an older phone's payload decodes to.
+    var zoneCoachTarget: Int?
 }
 
 /// Whether there is a watch to record on at all.

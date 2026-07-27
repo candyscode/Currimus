@@ -61,12 +61,25 @@ final class RunSession: NSObject, ObservableObject {
     /// summary repeats it so it survives a glance mid-run.
     @Published private(set) var issues: [RecordingIssue] = []
     @Published var kilometerAlert: KilometerAlert?
+    /// Raised when the zone the runner asked to be held in has been lost.
+    @Published var zoneWarning: ZoneWarning?
     @Published var pacerTarget: TimeInterval = 315
     /// nil = "Off" — pacer runs open-ended, no finish forecast.
     @Published var pacerDistanceKm: Double?
     var zones = HRZones()
     var kilometerAlertEnabled = true
     var gpsAccuracy: GPSAccuracy = .high
+    /// Which zone to hold the runner in by vibration alone; nil = off.
+    /// Set from the iPhone's settings when a run starts.
+    var zoneCoachTarget: Int? {
+        didSet {
+            guard zoneCoachTarget != oldValue else { return }
+            coach = zoneCoachTarget.map { ZoneCoach(targetZone: $0) }
+        }
+    }
+    private var coach: ZoneCoach?
+    private var cueTask: Task<Void, Never>?
+    private var warningDismiss: Task<Void, Never>?
 
     // MARK: - Metrics passthrough (what the views read)
 
@@ -202,7 +215,8 @@ final class RunSession: NSObject, ObservableObject {
     func end() -> Run {
         timer?.cancel()
         phase = .finished
-        haptic(.success)
+        // Two taps, not the finish chime: everything speaks in vibration now.
+        Task { await pulse(times: 2, every: .milliseconds(160), kind: .stop) }
 
         // Elevation is recorded for every run (the iPhone shows road climb and
         // uses it for grade-adjusted pace); the GPS track powers the map + GPX.
@@ -465,7 +479,61 @@ final class RunSession: NSObject, ObservableObject {
         let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
                                  heartRate: heartRate, zone: currentZone)
         if let split { raiseKilometerAlert(split) }
+        coachZone()
         checkDistanceIsArriving()
+    }
+
+    // MARK: - Zone coaching
+
+    /// Turns the live heart rate into something the wrist can report on its
+    /// own. Runs on the same tick as everything else — a cue that arrived a
+    /// second late would be a cue about a heart rate that has moved on.
+    private func coachZone() {
+        guard coach != nil else { return }
+        let cue = coach?.update(zone: currentZone,
+                                position: zones.position(forHR: heartRate),
+                                now: elapsed)
+        guard let cue else { return }
+        play(cue)
+        if case .leftZone(let zone) = cue, let target = coach?.targetZone {
+            raiseZoneWarning(ZoneWarning(zone: zone, targetZone: target))
+        }
+    }
+
+    /// The patterns themselves. Fast and light means "lift the pace", slow and
+    /// heavy means "ease off" — the difference has to survive a sleeve, a
+    /// jacket and a runner who is not thinking about their watch.
+    private func play(_ cue: ZoneCoach.Cue) {
+        cueTask?.cancel()
+        cueTask = Task { @MainActor [weak self] in
+            switch cue {
+            case .speedUp:
+                await self?.pulse(times: 4, every: .milliseconds(170), kind: .directionUp)
+            case .slowDown:
+                await self?.pulse(times: 3, every: .milliseconds(650), kind: .directionDown)
+            case .leftZone:
+                // Three seconds of it: the zone is gone, and this is the one
+                // cue that has to interrupt whatever the runner was thinking.
+                await self?.pulse(times: 12, every: .milliseconds(250), kind: .click)
+            }
+        }
+    }
+
+    private func pulse(times: Int, every gap: Duration, kind: HapticKind) async {
+        for index in 0..<times {
+            guard !Task.isCancelled else { return }
+            haptic(kind)
+            if index < times - 1 { try? await Task.sleep(for: gap) }
+        }
+    }
+
+    private func raiseZoneWarning(_ warning: ZoneWarning) {
+        zoneWarning = warning
+        warningDismiss?.cancel()
+        warningDismiss = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            if !Task.isCancelled { self?.zoneWarning = nil }
+        }
     }
 
     /// Catches the denial the gate structurally cannot see: Health grants the
@@ -481,7 +549,9 @@ final class RunSession: NSObject, ObservableObject {
         guard kilometerAlertEnabled else { return }
         kilometerAlert = KilometerAlert(km: split.km, splitSeconds: split.seconds,
                                         deltaVsAvg: split.deltaVsAverage)
-        haptic(.notification)
+        // Was the notification chime — a double tap says the same thing
+        // without making a sound of it.
+        Task { await pulse(times: 2, every: .milliseconds(130), kind: .click) }
         alertDismiss?.cancel()
         alertDismiss = Task { [weak self] in
             try? await Task.sleep(for: .seconds(5))
@@ -682,10 +752,13 @@ final class RunSession: NSObject, ObservableObject {
                                    verticalAccuracy: 5, at: elapsed)
         }
 
-        // Zone time and splits follow the same path a real second takes.
+        // Zone time, splits and the zone cues follow the same path a real
+        // second takes — the simulator is the only place the coaching can be
+        // watched at all, since no simulated wrist has a pulse.
         let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
                                  heartRate: heartRate, zone: currentZone)
         if let split { raiseKilometerAlert(split) }
+        coachZone()
     }
 
     /// A deterministic, realistic trail elevation (m) for a simulated run.
@@ -713,13 +786,25 @@ final class RunSession: NSObject, ObservableObject {
 
     // MARK: - Haptics
 
-    private enum HapticKind { case start, stop, success, click, notification }
+    /// Only tap-shaped haptics are left.
+    ///
+    /// `.notification` and `.success` are the two watchOS plays as a little
+    /// tune when the watch is not in silent mode — the chime a kilometre split
+    /// used to arrive with, and the one at the finish. Currimus speaks in
+    /// vibration now, so both are gone; what a split or a finish feels like is
+    /// built from taps instead.
+    ///
+    /// What no app can do is silence the rest: watchOS pairs a sound with
+    /// every haptic type it plays, and whether it is audible is the wearer's
+    /// setting (Silent Mode), not ours. Choosing tap types is as close to
+    /// "vibration only" as the platform allows.
+    private enum HapticKind { case start, stop, click, directionUp, directionDown }
 
     private func haptic(_ kind: HapticKind) {
         #if os(watchOS)
         let map: [HapticKind: WKHapticType] = [
-            .start: .start, .stop: .stop, .success: .success,
-            .click: .click, .notification: .notification,
+            .start: .start, .stop: .stop, .click: .click,
+            .directionUp: .directionUp, .directionDown: .directionDown,
         ]
         WKInterfaceDevice.current().play(map[kind] ?? .click)
         #endif

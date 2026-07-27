@@ -14,6 +14,7 @@ settings         | loose  | -demo 1 -push settings
 pacer-defaults   | strict | -demo 1 -push pacerDefaults
 hr-zones         | strict | -demo 1 -push hrZones
 gps-accuracy     | strict | -demo 1 -push gpsAccuracy
+zone-coach       | strict | -demo 1 -push zoneCoach -zones coach
 acknowledgements | strict | -demo 1 -push acknowledgements
 edit-run         | strict | -demo 1 -push editRun
 

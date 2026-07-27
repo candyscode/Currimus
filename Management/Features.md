@@ -142,9 +142,9 @@ https://github.com/candyscode/Currimus/commit/63a8b92
 ### CUR-6: Vibration-based heart rate zone indication
 
 [ ] In Specification
-[X] Open
+[ ] Open
 [ ] WIP
-[ ] Done
+[X] Done
 
 Wir bauen ein Feature ein, mit dem man ohne auf die Watch zu schauen in der entsprechenden Puls zurück bleiben kann. Und zwar kann man das in den Einstellungen der App in iOS einschalten und sagen, man möchte Vibrationshinweise für eine Pulszone. Und dann kann man auswählen, welche Pulszone man haben möchte, an die man erinnert wird, wenn man dabei ist, sie zu verlassen. Zum Beispiel Zone 2. Achte dabei darauf, dass die UI-Changes ins Look & Feel der App und zum Design System passen. 
 Und dann läuft es wie folgend: Wenn man noch innerhalb der Zone 2 ist, aber in den unteren 15%, dann gibt es einen Vibrationshinweis der schnell hintereinander pulsiert, um dem Nutzer zu sagen: lauf etwas schneller. Das Vibrationsmuster läuft dauerhaft, solange er in dieser 15% Scheibe ist. 
@@ -156,6 +156,21 @@ Das soll ihm dann helfen, auch ohne auf die Uhr zu schauen, immer zu wissen, wo 
 Und wenn er die Pulszone verlässt (z.B. er möchte in Zone 2 bleiben und jetzt in Zone 3 ist) dann gibt's eine Dauer Vibration für 3 Sekunden und eine Full-Screen Display-Warnung ähnlich wie die Split-Anzeige (in die Richtung: "Du bist jetzt in Zone 3, werde langsamer").
 
 Entferne alle Tonsignale, die die Apple Watch von sich gibt. Da haben wir aktuell so einen Bimmelton. Wir arbeiten ab sofort nur noch mit Vibrationen. 
+
+#### Agent Comments
+
+- **The decision layer** is `Shared/ZoneCoach.swift` — pure, no haptics and no clock of its own, so the cadence is asserted in `Tests/ZoneCoachTests.swift` instead of only being feelable on a wrist. `RunSession` feeds it the per-second tick and plays what it asks for.
+- **Bands and patterns**: bottom 15 % of the target zone → four quick taps (`.directionUp`), repeating every 3.5 s while you stay there. Top 15 % → three slow taps (`.directionDown`), every 5 s. The two must never be confused through a sleeve, which is why one is fast and light and the other slow and heavy.
+- **Losing the zone**: three seconds of buzzing (12 taps) plus a full-screen warning in the same treatment as the kilometre split — "ZONE 3 · Ease off · back down to zone 2" — for five seconds, on the Run, Pacer and Trail screens. It repeats every 60 s while the zone is still lost; firing once and never again would be a cue missed exactly when it mattered.
+- **Zone 0 (no heart rate yet) is not the wrong zone.** Buzzing at someone whose strap has not connected is how a feature gets switched off for good.
+- **Settings**: iPhone › Settings › Zone coaching — a toggle, the five zones with the runner's own bpm ranges, and a plain description of the three patterns. Off by default; switching it on defaults to zone 2.
+- **Sounds**: `.notification` (the kilometre chime) and `.success` (the finish chime) are gone — those are the two watchOS plays as a little tune. Everything is built from taps now (`.click`, `.start`, `.stop`, `.directionUp/Down`). One honest limit: watchOS pairs a sound with *every* haptic type and gives an app no way to suppress it — whether any of it is audible is the wearer's Silent Mode setting, not ours. The two musical cues are what "Bimmelton" meant, and they are gone.
+- Cues also run in the watch simulator's demo runs, since no simulated wrist has a pulse and that is the only place this can be watched at all.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-6
+
 
 ### CUR-7: Show progress over pace in heart rate zone 2
 

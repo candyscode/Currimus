@@ -119,6 +119,7 @@ struct WatchRootView: View {
         session.kilometerAlertEnabled = store.kilometerAlert
         session.countdownEnabled = store.countdownEnabled
         session.gpsAccuracy = store.gpsAccuracy
+        session.zoneCoachTarget = store.zoneCoachTarget
         session.begin(type)
     }
 

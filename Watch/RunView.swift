@@ -22,16 +22,22 @@ struct RunView: View {
             if let alert = session.kilometerAlert {
                 KilometerAlertView(alert: alert)
                     .transition(.opacity)
+            } else if let warning = session.zoneWarning {
+                // A split is the rarer event and the one the runner is waiting
+                // for, so it wins the canvas if both land in the same second.
+                ZoneWarningView(warning: warning)
+                    .transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: session.kilometerAlert)
+        .animation(.easeInOut(duration: 0.25), value: session.zoneWarning)
         .contentShape(Rectangle())
         .onTapGesture { session.pause() }
         // Caption owned by the container so both Run and Pacer show it — a
         // consistent nav bar keeps their heroes at the same height. Hidden
         // while the kilometer alert owns the whole canvas.
         .topBarCaption {
-            if session.kilometerAlert == nil {
+            if session.kilometerAlert == nil, session.zoneWarning == nil {
                 switch session.type {
                 case .pacer:
                     TopBarCaption(text: "PACER", color: palette.label)
@@ -190,6 +196,46 @@ struct KilometerAlertView: View {
                 .foregroundStyle(palette.label)
                 .padding(.top, 4)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.bg)
+    }
+}
+
+/// The zone is gone — shown for 5 s over whatever screen is up, with three
+/// seconds of vibration under it.
+///
+/// Same treatment as a kilometre split, because it is the same kind of moment:
+/// one thing to know, read at arm's length, gone again on its own. The
+/// difference is that this one has an instruction in it, and the instruction
+/// is the point — a runner who is told "zone 3" still has to work out what to
+/// do about it.
+struct ZoneWarningView: View {
+    var warning: ZoneWarning
+    @Environment(\.isLuminanceReduced) private var systemDimmed
+    @Environment(\.alwaysOnReduced) private var reducedEnabled
+
+    private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
+    private var palette: RunPalette { RunPalette(dimmed: dimmed) }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("ZONE \(warning.zone)").kicker(8.5, color: palette.label, tracking: 0.16)
+            Text(warning.isTooHigh ? "Ease off" : "Push on")
+                .font(.stat(34))
+                .kerning(-1.2)
+                .foregroundStyle(Theme.signal)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.top, 6)
+            Text(warning.isTooHigh
+                 ? "back down to zone \(warning.targetZone)"
+                 : "back up to zone \(warning.targetZone)")
+                .font(.sg(12))
+                .foregroundStyle(palette.hero)
+                .multilineTextAlignment(.center)
+                .padding(.top, 8)
+        }
+        .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.bg)
     }

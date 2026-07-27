@@ -43,13 +43,16 @@ struct TrailRunPager: View {
         .overlay {
             if let alert = session.kilometerAlert {
                 KilometerAlertView(alert: alert).transition(.opacity)
+            } else if let warning = session.zoneWarning {
+                ZoneWarningView(warning: warning).transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: session.kilometerAlert)
+        .animation(.easeInOut(duration: 0.25), value: session.zoneWarning)
         // One caption for the pager, driven by the visible page. Hidden while
-        // the kilometer alert owns the canvas.
+        // an alert owns the canvas.
         .topBarCaption {
-            if session.kilometerAlert == nil {
+            if session.kilometerAlert == nil, session.zoneWarning == nil {
                 TopBarCaption(text: page == 0 ? "TRAIL" : "ELEVATION", color: palette.label,
                               mark: true, markColor: palette.signal)
             }

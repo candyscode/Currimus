@@ -24,6 +24,8 @@ final class RunStore: ObservableObject {
     @Published var pacerTargetSecPerKm: TimeInterval = 315 { didSet { persistSettings(); pushSettings() } }
     @Published var pacerDefaultDistanceKm: Double? = 10 { didSet { persistSettings(); pushSettings() } }
     @Published var kilometerAlert = true { didSet { persistSettings(); pushSettings() } }
+    /// Zone the watch holds the runner in by vibration alone; nil = off.
+    @Published var zoneCoachTarget: Int? { didSet { persistSettings(); pushSettings() } }
     @Published var countdownEnabled = true { didSet { persistSettings(); pushSettings() } }
     /// GPS fidelity the watch records with — the run's dominant battery cost.
     @Published var gpsAccuracy: GPSAccuracy = .high { didSet { persistSettings(); pushSettings() } }
@@ -397,6 +399,7 @@ final class RunStore: ObservableObject {
                 kilometerAlert = s.kilometerAlert
                 countdownEnabled = s.countdownEnabled
                 zones = HRZones(maxHR: s.maxHR, overrides: s.zoneBounds)
+                zoneCoachTarget = s.zoneCoachTarget
             } catch {
                 Log.store.error("settings unreadable: \(error.localizedDescription, privacy: .public)")
             }
@@ -422,7 +425,8 @@ final class RunStore: ObservableObject {
             zoneBounds: zones.overrides,
             restingHR: zones.restingHR,
             gpsAccuracy: gpsAccuracy,
-            alwaysOnReduced: alwaysOnReduced
+            alwaysOnReduced: alwaysOnReduced,
+            zoneCoachTarget: zoneCoachTarget
         )
     }
 
@@ -445,6 +449,7 @@ final class RunStore: ObservableObject {
                         restingHR: settings.restingHR)
         if let accuracy = settings.gpsAccuracy { gpsAccuracy = accuracy }
         if let reduced = settings.alwaysOnReduced { alwaysOnReduced = reduced }
+        zoneCoachTarget = settings.zoneCoachTarget
         isLoading = false
         persistSettings()
         #endif

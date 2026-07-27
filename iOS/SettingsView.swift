@@ -53,6 +53,13 @@ struct SettingsScreen: View {
                         ChevronRow(title: "Heart rate zones") { Text("Max \(store.zones.maxHR)") }
                     }.buttonStyle(.plain)
                     hairline
+                    Button { push(.zoneCoach) } label: {
+                        ChevronRow(title: "Zone coaching",
+                                   subtitle: "Vibration cues to hold one zone") {
+                            Text(store.zoneCoachTarget.map { "Zone \($0)" } ?? "Off")
+                        }
+                    }.buttonStyle(.plain)
+                    hairline
                     Menu {
                         ForEach(Array(stride(from: 20, through: 90, by: 5)), id: \.self) { goal in
                             Button("\(goal) km") { store.weeklyGoalKm = Double(goal) }

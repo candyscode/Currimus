@@ -11,6 +11,7 @@ enum Route: Hashable {
     case settings
     case pacerDefaults
     case hrZones
+    case zoneCoach
     case gpsAccuracy
     case acknowledgements
 }

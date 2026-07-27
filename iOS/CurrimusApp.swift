@@ -96,6 +96,7 @@ struct RootView: View {
         case "settings": return [.settings]
         case "pacerDefaults": return [.pacerDefaults]
         case "hrZones": return [.hrZones]
+        case "zoneCoach": return [.zoneCoach]
         case "gpsAccuracy": return [.gpsAccuracy]
         case "acknowledgements": return [.acknowledgements]
         case "detailRoad": return store.runs.first { !$0.isTrail }.map { [.runDetail($0)] } ?? []
@@ -126,6 +127,9 @@ struct RootView: View {
                 to: store.zones
             )
         }
+        // Zone coaching is off until someone switches it on, so its screen has
+        // no configured state to screenshot without this.
+        if DebugFlags.zones == "coach" { store.zoneCoachTarget = 2 }
         switch DebugFlags.home {
         case "norace": store.race = nil
         case "raceday":
@@ -173,6 +177,7 @@ func routeDestination(_ route: Route) -> some View {
     case .settings: SettingsScreen()
     case .pacerDefaults: PacerDefaultsView()
     case .hrZones: HRZonesView()
+    case .zoneCoach: ZoneCoachView()
     case .gpsAccuracy: GPSAccuracyView()
     case .acknowledgements: AcknowledgementsView()
     }
