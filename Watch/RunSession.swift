@@ -278,6 +278,13 @@ final class RunSession: NSObject, ObservableObject {
         steps = 0
         metrics = RunMetrics()
         kilometerAlert = nil
+        zoneWarning = nil
+        // A coach carried over from the last run carries its clock with it —
+        // `lastFired` sits on the previous run's elapsed time, which suppressed
+        // every cue for the first half hour of the next one.
+        cueTask?.cancel()
+        warningDismiss?.cancel()
+        coach = zoneCoachTarget.map { ZoneCoach(targetZone: $0) }
         issues = []
         if type != .pacer { pacerDistanceKm = nil }
     }

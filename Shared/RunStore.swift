@@ -212,13 +212,13 @@ final class RunStore: ObservableObject {
     /// any other run's samples, so the second visit costs nothing.
     func hydrateImported(_ run: Run) async {
         guard run.isImported, !isDemo, needsHydration(run) else { return }
-        guard let detail = await HealthImport.detail(for: run, zones: zones, in: healthStore),
-              !detail.isEmpty else { return }
-        if !detail.route.isEmpty {
-            let samples = RunSamples(route: detail.route)
-            sampleCache[run.id] = samples
-            RunSampleStore.save(samples, for: run.id)
-        }
+        guard let detail = await HealthImport.detail(for: run, zones: zones, in: healthStore) else { return }
+        // Asked, and answered — even an empty answer. A treadmill run has no
+        // route and never will.
+        hydratedImported.insert(run.id)
+        let samples = RunSamples(route: detail.route)
+        sampleCache[run.id] = samples
+        RunSampleStore.save(samples, for: run.id)
         if detail.zoneSeconds.reduce(0, +) >= 1,
            let index = importedRuns.firstIndex(where: { $0.id == run.id }) {
             importedRuns[index].zoneSeconds = detail.zoneSeconds
@@ -226,9 +226,18 @@ final class RunStore: ObservableObject {
     }
 
     /// Whether Health still holds something this run does not.
+    ///
+    /// The sample file is asked for directly rather than through `samples(for:)`,
+    /// which manufactures an empty one when the file is missing: an indoor run
+    /// has no route and never will, so inferring "not fetched yet" from an
+    /// empty route re-queried Health on every single visit.
     private func needsHydration(_ run: Run) -> Bool {
-        run.zoneSeconds.reduce(0, +) < 1 || (samples(for: run).route?.isEmpty ?? true)
+        guard !hydratedImported.contains(run.id) else { return false }
+        return run.zoneSeconds.reduce(0, +) < 1 || RunSampleStore.load(run.id) == nil
     }
+
+    /// Imported runs already asked about in this session, route or no route.
+    private var hydratedImported: Set<UUID> = []
     #endif
 
     private func storeSamples(of run: Run) {
@@ -255,9 +264,22 @@ final class RunStore: ObservableObject {
         guard !isDemo else { return }
         if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
         let fetched = await HealthImport.fetchRuns(healthStore)
-        let merged = HealthImport.merging(fetched, with: runs)
+        let merged = HealthImport.merging(fetched, with: runs).map(carryingHydratedZones)
         if merged != importedRuns { importedRuns = merged }
         await refreshHeartRateZones()
+    }
+
+    /// A refresh re-reads each workout's *summary*, which carries no zone
+    /// breakdown at all. Without this, every return to the foreground threw
+    /// away the zones built from a run's heart-rate trace and the run fell
+    /// back to being placed by its average heart rate.
+    func carryingHydratedZones(_ run: Run) -> Run {
+        guard run.zoneSeconds.reduce(0, +) < 1,
+              let known = importedRuns.first(where: { $0.id == run.id }),
+              known.zoneSeconds.reduce(0, +) >= 1 else { return run }
+        var carried = run
+        carried.zoneSeconds = known.zoneSeconds
+        return carried
     }
 
     /// Re-derives the zones from Health. Never touches zones the user has
@@ -282,8 +304,12 @@ final class RunStore: ObservableObject {
         // Only news when there was something to change from, and only when the
         // app changed it by itself: the very first derivation is Currimus
         // learning the runner, and a forced recalculation is already on screen.
-        if !force, zones.derivation != nil {
-            zoneNotice = HRZones.changeSummary(from: zones, to: updated)
+        if !force, zones.derivation != nil,
+           let summary = HRZones.changeSummary(from: zones, to: updated) {
+            // Assigned only when there is something to say: a refresh that
+            // moved nothing visible must not wipe a notice the runner has not
+            // read yet.
+            zoneNotice = summary
         }
         zones = updated
     }

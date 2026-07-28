@@ -56,9 +56,10 @@ struct ZoneFooter: View {
                 Text(zone > 0 ? "\(zone)" : "–")
                     .font(.stat(7.5))
                     // Signal is reserved for zone 5 — the number turning red
-                    // means max effort, nothing else. Full strength with the
-                    // wrist down, like the bar above it.
-                    .foregroundStyle(zone == 5 ? Theme.signal : palette.hero)
+                    // means max effort, nothing else. `Theme.ink` rather than
+                    // `palette.hero`: the hero steps back with the wrist down
+                    // and this number reads with the bar, which does not.
+                    .foregroundStyle(zone == 5 ? Theme.signal : Theme.ink)
             }
             .padding(.top, 4.5)   // design 9 px
         }

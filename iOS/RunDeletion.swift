@@ -88,8 +88,13 @@ struct SwipeToRevealRow<Content: View>: View {
             // vertical drags, while the guard below ignores them here.
             .simultaneousGesture(swipe)
             .onChange(of: openRow) { _, now in
-                // Somebody else opened, or everything was put away.
-                guard now != id, offset != 0, !isDragging else { return }
+                // Somebody else opened, or everything was put away. This is
+                // authoritative even mid-drag: a gesture the scroll view took
+                // over never gets its `onEnded`, and treating that as "still
+                // dragging" left the row stuck half-open with no way back.
+                guard now != id else { return }
+                isDragging = false
+                guard offset != 0 else { return }
                 withAnimation(.snappy(duration: 0.25)) { offset = 0 }
             }
             .accessibilityAction(named: Text(label), action)

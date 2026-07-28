@@ -71,11 +71,27 @@ final class ZoneCoachTests: XCTestCase {
 
     func testLeavingTheZoneRaisesTheAlarmAtOnce() {
         var coach = coach()
+        // Arrived in zone 2 first, as every run does.
+        XCTAssertNil(coach.update(zone: 2, position: 0.5, now: 5))
         XCTAssertEqual(coach.update(zone: 3, position: 0.3, now: 10), .leftZone(3))
+    }
+
+    func testTheWarmUpIsNotTreatedAsLeavingTheZone() {
+        var coach = coach()
+        // The first minutes of a run are spent climbing into the zone. Three
+        // seconds of buzzing and a full-screen warning for not being there yet
+        // is nagging, not coaching.
+        XCTAssertNil(coach.update(zone: 1, position: 0.4, now: 0))
+        XCTAssertNil(coach.update(zone: 1, position: 0.6, now: 60))
+        XCTAssertNil(coach.update(zone: 1, position: 0.9, now: 120))
+        // Reached it — and dropping out of it now is worth saying.
+        XCTAssertNil(coach.update(zone: 2, position: 0.5, now: 180))
+        XCTAssertEqual(coach.update(zone: 1, position: 0.9, now: 240), .leftZone(1))
     }
 
     func testTheAlarmRepeatsEveryMinuteWhileTheZoneIsStillLost() {
         var coach = coach()
+        XCTAssertNil(coach.update(zone: 2, position: 0.5, now: -5))
         XCTAssertEqual(coach.update(zone: 3, position: 0.3, now: 0), .leftZone(3))
         XCTAssertNil(coach.update(zone: 3, position: 0.3, now: 30))
         XCTAssertEqual(coach.update(zone: 3, position: 0.3, now: 60), .leftZone(3))
@@ -83,6 +99,7 @@ final class ZoneCoachTests: XCTestCase {
 
     func testDriftingIntoAnotherWrongZoneIsItsOwnAlarm() {
         var coach = coach()
+        XCTAssertNil(coach.update(zone: 2, position: 0.5, now: -5))
         XCTAssertEqual(coach.update(zone: 3, position: 0.9, now: 0), .leftZone(3))
         XCTAssertEqual(coach.update(zone: 4, position: 0.1, now: 5), .leftZone(4))
     }

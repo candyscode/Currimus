@@ -96,7 +96,7 @@ struct TrailRunPager: View {
                     }
                     GridRow {
                         VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 17)) {
-                            ClimbStat(value: "\(Int(session.climbMeters))", size: 17, color: palette.hero)
+                            ClimbStat(value: "\(Int(session.climbMeters))", size: 17, color: palette.value)
                             Text(verbatim: " ").kicker(8, tracking: 0.1)
                                 .overlay(alignment: .leading) {
                                     Text("M CLIMBED").kicker(8, color: palette.label, tracking: 0.1)
@@ -240,7 +240,7 @@ struct TrailElevationView: View {
             // is the number you came for; climbed and down are the ledger.
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                    ClimbStat(value: "\(Int(session.climbMeters))", size: 15, color: palette.hero)
+                    ClimbStat(value: "\(Int(session.climbMeters))", size: 15, color: palette.value)
                     Text("CLIMBED").kicker(8, color: palette.label, tracking: 0.1)
                 }
                 VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {

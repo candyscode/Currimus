@@ -153,8 +153,12 @@ struct ProgressScreen: View {
         let months = RunAnalytics.monthlyZonePace(runs: store.allRuns, zone: 2,
                                                   zones: store.zones, months: 12)
         let series = months.map(\.pace)
-        let km = months.reduce(0) { $0 + $1.km }
-        let seconds = months.reduce(0.0) { $0 + ($1.pace ?? 0) * $1.km }
+        // Only months that produced a pace: one with a few hundred metres in
+        // zone 2 has no pace to contribute but would still add its distance to
+        // the denominator, tilting the headline fast.
+        let counted = months.filter { $0.pace != nil }
+        let km = counted.reduce(0) { $0 + $1.km }
+        let seconds = counted.reduce(0.0) { $0 + ($1.pace ?? 0) * $1.km }
         // Time over distance across the whole window — the same arithmetic as
         // the overall pace above, so the two numbers can be read against each
         // other. It used to be the mean of the monthly means, which let a
@@ -169,8 +173,10 @@ struct ProgressScreen: View {
                 Text("/km").font(.sg(15)).foregroundStyle(Theme.bright)
                 Spacer()
                 if let change {
+                    // The first month that actually carries a point — the
+                    // window may open months before the running does.
                     trendDelta(Format.paceDelta(change), improved: change <= 0,
-                               since: months.first?.month)
+                               since: counted.first?.month)
                 }
             }
             .padding(.top, 6)

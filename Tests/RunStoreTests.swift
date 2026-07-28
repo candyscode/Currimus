@@ -311,6 +311,33 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(store.importedRuns.count, 1)
     }
 
+    func testHydratedZonesSurviveAHealthRefresh() {
+        let store = makeStore()
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var theirs = run("Fitness", km: 10, minutes: 50, date: start, imported: true)
+        theirs.zoneSeconds = [0, 2400, 600, 0, 0]      // built from the trace
+        store.importedRuns = [theirs]
+
+        // What a refresh reads back is the workout's *summary*, which carries
+        // no zone breakdown — the trace was never part of it. Without the
+        // carry-over, every return to the foreground threw the zones away.
+        var summary = theirs
+        summary.zoneSeconds = [0, 0, 0, 0, 0]
+        XCTAssertEqual(store.carryingHydratedZones(summary).zoneSeconds, [0, 2400, 600, 0, 0])
+    }
+
+    func testARefreshedRunKeepsItsOwnZonesWhenHealthHasThem() {
+        let store = makeStore()
+        var theirs = run("Fitness", km: 10, minutes: 50, imported: true)
+        theirs.zoneSeconds = [0, 2400, 600, 0, 0]
+        store.importedRuns = [theirs]
+
+        // A summary that does carry zones is the newer truth and wins.
+        var fresher = theirs
+        fresher.zoneSeconds = [0, 1200, 1800, 0, 0]
+        XCTAssertEqual(store.carryingHydratedZones(fresher).zoneSeconds, [0, 1200, 1800, 0, 0])
+    }
+
     // MARK: - Zones from another app's heart-rate trace
 
     /// Zones at max 190: 115 / 133 / 152 / 171.

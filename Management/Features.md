@@ -442,6 +442,33 @@ Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 
 Maybe based on trail run mode but with different metrics? How to exclude from progress page? How to make this clear in the UI?
 
+### CUR-16: Code review of CUR-1…CUR-15
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+A review of the whole CUR-1…CUR-15 series and the working tree, run on 2026-07-28. Nine findings, all confirmed against the code and all fixed.
+
+#### Agent Comments
+
+Two of them meant a shipped feature quietly did not do what its ticket claims:
+
+1. **Every foreground threw away the zones CUR-15 had fetched.** `refreshImportedRuns` replaces the imported list wholesale with what Health returns, and a workout *summary* carries no zone breakdown — so a run whose heart-rate trace had been read went back to zeros on the next return to the app, and the zone-2 chart silently fell back to placing it by its average heart rate. Hydrated zones are now carried across the refresh (`carryingHydratedZones`), and a fresher answer from Health still wins.
+2. **Zone coaching went silent for the second run of an app session.** `RunSession` lives for the lifetime of the app, and the coach was only rebuilt when the target zone *changed* — so run two inherited run one's `lastFired`, sitting on the previous run's elapsed clock, and suppressed every cue until the new run passed the same elapsed time. The coach is rebuilt in `resetMetrics`, along with clearing a stale zone warning.
+3. **The out-of-zone alarm fired during the warm-up.** Any zone that was not the target counted as "left", so a run that starts in zone 1 got three seconds of buzzing and a full-screen warning within seconds of starting, repeating every minute until the runner reached zone 2. A zone cannot be left before it has been reached; `ZoneCoach` now waits for the first arrival.
+4. A route query that failed without setting `done` never resumed its continuation, leaving the detail screen waiting on it for the rest of the session.
+5. An imported treadmill run has no route and never will, so "has no route yet" meant it re-queried Health on every single visit. Hydration is remembered instead.
+6. The zone number under the bar dimmed with the wrist down — CUR-5 says it stays lit, and so did the comment above it. (Trail's climb stats moved to the secondary ink at the same time, so they no longer sit a step brighter than the numbers beside them.)
+7. A swipe the scroll view took over left `isDragging` set, so the row stuck half-open and the close-all path refused to touch it.
+8. The zone-2 headline divided by months that had contributed no time, and the delta was labelled with the first month of the *window* rather than the first month with a point in it.
+9. A zone-update notice could be cleared before it was read, by a later refresh that found nothing to say.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-16
+
 ### CUR-15: Imported runs from Apple Fitness app does not show heart rate zones and track on map.
 
 [ ] In Specification

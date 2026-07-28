@@ -191,8 +191,11 @@ enum HealthImport {
         guard let series = await routeSeries(of: workout, in: store) else { return [] }
         return await withCheckedContinuation { continuation in
             let buffer = RouteBuffer()
-            let query = HKWorkoutRouteQuery(route: series) { _, locations, done, _ in
-                if let all = buffer.add(locations, done: done) {
+            let query = HKWorkoutRouteQuery(route: series) { _, locations, done, error in
+                // An error ends the query whether or not `done` was set, and a
+                // continuation that is never resumed leaves the detail screen
+                // waiting on it for the rest of the session.
+                if let all = buffer.add(locations, done: done || error != nil) {
                     continuation.resume(returning: all)
                 }
             }

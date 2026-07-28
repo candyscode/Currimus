@@ -40,6 +40,8 @@ struct ZoneCoach {
 
     private var lastCue: Cue?
     private var lastFired: TimeInterval?
+    /// Whether the target zone has been reached at all yet.
+    private var hasArrived = false
 
     init(targetZone: Int) { self.targetZone = targetZone }
 
@@ -50,6 +52,7 @@ struct ZoneCoach {
     /// is also not the wrong zone: buzzing at someone because their strap has
     /// not connected is how a feature gets switched off for good.
     mutating func update(zone: Int?, position: Double, now: TimeInterval) -> Cue? {
+        if zone == targetZone { hasArrived = true }
         let cue = pending(zone: zone, position: position)
         defer { lastCue = cue }
         guard let cue else {
@@ -70,7 +73,13 @@ struct ZoneCoach {
 
     private func pending(zone: Int?, position: Double) -> Cue? {
         guard let zone else { return nil }
-        guard zone == targetZone else { return .leftZone(zone) }
+        guard zone == targetZone else {
+            // A zone cannot be *left* before it has been reached. The first
+            // minutes of any run are spent climbing into it, and three seconds
+            // of buzzing plus a full-screen warning for not being there yet is
+            // nagging rather than coaching.
+            return hasArrived ? .leftZone(zone) : nil
+        }
         if position < Self.edgeBand { return .speedUp }
         if position > 1 - Self.edgeBand { return .slowDown }
         return nil
