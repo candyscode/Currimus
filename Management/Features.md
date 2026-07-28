@@ -467,7 +467,7 @@ Two of them meant a shipped feature quietly did not do what its ticket claims:
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-16
+https://github.com/candyscode/Currimus/commit/24028c7
 
 ### CUR-15: Imported runs from Apple Fitness app does not show heart rate zones and track on map.
 
