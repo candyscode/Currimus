@@ -56,6 +56,18 @@ Untested by machine: the swipe gesture itself (no UI-test target — the harness
 
 https://github.com/candyscode/Currimus/commit/b9d9424
 
+#### Andi's Review
+
+Swipe gesture does not work properly. Dragging to reveal delete button works, but when finger is released, the item goes back again and hides the button again. => Not clickable. The "Are you sure modal" looks custom. We can use the standard iOS modal, no? Imported runs dont even have the swipe feature, I get the point (not deletable), but it seems broken to the user. Maybe show a greyed out button that is pressable but shows an explanatory text that this is not possible due to iOS's limitation.
+
+#### Agent Response
+
+All three fixed.
+
+- **The swipe snapping back.** Two causes, both removed. The row derived its offset from `openRow` (parent state) plus a live drag, so the settle animation depended on the parent's update landing inside the same transaction — when it did not, the row animated back to zero under the finger. The row now owns a single `offset` and `openRow` is used only to close the *others*. Second, each row carried a `.contextMenu` for the same long-press delete; `UIContextMenuInteraction` competes with the drag for the touch and cancels it. The context menu is gone — the swipe, the marking mode and the detail screen are three ways in already.
+- **The dialog** is a plain `.alert` now, on both the log and the run detail. It was a `confirmationDialog` (an action sheet) — also standard, but it evidently did not read that way.
+- **Imported runs swipe too.** The tile is greyed and still pressable; pressing it explains that Apple Health only lets the app that recorded a run delete it, and where to do it instead. A row that silently swallows the gesture looks broken, which was exactly your point.
+
 ### CUR-2: Re-calculate heart rate zones on app start
 
 [ ] In Specification
@@ -97,7 +109,7 @@ iOS App Run Detail Ansicht: Stelle die Zeit in den Pulszonen nicht mehr als eine
 
 https://github.com/candyscode/Currimus/commit/b8b5a3d
 
-### CUR-4: Remove feature in run mode to  change pace color to orange
+### CUR-4: Remove feature in run mode to change pace color to orange
 
 [ ] In Specification
 [ ] Open
@@ -139,6 +151,18 @@ Nur Apple Watch: Im abgedunkelten Modus (isLuminanceReduced), soll bitte weiterh
 
 https://github.com/candyscode/Currimus/commit/63a8b92
 
+#### Andi's Review
+
+It seems the entire darkening feature is gone. Can you please check? Nothing darkens anymore when I put the wrist down.
+
+#### Agent Response
+
+You are right, and it was this ticket plus CUR-4 between them. The wiring was never broken — but `RunPalette.hero` had always returned full-strength ink for *every* number on the screen, so the only things that actually dimmed were the small captions. CUR-4 then took away the orange pace and CUR-5 lit the zone bar back up, and there was nothing visibly left.
+
+Fixed by making something give: the hero (the clock, or the pacer's live pace) steps back to a light grey with the wrist down, and the numbers around it — distance, pace, climb — step back further. The zone bar, its needle and the zone number stay at full strength, which is what this ticket asked for. Captions are unchanged.
+
+If the hero now feels too dark at arm's length in sun, it is one constant in `RunPalette` (`hero`, currently `0xC4C4C4`) — say the word and it goes back up. Snapshot route `run-aod` shows the result.
+
 ### CUR-6: Vibration-based heart rate zone indication
 
 [ ] In Specification
@@ -171,6 +195,14 @@ Entferne alle Tonsignale, die die Apple Watch von sich gibt. Da haben wir aktuel
 
 https://github.com/candyscode/Currimus/commit/44c1cc1
 
+#### Andi's Review
+
+There is no Zone 0! Only Zone 1 to Zone 5.
+
+#### Agent Response
+
+Correct — zero was an internal sentinel ("no heart rate yet", which draws the bar unlit) that leaked into the way I described the feature. `ZoneCoach.update` now takes `zone: Int?`, so the absence of a reading is expressed as an absence rather than as a sixth zone, and the comments and tests say so. Behaviour is unchanged: no reading still means no vibration.
+
 
 ### CUR-7: Show progress over pace in heart rate zone 2
 
@@ -194,6 +226,43 @@ As a runner, I want to track my progress on my pace while running in zone 2. So 
 
 https://github.com/candyscode/Currimus/commit/baeb68e
 
+#### Andi's Review
+
+I asked Claude regarding the shortcomings of CUR-7 and this was the answer. Implement everything it said, except the part marked optional. Make sure the UI looks good. Both graphs need their own x-Axis. 12 months instead of 12 weeks in this case. Zone 2 only, not configurable for now.
+
+##### Start of Claude Review
+
+What's actually wrong with it
+
+1. The unit is the whole run, not the time in the zone. RunAnalytics.isRun(_:mostlyIn:zones:) asks "did this run spend ≥50 % of its time in zone 2", and if yes, the run's entire distance and duration go into the week. So a 20 km long run that was 60 % Z2 and 30 % Z3 contributes its Z3 kilometres too — and those are the faster ones. The bias has a direction: the chart flatters you. It reports zone-2 pace as quicker than you actually run in zone 2.
+
+2. The 50 % threshold is a cliff. 49 % contributes nothing, 51 % contributes everything. Week-to-week movement in the line can come purely from runs crossing that line, which is noise dressed as fitness.
+
+3. Imported runs are placed by mean heart rate — exactly where the mean lies. An interval session that alternates Z1 and Z4 averages neatly into zone 2. Strava intervals can land in your easy-run chart. Averaging HR is meaningless for precisely the run shape most likely to be misfiled.
+
+4. Today's zones are applied to old runs. isRun takes store.zones — the current boundaries. CUR-2 now re-derives those on every launch, so a max-HR change silently reclassifies history for imported runs. Your own runs are safe (their zoneSeconds were frozen on the watch), imported ones aren't. That's an interaction between two tickets I shipped in the same session, and it's the one I'd want fixed regardless of what else you do.
+
+5. The two headlines are computed differently — and I did that. The overall pace above is distance-weighted across the whole 12-week window (time / km). My zone-2 number is the unweighted mean of the weekly paces, so a week with one 5 km jog counts the same as a week with 60 km. Two numbers stacked to be compared, arrived at two different ways. That's a defect, not a trade-off.
+
+6. The delta compares two single weeks — first present value against last present. Zone-2 series are sparser than the overall one, so those two weeks can be far apart and each can be a single run. And nothing in the UI tells you which points rest on 4 km and which on 40.
+
+How to fix it, in the order I'd do it
+
+First, today, ~15 minutes: make the headline distance-weighted like the one above it. Pure inconsistency, no design question attached.
+
+Then the real fix: measure pace per zone at the source. RunMetrics.tick already gets elapsed, distance, heart rate and zone every second — it accumulates zoneSeconds and throws the distance half away. Add zoneDistanceKm[5] beside it, store it on Run as an optional array, and zone-2 pace becomes zoneSeconds[1] / zoneDistanceKm[1]: exact, per run, no threshold, no contamination. Every run then contributes its zone-2 portion rather than qualifying or not, and the weekly aggregate becomes a proper Σtime / Σdistance. That kills shortcomings 1, 2 and most of 5 outright. Cost is small — an array on the model, a few lines in RunMetrics, one field in the sync payload — but it only applies to runs recorded from then on, so you'd need to decide what the chart does with the twelve weeks of history that predate it (my instinct: keep today's approximation for legacy runs and don't mark the seam, since the error is small at the aggregate level).
+
+Then imported runs. The honest fix is to read the workout's heart-rate samples from Health and build real zone seconds, instead of trusting one average. That's a heavier query, but it pays twice: those runs would also get a real zone breakdown in the run detail, where they currently show nothing. Together with freezing the zone bounds on each run, that closes 3 and 4.
+
+Then the small honesty work: a delta over a smoothed window (first three weeks against last three) instead of two lone points, and a visual signal for weeks with little zone-2 volume.
+
+Optional, worth arguing about: grade-adjust road runs with real climb (RunAnalytics.gradeAdjustedPace already exists) so hills don't read as lost fitness; and let the chart follow the zone chosen in CUR-6's coaching rather than hardcoding 2.
+
+One more thing, since it's related: your ticket said twelve months and I built twelve weeks so the two charts could share an axis. For a base-building metric, months are the better window — fuller buckets, less noise — but it means giving up the shared axis. Worth deciding deliberately rather than inheriting my choice.
+
+Want me to do the headline fix now and write the zone-distance recording up as CUR-15?
+
+##### End of Claude Review
 
 ### CUR-8: Show hints to improve running style in run detail view
 
@@ -229,6 +298,10 @@ Also, show the avg. cadence also in run detail view, regardless if there is a hi
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/3d03070
+
+#### Andi's Review
+
+Are you happy with the solution or does it have significant shortcomings, we have to address?
 
 
 ### CUR-9: Coaching Mode (for beginners)
@@ -357,5 +430,14 @@ Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 [ ] Done
 
 Maybe based on trail run mode but with different metrics? How to exclude from progress page? How to make this clear in the UI?
+
+### CUR-15: Imported runs from Apple Fitness app does not show heart rate zones and track on map.
+
+[ ] In Specification
+[X] Open
+[ ] WIP
+[ ] Done
+
+Imported runs from Apple Fitness, Strava & Co. must also show heart rate zones and track on map in the run detail view. Currently shows "No GPS track for this run" and "No heart rate zones was recorded for this run". 
 
 

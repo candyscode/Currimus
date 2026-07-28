@@ -71,6 +71,7 @@ struct RunView: View {
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
+                    .foregroundStyle(palette.hero)
                     .contentTransition(dimmed ? .identity : .numericText())
                     .animation(dimmed ? nil : .linear(duration: 0.25), value: elapsed)
 
@@ -89,7 +90,7 @@ struct RunView: View {
                 // CSS grid — never scaled, baselines locked.
                 HStack(alignment: .top, spacing: 18) {
                     BigStat(value: Format.km(session.distanceKm), label: "KM",
-                            valueColor: palette.hero,
+                            valueColor: palette.value,
                             size: 30, labelSize: 11, labelGap: 4,
                             valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,7 +99,7 @@ struct RunView: View {
                     // pace nobody had set a target for — the one accent on a
                     // run screen belongs to the zone, which does mean something.
                     BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
-                            valueColor: palette.hero,
+                            valueColor: palette.value,
                             size: 30, labelSize: 11, labelGap: 4,
                             valueOutsideLayout: true)
                         .frame(maxWidth: .infinity, alignment: .leading)

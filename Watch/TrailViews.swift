@@ -75,6 +75,7 @@ struct TrailRunPager: View {
                     .kerning(-2.3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
+                    .foregroundStyle(palette.hero)
                     .contentTransition(dimmed ? .identity : .numericText())
                     .animation(dimmed ? nil : .linear(duration: 0.25), value: elapsed)
 
@@ -85,11 +86,11 @@ struct TrailRunPager: View {
                      verticalSpacing: LineBox.gap(10, cropping: 17)) {
                     GridRow {
                         BigStat(value: Format.km(session.distanceKm), label: "KM",
-                                valueColor: palette.hero,
+                                valueColor: palette.value,
                                 size: 17, labelGap: 2.5, labelOutsideLayout: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(value: Format.pace(session.rollingPace), label: "PACE /KM",
-                                valueColor: palette.hero,
+                                valueColor: palette.value,
                                 size: 17, labelGap: 2.5, labelOutsideLayout: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }

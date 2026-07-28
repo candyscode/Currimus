@@ -249,11 +249,11 @@ struct PacerRunView: View {
 
                 StatRow {
                     BigStat(value: Format.clock(elapsed), label: "TIME",
-                            valueColor: palette.hero, size: 13)
+                            valueColor: palette.value, size: 13)
                     BigStat(
                         value: Format.km(session.distanceKm),
                         label: session.pacerDistanceKm.map { "/ \(Int($0)) KM" } ?? "KM",
-                        valueColor: palette.hero, size: 13
+                        valueColor: palette.value, size: 13
                     )
                     VStack(alignment: .leading, spacing: 3) {
                         ZoneBar(zone: session.currentZone, height: 4, gap: 1.5)

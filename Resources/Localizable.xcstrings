@@ -7,6 +7,12 @@
     " · TRAIL" : {
 
     },
+    " Change anything here by hand and the automatic update stops, until you tap Recalculate." : {
+
+    },
+    " These are yours right now — you changed them by hand, so the automatic update leaves them alone until you tap Recalculate." : {
+
+    },
     "–" : {
 
     },
@@ -69,6 +75,16 @@
     "%@ km" : {
 
     },
+    "%@ km, %@. Every total and record is recalculated without it, and the workout is removed from Apple Health." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ km, %2$@. Every total and record is recalculated without it, and the workout is removed from Apple Health."
+          }
+        }
+      }
+    },
     "%@ per kilometre" : {
 
     },
@@ -97,6 +113,16 @@
     },
     "%@ vs avg" : {
 
+    },
+    "%@, %lld percent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld percent"
+          }
+        }
+      }
     },
     "%@%@" : {
       "localizations" : {
@@ -140,7 +166,33 @@
         }
       }
     },
+    "%lld runs, %@ km in total. Every total and record is recalculated without them, and their workouts are removed from Apple Health." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld runs, %2$@ km in total. Every total and record is recalculated without them, and their workouts are removed from Apple Health."
+          }
+        }
+      }
+    },
+    "%lld selected" : {
+
+    },
+    "%lld–%lld bpm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld–%2$lld bpm"
+          }
+        }
+      }
+    },
     "%lld%%" : {
+
+    },
+    "%lld+ bpm" : {
 
     },
     "+%lld" : {
@@ -170,6 +222,9 @@
     "Appears once a few easy runs sit at a similar pace" : {
 
     },
+    "Appears once a few runs have been spent mostly in zone 2. Runs from other apps count too, placed by their average heart rate." : {
+
+    },
     "at %@ → finish " : {
 
     },
@@ -180,6 +235,12 @@
 
     },
     "Back" : {
+
+    },
+    "back down to zone %lld" : {
+
+    },
+    "back up to zone %lld" : {
 
     },
     "Calculate from Apple Health" : {
@@ -206,6 +267,9 @@
     "CURRIMUS" : {
 
     },
+    "Currimus reads your max heart rate and your resting heart rate from Apple Health every time it opens, and rebuilds the boundaries from them — fitness moves, and zones built on last year's numbers describe last year's runner. Max comes from the third-highest daily peak of the past year (one sensor glitch must not set your ceiling), resting from Health's own 60-day average." : {
+
+    },
     "Currimus records your run as an Apple Health workout. Distance and heart rate come from there, so without access there is nothing to record." : {
 
     },
@@ -224,16 +288,31 @@
     "Delete" : {
 
     },
+    "Delete %lld runs?" : {
+
+    },
     "Delete run" : {
 
     },
     "Delete this run?" : {
 
     },
+    "Deleted here. Apple Health did not allow Currimus to remove the workout — turn on \"Workouts\" under Settings › Apps › Health › Data Access & Devices › Currimus." : {
+
+    },
+    "Deleted here. The workout could not be removed from Apple Health." : {
+
+    },
+    "Dismiss" : {
+
+    },
     "Done" : {
 
     },
     "DOWN" : {
+
+    },
+    "Ease off" : {
 
     },
     "Easy" : {
@@ -265,6 +344,16 @@
     },
     "FAST" : {
 
+    },
+    "Fastest pace in %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Fastest pace in %1$@ %2$@"
+          }
+        }
+      }
     },
     "finish ~%@" : {
 
@@ -305,13 +394,48 @@
     "Heart rate zone" : {
 
     },
+    "Heart rate zones updated from Apple Health — your max heart rate is now %lld bpm instead of %lld." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Heart rate zones updated from Apple Health — your max heart rate is now %1$lld bpm instead of %2$lld."
+          }
+        }
+      }
+    },
+    "Heart rate zones updated from Apple Health. Zone %lld now ends at %lld bpm instead of %lld." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Heart rate zones updated from Apple Health. Zone %1$lld now ends at %2$lld bpm instead of %3$lld."
+          }
+        }
+      }
+    },
+    "Held an even pace from half to half." : {
+
+    },
+    "Hides every kilometre" : {
+
+    },
     "high point · %@ m" : {
+
+    },
+    "HOLD ME IN" : {
 
     },
     "Home" : {
 
     },
     "Home goes back to your weekly volume. Your runs and records are untouched." : {
+
+    },
+    "HOW THESE ARE KEPT CURRENT" : {
+
+    },
+    "IN ZONE 2 · EASY RUNS" : {
 
     },
     "Intervals" : {
@@ -440,6 +564,9 @@
     "No Health data" : {
 
     },
+    "No heart rate was recorded for this run." : {
+
+    },
     "no marathon yet" : {
 
     },
@@ -494,10 +621,16 @@
     "Pacer %@" : {
 
     },
+    "Pick the runs to delete" : {
+
+    },
     "PROFILE" : {
 
     },
     "Progress" : {
+
+    },
+    "Push on" : {
 
     },
     "Race" : {
@@ -528,6 +661,9 @@
 
     },
     "Recorded by %@. Delete it in Apple Health." : {
+
+    },
+    "Recorded by %@. This run belongs to Apple Health — delete it in the app that recorded it." : {
 
     },
     "Recording problem: %@. %@" : {
@@ -570,6 +706,9 @@
     "Runs" : {
 
     },
+    "Runs from Apple Health belong to the app that recorded them — delete those there." : {
+
+    },
     "Same effort, less work" : {
 
     },
@@ -579,7 +718,19 @@
     "Save race" : {
 
     },
+    "Second half %lld s/km faster — a negative split." : {
+
+    },
+    "Second half %lld s/km slower." : {
+
+    },
+    "Select" : {
+
+    },
     "Set up race, zones and pacer" : {
+
+    },
+    "Shows every kilometre" : {
 
     },
     "Simple.\nBeautiful.\n%@" : {
@@ -661,10 +812,19 @@
     "Training toward a race? Set it up" : {
 
     },
+    "Try shorter, quicker steps" : {
+
+    },
     "Uphill, pace lies — climb rate and grade-adjusted pace tell the truth. Same rule as on the watch." : {
 
     },
+    "Vibration cues" : {
+
+    },
     "Weekly volume, last four weeks" : {
+
+    },
+    "WHAT YOU WILL FEEL" : {
 
     },
     "What your trail pace is worth on the flat" : {
@@ -676,15 +836,25 @@
     "Workout not started" : {
 
     },
-    "Yours." : {
-
-    },
-    "Z%lld · %lldm" : {
+    "You held %lld steps a minute at %@ /km. Aiming for about %lld — five per cent quicker — shortens the stride without changing the pace, so the foot lands under you instead of out in front. That is where most of the impact your knees absorb comes from. It helps to imagine running on a slippery path: short, light, frequent steps." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Z%1$lld · %2$lldm"
+            "value" : "You held %1$lld steps a minute at %2$@ /km. Aiming for about %3$lld — five per cent quicker — shortens the stride without changing the pace, so the foot lands under you instead of out in front. That is where most of the impact your knees absorb comes from. It helps to imagine running on a slippery path: short, light, frequent steps."
+          }
+        }
+      }
+    },
+    "Yours." : {
+
+    },
+    "Z%lld · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Z%1$lld · %2$@"
           }
         }
       }
@@ -695,12 +865,28 @@
     "ZONE " : {
 
     },
+    "Zone %lld" : {
+
+    },
+    "ZONE %lld" : {
+
+    },
     "Zone %lld · %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "Zone %1$lld · %2$@"
+          }
+        }
+      }
+    },
+    "Zone %lld, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zone %1$lld, %2$@"
           }
         }
       }

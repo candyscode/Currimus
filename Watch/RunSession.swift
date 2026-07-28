@@ -507,7 +507,9 @@ final class RunSession: NSObject, ObservableObject {
     /// second late would be a cue about a heart rate that has moved on.
     private func coachZone() {
         guard coach != nil else { return }
-        let cue = coach?.update(zone: currentZone,
+        // `currentZone` uses 0 for "no reading yet", which the bar draws as an
+        // unlit track. The coach is handed the absence itself.
+        let cue = coach?.update(zone: currentZone > 0 ? currentZone : nil,
                                 position: zones.position(forHR: heartRate),
                                 now: elapsed)
         guard let cue else { return }

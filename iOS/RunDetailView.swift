@@ -25,7 +25,8 @@ struct RunDetailView: View {
                 deleteAction
             }
         }
-        .confirmationDialog(
+        // Plain system alert, like the log's — one question, asked one way.
+        .alert(
             DeletePrompt.title([run]),
             isPresented: $confirmingDelete
         ) {

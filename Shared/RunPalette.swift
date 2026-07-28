@@ -9,11 +9,19 @@ import SwiftUI
 struct RunPalette {
     var dimmed: Bool
 
-    /// Every number on the screen. The values *are* the read, so none of them
-    /// steps back — the frame around them does. The system has already dimmed
-    /// the panel; dimming the figures a second time would cost exactly the
-    /// glance this mode exists for.
-    var hero: Color { Theme.ink }
+    /// The one number the screen exists for — the clock on Run and Trail, the
+    /// live pace on Pacer. It steps back a little with the wrist down and no
+    /// further: always-on exists for a readable glance at arm's length, and
+    /// this is what gets glanced at.
+    ///
+    /// It used to keep full contrast, which was defensible on its own. But
+    /// once the pace stopped being orange (CUR-4) and the zone bar stayed lit
+    /// (CUR-5), nothing on the screen changed at all when the wrist dropped,
+    /// and the mode read as broken. Something has to visibly give.
+    var hero: Color { dimmed ? Color(hex: 0xC4C4C4) : Theme.ink }
+    /// The numbers around the hero — distance, pace, climb, the pacer's clock.
+    /// Read second, so they step back further than it does.
+    var value: Color { dimmed ? Color(hex: 0x8F8F8F) : Theme.ink }
     /// Marks that are not the read — the elevation chart's parked dot.
     var secondary: Color { dimmed ? Color(hex: 0x5A5A5A) : Theme.ink }
     /// Kickers and captions.

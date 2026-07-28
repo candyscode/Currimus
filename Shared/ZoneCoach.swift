@@ -45,10 +45,11 @@ struct ZoneCoach {
 
     /// The cue to play right now, or nil for silence.
     ///
-    /// `zone` is 0 until a heart rate arrives — no reading is not the same as
-    /// the wrong zone, and buzzing at someone because their strap has not
-    /// connected yet is how a feature gets switched off for good.
-    mutating func update(zone: Int, position: Double, now: TimeInterval) -> Cue? {
+    /// `zone` is nil until a heart rate arrives. No reading is not a zone —
+    /// there are five, and "none yet" is the absence of one, not a sixth. It
+    /// is also not the wrong zone: buzzing at someone because their strap has
+    /// not connected is how a feature gets switched off for good.
+    mutating func update(zone: Int?, position: Double, now: TimeInterval) -> Cue? {
         let cue = pending(zone: zone, position: position)
         defer { lastCue = cue }
         guard let cue else {
@@ -67,8 +68,8 @@ struct ZoneCoach {
         return cue
     }
 
-    private func pending(zone: Int, position: Double) -> Cue? {
-        guard zone > 0 else { return nil }
+    private func pending(zone: Int?, position: Double) -> Cue? {
+        guard let zone else { return nil }
         guard zone == targetZone else { return .leftZone(zone) }
         if position < Self.edgeBand { return .speedUp }
         if position > 1 - Self.edgeBand { return .slowDown }

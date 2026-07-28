@@ -89,10 +89,11 @@ final class ZoneCoachTests: XCTestCase {
 
     func testNoHeartRateIsNotTheWrongZone() {
         var coach = coach()
-        // Zone 0 is "no reading yet". Buzzing at someone because their strap
+        // There is no zone for "no reading yet" — there are five zones, and
+        // this is the absence of one. Buzzing at someone because their strap
         // has not connected is how a feature gets switched off for good.
-        XCTAssertNil(coach.update(zone: 0, position: 0.5, now: 0))
-        XCTAssertNil(coach.update(zone: 0, position: 0.5, now: 120))
+        XCTAssertNil(coach.update(zone: nil, position: 0.5, now: 0))
+        XCTAssertNil(coach.update(zone: nil, position: 0.5, now: 120))
     }
 
     // MARK: - The warning itself

@@ -16,6 +16,12 @@ enum DeletePrompt {
             : String(localized: "Delete \(runs.count) runs?")
     }
 
+    /// Why a run another app recorded cannot be deleted here. Named plainly,
+    /// because "not possible" without a reason reads as a bug in Currimus.
+    static func importedExplanation(_ run: Run) -> String {
+        String(localized: "Apple Health only lets the app that recorded a run delete it, so Currimus cannot remove this one. Delete it in \(run.name), or in the Fitness app, and it will disappear from Currimus on the next refresh.")
+    }
+
     static func message(_ runs: [Run]) -> String {
         let km = Format.km(runs.reduce(0) { $0 + $1.distanceKm }, decimals: 1)
         if let run = runs.first, runs.count == 1 {
@@ -35,12 +41,21 @@ enum DeletePrompt {
 /// a `List`. So the gesture is drawn here — and only takes over once the drag
 /// is clearly sideways, which is what keeps it out of the scroll view's way.
 ///
-/// `openRow` is shared by every row in the list, so opening one closes the
-/// rest and a tap anywhere can put them all away.
+/// `openRow` says which row is currently showing its action, so opening one
+/// closes the rest and a tap anywhere puts them away.
+///
+/// The row owns its own offset. It used to derive it from `openRow` and add a
+/// live drag on top, which meant the settle animation depended on the parent's
+/// state landing inside the same transaction — and when it did not, the row
+/// slid back under the finger and the button could never be hit. One source of
+/// truth here, `openRow` only for closing the others.
 struct SwipeToRevealRow<Content: View>: View {
     var id: UUID
     var label: LocalizedStringKey
     var systemImage: String
+    /// A muted tile is still pressable. A row that cannot be deleted must say
+    /// so when asked rather than swallow the swipe and look broken.
+    var isMuted = false
     @Binding var openRow: UUID?
     var action: () -> Void
     @ViewBuilder var content: Content
@@ -51,14 +66,10 @@ struct SwipeToRevealRow<Content: View>: View {
     /// somewhere to go instead of ending against a wall.
     private static var overshoot: CGFloat { 28 }
 
-    @State private var drag: CGFloat = 0
-
-    private var isOpen: Bool { openRow == id }
-
-    private var offset: CGFloat {
-        let resting = isOpen ? -Self.actionWidth : 0
-        return min(0, max(-Self.actionWidth - Self.overshoot, resting + drag))
-    }
+    @State private var offset: CGFloat = 0
+    /// Where the row sat when this drag began.
+    @State private var base: CGFloat = 0
+    @State private var isDragging = false
 
     var body: some View {
         content
@@ -76,6 +87,11 @@ struct SwipeToRevealRow<Content: View>: View {
             // which is everywhere. Sharing it lets the scroll view keep the
             // vertical drags, while the guard below ignores them here.
             .simultaneousGesture(swipe)
+            .onChange(of: openRow) { _, now in
+                // Somebody else opened, or everything was put away.
+                guard now != id, offset != 0, !isDragging else { return }
+                withAnimation(.snappy(duration: 0.25)) { offset = 0 }
+            }
             .accessibilityAction(named: Text(label), action)
     }
 
@@ -85,40 +101,52 @@ struct SwipeToRevealRow<Content: View>: View {
                 Image(systemName: systemImage).font(.system(size: 17, weight: .semibold))
                 Text(label).font(.sg(12, weight: .semibold))
             }
-            .foregroundStyle(Theme.bg)
+            .foregroundStyle(isMuted ? Theme.dim : Theme.bg)
             .frame(width: Self.actionWidth)
             .frame(maxHeight: .infinity)
-            .background(Theme.signal, in: RoundedRectangle(cornerRadius: 14))
+            .background(isMuted ? Theme.track : Theme.signal,
+                        in: RoundedRectangle(cornerRadius: 14))
             .padding(.vertical, 3)
         }
         .buttonStyle(.plain)
         // Nothing to hit while the row is closed — the row itself covers it,
         // but a stray tap through the corners should not delete a run either.
-        .allowsHitTesting(isOpen)
+        .allowsHitTesting(offset < -20)
         .accessibilityHidden(true)
     }
 
     private var swipe: some Gesture {
         DragGesture(minimumDistance: 14)
             .onChanged { value in
-                // Vertical intent belongs to the scroll view, always.
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                if !isOpen, openRow != nil { openRow = nil }
-                drag = value.translation.width
+                // Vertical intent belongs to the scroll view — but only until
+                // this row has taken the drag. Re-checking every frame let a
+                // swipe freeze the moment the finger wandered downwards.
+                guard isDragging
+                        || abs(value.translation.width) > abs(value.translation.height) else { return }
+                if !isDragging {
+                    isDragging = true
+                    base = offset
+                    // Claiming the slot here closes any other open row at the
+                    // start of the swipe rather than at the end of it.
+                    openRow = id
+                }
+                offset = clamp(base + value.translation.width)
             }
             .onEnded { value in
-                let resting = isOpen ? -Self.actionWidth : 0
+                guard isDragging else { return }
+                isDragging = false
                 // Flicks count: where the row would come to rest decides, not
                 // where the finger happened to leave the glass.
-                let projected = resting + value.predictedEndTranslation.width
+                let projected = base + value.predictedEndTranslation.width
+                let opens = projected < -Self.actionWidth / 2
                 withAnimation(.snappy(duration: 0.25)) {
-                    if projected < -Self.actionWidth / 2 {
-                        openRow = id
-                    } else if isOpen {
-                        openRow = nil
-                    }
-                    drag = 0
+                    offset = opens ? -Self.actionWidth : 0
                 }
+                openRow = opens ? id : nil
             }
+    }
+
+    private func clamp(_ x: CGFloat) -> CGFloat {
+        min(0, max(-Self.actionWidth - Self.overshoot, x))
     }
 }

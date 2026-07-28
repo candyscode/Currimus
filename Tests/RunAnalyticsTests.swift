@@ -467,11 +467,19 @@ final class RunAnalyticsTests: XCTestCase {
         #endif
     }
 
-    func testReducedScreenKeepsEveryNumberAtFullContrast() {
-        // The system already dims the panel; dimming the largest number again
-        // would cost the readable glance the mode exists for.
-        XCTAssertEqual(rgba(RunPalette(dimmed: true).hero), rgba(Theme.ink))
-        XCTAssertEqual(rgba(RunPalette(dimmed: false).hero), rgba(Theme.ink))
+    func testReducedScreenStepsTheNumbersBackWithoutLosingThem() {
+        let live = RunPalette(dimmed: false)
+        let dim = RunPalette(dimmed: true)
+        XCTAssertEqual(rgba(live.hero), rgba(Theme.ink))
+        XCTAssertEqual(rgba(live.value), rgba(Theme.ink))
+
+        // With the wrist down something has to visibly give, or the mode reads
+        // as broken — but the hero is what gets glanced at, so it gives least.
+        XCTAssertLessThan(rgba(dim.hero)[0], rgba(live.hero)[0])
+        XCTAssertLessThan(rgba(dim.value)[0], rgba(dim.hero)[0])
+        // …and stays well clear of the muted greys the frame is drawn in.
+        XCTAssertGreaterThan(rgba(dim.hero)[0], rgba(dim.label)[0])
+        XCTAssertGreaterThan(rgba(dim.value)[0], rgba(dim.label)[0])
     }
 
     func testReducedScreenStepsSecondaryInkBack() {

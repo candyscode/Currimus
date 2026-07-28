@@ -9,6 +9,9 @@ struct LogView: View {
     @State private var pendingDelete: PendingDelete?
     /// Which row currently has its delete action swiped open, if any.
     @State private var openRow: UUID?
+    /// An imported run whose greyed delete tile was pressed — the alert reads
+    /// it back to explain why the delete cannot happen here.
+    @State private var notDeletable: Run?
     @State private var isSelecting = DebugFlags.opensLogSelection
     @State private var selection: Set<UUID> = []
 
@@ -60,7 +63,9 @@ struct LogView: View {
         .toolbar(isSelecting ? .hidden : .visible, for: .tabBar)
         .overlay(alignment: .bottom) { if isSelecting { deleteBar } }
         .animation(.snappy(duration: 0.25), value: isSelecting)
-        .confirmationDialog(
+        // A plain system alert. This was an action sheet, which is the other
+        // standard answer and read as something the app had drawn itself.
+        .alert(
             DeletePrompt.title(pendingDelete?.runs ?? []),
             isPresented: Binding(get: { pendingDelete != nil },
                                  set: { if !$0 { pendingDelete = nil } }),
@@ -71,37 +76,41 @@ struct LogView: View {
         } message: { pending in
             Text(DeletePrompt.message(pending.runs))
         }
+        .alert("Recorded by \(notDeletable?.name ?? "another app")",
+               isPresented: Binding(get: { notDeletable != nil },
+                                    set: { if !$0 { notDeletable = nil } }),
+               presenting: notDeletable) { _ in
+            Button("OK", role: .cancel) { notDeletable = nil }
+        } message: { run in
+            Text(DeletePrompt.importedExplanation(run))
+        }
     }
 
     // MARK: - Rows
 
     /// A mis-recorded run — a forgotten stop, a drive home still counting —
     /// used to be permanent, and it distorts every total, chart and record it
-    /// touches. Three ways to reach the same delete: a swipe for one run, the
-    /// marking mode for many, and the long press that was here first.
+    /// touches. Two ways to reach the same delete: a swipe for one run, the
+    /// marking mode for many.
+    ///
+    /// Every row swipes, imported ones included. Theirs reveals a greyed tile
+    /// that explains why Currimus cannot carry the delete out — a row that
+    /// silently refuses the gesture reads as broken, not as protected. The
+    /// long-press menu that was here first is gone with it: a context menu on
+    /// the same view fights the drag for the touch, which is what stopped the
+    /// swipe from staying open.
     @ViewBuilder
     private func row(_ run: Run, prTag: String?, isFastestPaceOfMonth: Bool) -> some View {
         let content = LogRow(run: run, prTag: prTag, isFastestPaceOfMonth: isFastestPaceOfMonth)
         if isSelecting {
             selectableRow(run) { content }
-        } else if run.isImported {
-            // Currimus is only reading this one; it belongs to whoever wrote
-            // it, and HealthKit will not let another app delete it. Offering a
-            // swipe here would be offering something that cannot happen.
-            Button { push(.runDetail(run)) } label: { content }
-                .buttonStyle(.plain)
-                .contextMenu { Text("Recorded by \(run.name). Delete it in Apple Health.") }
         } else {
             SwipeToRevealRow(id: run.id, label: "Delete", systemImage: "trash",
+                             isMuted: run.isImported,
                              openRow: $openRow,
-                             action: { ask(for: [run]) }) {
+                             action: { run.isImported ? explain(run) : ask(for: [run]) }) {
                 Button { tapped(run) } label: { content }
                     .buttonStyle(.plain)
-                    .contextMenu {
-                        Button(role: .destructive) { ask(for: [run]) } label: {
-                            Label("Delete run", systemImage: "trash")
-                        }
-                    }
             }
         }
     }
@@ -224,6 +233,10 @@ struct LogView: View {
     private func toggle(_ run: Run) {
         guard !run.isImported else { return }
         if selection.contains(run.id) { selection.remove(run.id) } else { selection.insert(run.id) }
+    }
+
+    private func explain(_ run: Run) {
+        notDeletable = run
     }
 
     private func ask(for runs: [Run]) {
