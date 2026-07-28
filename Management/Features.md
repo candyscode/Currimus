@@ -451,6 +451,6 @@ Both were there in Health all along; Currimus was only reading the workout's sum
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-15
+https://github.com/candyscode/Currimus/commit/2ea9c45
 
 
