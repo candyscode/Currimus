@@ -97,6 +97,10 @@ final class RunStore: ObservableObject {
     private var cachedHolders: [UUID: String]?
     private var cachedLatestBenchmark: LatestBenchmark??
     private var cachedFastestPaceOfMonth: Set<UUID>?
+    /// Grouping and sorting the whole log ran on every body pass of the Log
+    /// screen — including every tap of a checkbox in its marking mode.
+    private var cachedMonths: [LogFilter: [(month: Date, runs: [Run])]] = [:]
+    private var cachedLogText: [UUID: LogRowText] = [:]
 
     private func invalidateAggregates() {
         cachedAllRuns = nil
@@ -104,6 +108,8 @@ final class RunStore: ObservableObject {
         cachedHolders = nil
         cachedLatestBenchmark = nil
         cachedFastestPaceOfMonth = nil
+        cachedMonths = [:]
+        cachedLogText = [:]
     }
 
     var lastRun: Run? { allRuns.first }
@@ -212,18 +218,33 @@ final class RunStore: ObservableObject {
     /// any other run's samples, so the second visit costs nothing.
     func hydrateImported(_ run: Run) async {
         guard run.isImported, !isDemo, needsHydration(run) else { return }
+        // The route type was added to the read set after most installs had
+        // already answered the Health prompt, so it sits undetermined and
+        // every query comes back empty. Asking again raises the sheet for the
+        // types that are new and is a no-op for the rest.
+        if !askedHealth {
+            askedHealth = true
+            await HealthImport.requestAuthorization(healthStore)
+        }
         guard let detail = await HealthImport.detail(for: run, zones: zones, in: healthStore) else { return }
-        // Asked, and answered — even an empty answer. A treadmill run has no
-        // route and never will.
+        // Asked, and answered.
         hydratedImported.insert(run.id)
-        let samples = RunSamples(route: detail.route)
-        sampleCache[run.id] = samples
-        RunSampleStore.save(samples, for: run.id)
-        if detail.zoneSeconds.reduce(0, +) >= 1,
-           let index = importedRuns.firstIndex(where: { $0.id == run.id }) {
-            importedRuns[index].zoneSeconds = detail.zoneSeconds
+
+        // Written to the sidecar, not just to the run: the imported list is
+        // replaced wholesale on every refresh, and zones that lived only there
+        // vanished from under the detail screen the runner was looking at.
+        let rebuilt = detail.zoneSeconds.reduce(0, +) >= 1 ? detail.zoneSeconds : nil
+        if !detail.route.isEmpty || rebuilt != nil {
+            let samples = RunSamples(route: detail.route.isEmpty ? nil : detail.route,
+                                     zoneSeconds: rebuilt)
+            sampleCache[run.id] = samples
+            RunSampleStore.save(samples, for: run.id)
+        }
+        if let rebuilt, let index = importedRuns.firstIndex(where: { $0.id == run.id }) {
+            importedRuns[index].zoneSeconds = rebuilt
         }
     }
+
 
     /// Whether Health still holds something this run does not.
     ///
@@ -233,11 +254,17 @@ final class RunStore: ObservableObject {
     /// empty route re-queried Health on every single visit.
     private func needsHydration(_ run: Run) -> Bool {
         guard !hydratedImported.contains(run.id) else { return false }
-        return run.zoneSeconds.reduce(0, +) < 1 || RunSampleStore.load(run.id) == nil
+        guard let stored = RunSampleStore.load(run.id) else { return true }
+        // A run with zones but no route is either indoors or was fetched
+        // before Health granted the route type — worth one ask per session,
+        // which `hydratedImported` bounds.
+        return stored.route?.isEmpty ?? true
     }
 
     /// Imported runs already asked about in this session, route or no route.
     private var hydratedImported: Set<UUID> = []
+    /// Health is asked for permission once per session, at the first hydration.
+    private var askedHealth = false
     #endif
 
     private func storeSamples(of run: Run) {
@@ -436,16 +463,26 @@ final class RunStore: ObservableObject {
 
     private func persistSettings() {
         guard !isLoading else { return }
-        // Settings are tiny and the widget reads them on the next tick, so
-        // these stay synchronous — demo builds included, the widget has no
-        // other way to learn the goal.
-        do {
-            defaults.set(try JSONEncoder().encode(watchSettings), forKey: AppDefaults.settingsKey)
-        } catch {
-            Log.store.error("could not save settings: \(error.localizedDescription, privacy: .public)")
+        // On the io queue, not here. This fires on every single toggle in
+        // Settings, and a JSON encode plus three synchronous `UserDefaults`
+        // writes on the main thread is precisely the work that makes a switch
+        // stutter under the finger. The queue is serial, so the order the
+        // settings were changed in is the order they land in; the widget reads
+        // them on its own tick and cannot tell the difference. Demo builds
+        // included — the widget has no other way to learn the goal.
+        nonisolated(unsafe) let defaults = self.defaults
+        let settings = watchSettings
+        let goal = weeklyGoalKm
+        let accuracy = gpsAccuracy.rawValue
+        Self.ioQueue.async {
+            do {
+                defaults.set(try JSONEncoder().encode(settings), forKey: AppDefaults.settingsKey)
+            } catch {
+                Log.store.error("could not save settings: \(error.localizedDescription, privacy: .public)")
+            }
+            defaults.set(goal, forKey: AppDefaults.goalKey)
+            defaults.set(accuracy, forKey: AppDefaults.gpsAccuracyKey)
         }
-        defaults.set(weeklyGoalKm, forKey: AppDefaults.goalKey)
-        defaults.set(gpsAccuracy.rawValue, forKey: AppDefaults.gpsAccuracyKey)
     }
 
     private func loadSettings() {
@@ -491,7 +528,10 @@ final class RunStore: ObservableObject {
     private func pushSettings() {
         guard !isLoading else { return }
         #if os(iOS)
-        RunSync.shared.send(settings: watchSettings)
+        // `updateApplicationContext` is a synchronous hop to another process,
+        // and it sat on the main thread behind every toggle.
+        let settings = watchSettings
+        Self.ioQueue.async { RunSync.shared.send(settings: settings) }
         #endif
     }
 
@@ -567,7 +607,7 @@ final class RunStore: ObservableObject {
     }
 
     /// Filtered log grouped by month, newest first.
-    enum LogFilter { case all, road, trail }
+    enum LogFilter: Hashable { case all, road, trail }
 
     func filteredRuns(_ filter: LogFilter) -> [Run] {
         switch filter {
@@ -577,7 +617,22 @@ final class RunStore: ObservableObject {
         }
     }
 
+    /// The strings one log row draws, computed once per log change.
+    func logText(for run: Run, prTag: String?) -> LogRowText {
+        if let cached = cachedLogText[run.id] { return cached }
+        let built = LogRowText(run: run, prTag: prTag)
+        cachedLogText[run.id] = built
+        return built
+    }
+
     func runsByMonth(_ filter: LogFilter = .all) -> [(month: Date, runs: [Run])] {
+        if let cached = cachedMonths[filter] { return cached }
+        let built = buildRunsByMonth(filter)
+        cachedMonths[filter] = built
+        return built
+    }
+
+    private func buildRunsByMonth(_ filter: LogFilter) -> [(month: Date, runs: [Run])] {
         let grouped = Dictionary(grouping: filteredRuns(filter)) {
             calendar.dateInterval(of: .month, for: $0.date)?.start ?? $0.date
         }

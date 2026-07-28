@@ -21,6 +21,12 @@ struct LogView: View {
         let holders = store.benchmarkHolders
         let fastestOfMonth = store.fastestPaceOfMonthHolders
         return TabScreen(topInset: 8) { EmptyView() } content: {
+            // Deliberately eager. A `LazyVStack` here leaves the swipe tile
+            // without a definite height — it lives in a background of the
+            // offset row and stretches to whatever the lazy container
+            // proposes — and the delete button stops being hittable. The cost
+            // of building every row is paid down in what a row costs instead
+            // (see `RunStore.logText`), not by making them lazy.
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Runs").font(.sg(38, weight: .semibold)).kerning(-0.8)
@@ -101,16 +107,23 @@ struct LogView: View {
     /// swipe from staying open.
     @ViewBuilder
     private func row(_ run: Run, prTag: String?, isFastestPaceOfMonth: Bool) -> some View {
-        let content = LogRow(run: run, prTag: prTag, isFastestPaceOfMonth: isFastestPaceOfMonth)
+        let content = LogRow(text: store.logText(for: run, prTag: prTag),
+                             isFastestPaceOfMonth: isFastestPaceOfMonth)
         if isSelecting {
             selectableRow(run) { content }
         } else {
             SwipeToRevealRow(id: run.id, label: "Delete", systemImage: "trash",
                              isMuted: run.isImported,
                              openRow: $openRow,
-                             action: { run.isImported ? explain(run) : ask(for: [run]) }) {
-                Button { tapped(run) } label: { content }
-                    .buttonStyle(.plain)
+                             action: { run.isImported ? explain(run) : ask(for: [run]) },
+                             onTap: { push(.runDetail(run)) }) {
+                // One element per row: VoiceOver reads a run as a run rather
+                // than as five loose labels, and the swipe test has something
+                // to take hold of.
+                content
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityIdentifier("log-row")
             }
         }
     }
@@ -220,16 +233,6 @@ struct LogView: View {
         store.allRuns.filter { selection.contains($0.id) }
     }
 
-    private func tapped(_ run: Run) {
-        // A swiped-open row is a question, not a link: the tap that follows
-        // puts it away rather than navigating out from under it.
-        if openRow != nil {
-            withAnimation(.snappy(duration: 0.25)) { openRow = nil }
-        } else {
-            push(.runDetail(run))
-        }
-    }
-
     private func toggle(_ run: Run) {
         guard !run.isImported else { return }
         if selection.contains(run.id) { selection.remove(run.id) } else { selection.insert(run.id) }
@@ -268,26 +271,26 @@ struct LogView: View {
 }
 
 struct LogRow: View {
-    var run: Run
-    var prTag: String?
+    /// The strings, worked out by the store and cached there — this view does
+    /// no formatting and no classification of its own.
+    var text: LogRowText
     var isFastestPaceOfMonth: Bool
 
     var body: some View {
         HStack(spacing: 14) {
-            Text(run.date.formatted(.dateTime.weekday(.abbreviated)).uppercased()
-                 + "\n" + run.date.formatted(.dateTime.day(.twoDigits).month(.twoDigits)))
+            Text(text.day)
                 .font(.sg(12)).foregroundStyle(Theme.muted).lineSpacing(3)
                 .frame(width: 56, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
-                    Text("\(Format.km(run.distanceKm)) km").font(.stat(18))
-                    if run.isTrail { TrailTag() }
+                    Text("\(text.distance) km").font(.stat(18))
+                    if text.isTrail { TrailTag() }
                 }
                 detail
             }
             Spacer()
-            Text(Format.pace(run.paceSecPerKm))
+            Text(text.pace)
                 .font(.stat(18))
                 .foregroundStyle(isFastestPaceOfMonth ? Theme.signal : Theme.ink)
         }
@@ -299,19 +302,11 @@ struct LogRow: View {
 
     @ViewBuilder
     private var detail: some View {
-        if run.isImported {
-            // Another app recorded it: name the source instead of claiming
-            // zone data Currimus never captured.
-            Text("\(run.name) · \(Format.clock(run.duration))")
-                .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
-        } else if run.isTrail {
-            Text("Trail · \(Format.clock(run.duration)) · +\(Int(run.climbMeters ?? 0)) m")
-                .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
-        } else if let prTag, prTag != "Longest" {
-            Text("\(Format.clock(run.duration)) · \(Text(prTag).foregroundStyle(Theme.signal).fontWeight(.semibold))")
+        if let prTag = text.prTag {
+            Text("\(text.detail)\(Text(prTag).foregroundStyle(Theme.signal).fontWeight(.semibold))")
                 .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
         } else {
-            Text("\(run.classification.label) · \(Format.clock(run.duration)) · Z\(run.dominantZone)")
+            Text(text.detail)
                 .font(.stat(13, weight: .regular)).foregroundStyle(Theme.bright)
         }
     }

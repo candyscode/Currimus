@@ -19,6 +19,9 @@
     "—" : {
 
     },
+    ". Older runs count whole, so the early months are approximate." : {
+
+    },
     "/km" : {
 
     },
@@ -166,6 +169,16 @@
         }
       }
     },
+    "%lld runs · %@ km in zone 2" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld runs · %2$@ km in zone 2"
+          }
+        }
+      }
+    },
     "%lld runs, %@ km in total. Every total and record is recalculated without them, and their workouts are removed from Apple Health." : {
       "localizations" : {
         "en" : {
@@ -219,10 +232,13 @@
     "Appears after a trail run that recorded elevation" : {
 
     },
+    "Appears once a couple of months carry runs spent in zone 2. Runs from other apps count too." : {
+
+    },
     "Appears once a few easy runs sit at a similar pace" : {
 
     },
-    "Appears once a few runs have been spent mostly in zone 2. Runs from other apps count too, placed by their average heart rate." : {
+    "Apple Health only lets the app that recorded a run delete it, so Currimus cannot remove this one. Delete it in %@, or in the Fitness app, and it will disappear from Currimus on the next refresh." : {
 
     },
     "at %@ → finish " : {
@@ -435,7 +451,7 @@
     "HOW THESE ARE KEPT CURRENT" : {
 
     },
-    "IN ZONE 2 · EASY RUNS" : {
+    "IN ZONE 2 · LAST 12 MONTHS" : {
 
     },
     "Intervals" : {
@@ -597,6 +613,9 @@
     "Off, open-ended" : {
 
     },
+    "OK" : {
+
+    },
     "on schedule" : {
 
     },
@@ -658,9 +677,6 @@
 
     },
     "Recorded by %@" : {
-
-    },
-    "Recorded by %@. Delete it in Apple Health." : {
 
     },
     "Recorded by %@. This run belongs to Apple Health — delete it in the app that recorded it." : {

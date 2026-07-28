@@ -31,6 +31,7 @@
 		36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		374F1ED8509045D94909A27E /* ZoneCoach.swift in Sources */ = {isa = PBXBuildFile; fileRef = 730680C78DD898F3B49BC2BB /* ZoneCoach.swift */; };
 		3B9AAD3CBBED7A363608CBC2 /* RunHintsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1743CD59636C6E4B5816C5E /* RunHintsTests.swift */; };
+		3BF77CAB3DF7E39F5F5C0F62 /* SwipeToDeleteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2896414722F0534F76F64E00 /* SwipeToDeleteUITests.swift */; };
 		3EDCB951E6A8420B6587553D /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		40D4E4DB344B503AAF1DF4B9 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		420A6A484F0DE550B615F0C8 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
@@ -188,6 +189,13 @@
 			remoteGlobalIDString = CA2C3F29B285D1403A3E2C2F;
 			remoteInfo = CurrimusWatchWidgets;
 		};
+		8773569E703BF72CCF3831A3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 85A309E6DD9ADF05A2431D53 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F7FBDF38598250E3CB3341E4;
+			remoteInfo = Currimus;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -222,6 +230,7 @@
 		13D61C620B2F41C1B8C0B5B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1EC5D9A0957780EACF963837 /* RecordingIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIssue.swift; sourceTree = "<group>"; };
 		2093769E1832392AF743C8EC /* ProgressTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressTabView.swift; sourceTree = "<group>"; };
+		2896414722F0534F76F64E00 /* SwipeToDeleteUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeToDeleteUITests.swift; sourceTree = "<group>"; };
 		2D0AB554106862365931D05C /* RunScenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunScenario.swift; sourceTree = "<group>"; };
 		2DB82B4166A0D5F0DBB6A0C5 /* ZoneCoachTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoneCoachTests.swift; sourceTree = "<group>"; };
 		2EA58C9AB36DB9CE81261E36 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
@@ -290,6 +299,7 @@
 		DCBE840AF1F7A6789D2DADA0 /* Currimus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Currimus.entitlements; sourceTree = "<group>"; };
 		DD88986EEA97DE1411F9263F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E024589EC7343ED3809D8F41 /* RunExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunExportTests.swift; sourceTree = "<group>"; };
+		E38C21B8D024689E15501AC3 /* CurrimusUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CurrimusUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E47BCF44600BC83F472F7AE0 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		E4A703AB6859F2CA4B35CC46 /* AlwaysOn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlwaysOn.swift; sourceTree = "<group>"; };
 		E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SpaceGrotesk-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -340,6 +350,7 @@
 				B062C292B818DE4DFF9EAFF2 /* Resources */,
 				0955E5EB3EAD559243A19707 /* Shared */,
 				97D9648BC6D32F15DEF736BC /* Tests */,
+				CE66F348D0344E2AD30FBC01 /* UITests */,
 				64931F4C1BECC8078974DD90 /* Watch */,
 				4520411446D3456FD8A99652 /* WatchWidgets */,
 				F82FB9F92023F70ED54D274A /* Products */,
@@ -440,11 +451,20 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		CE66F348D0344E2AD30FBC01 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				2896414722F0534F76F64E00 /* SwipeToDeleteUITests.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
 		F82FB9F92023F70ED54D274A /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				4A2F7A36A31D6342D15638DA /* Currimus.app */,
 				A7798A4301C39FF833B1EBEF /* CurrimusTests.xctest */,
+				E38C21B8D024689E15501AC3 /* CurrimusUITests.xctest */,
 				D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */,
 				BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */,
 			);
@@ -488,6 +508,24 @@
 			productName = CurrimusWatchWidgets;
 			productReference = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		DAF4F229B8AC546E8D95C584 /* CurrimusUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A8C64DC4B52420E9975F72B /* Build configuration list for PBXNativeTarget "CurrimusUITests" */;
+			buildPhases = (
+				8DCDF48CB0B93928E72C7EFD /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8ED00B1A9E532D52A28CEC8A /* PBXTargetDependency */,
+			);
+			name = CurrimusUITests;
+			packageProductDependencies = (
+			);
+			productName = CurrimusUITests;
+			productReference = E38C21B8D024689E15501AC3 /* CurrimusUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		DC4EB7F9010256AAE8FB5ED9 /* CurrimusWatch */ = {
 			isa = PBXNativeTarget;
@@ -546,6 +584,11 @@
 						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
 					};
+					DAF4F229B8AC546E8D95C584 = {
+						DevelopmentTeam = 88U4UH4ASG;
+						ProvisioningStyle = Automatic;
+						TestTargetID = F7FBDF38598250E3CB3341E4;
+					};
 					DC4EB7F9010256AAE8FB5ED9 = {
 						DevelopmentTeam = 88U4UH4ASG;
 						ProvisioningStyle = Automatic;
@@ -572,6 +615,7 @@
 			targets = (
 				F7FBDF38598250E3CB3341E4 /* Currimus */,
 				02321DE45E155EE5C1C4F746 /* CurrimusTests */,
+				DAF4F229B8AC546E8D95C584 /* CurrimusUITests */,
 				DC4EB7F9010256AAE8FB5ED9 /* CurrimusWatch */,
 				CA2C3F29B285D1403A3E2C2F /* CurrimusWatchWidgets */,
 			);
@@ -628,6 +672,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8DCDF48CB0B93928E72C7EFD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3BF77CAB3DF7E39F5F5C0F62 /* SwipeToDeleteUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A1AB3C2C7FC4BEAD6346A220 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -796,6 +848,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8ED00B1A9E532D52A28CEC8A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F7FBDF38598250E3CB3341E4 /* Currimus */;
+			targetProxy = 8773569E703BF72CCF3831A3 /* PBXContainerItemProxy */;
+		};
 		CB5B03D0F6B12B5B9C9AEFAB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = CA2C3F29B285D1403A3E2C2F /* CurrimusWatchWidgets */;
@@ -878,6 +935,23 @@
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
 				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
+		093DD3ECCD38520649B9EE73 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Currimus;
 			};
 			name = Debug;
 		};
@@ -1076,6 +1150,23 @@
 			};
 			name = Release;
 		};
+		FB315256677BC9C27ADF25EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Currimus;
+			};
+			name = Release;
+		};
 		FC0B87DA324F717EC5E8C502 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1118,6 +1209,15 @@
 			buildConfigurations = (
 				B87FFFFE9A7FACC660E19BEC /* Debug */,
 				C9C5D918A88C0BDB026FB100 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8A8C64DC4B52420E9975F72B /* Build configuration list for PBXNativeTarget "CurrimusUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				093DD3ECCD38520649B9EE73 /* Debug */,
+				FB315256677BC9C27ADF25EC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

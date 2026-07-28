@@ -18,8 +18,16 @@ import HealthKit
 enum HeartRateProfile {
     /// Ignore anything outside this — sensor dropouts and stationary artifacts.
     private static let plausibleMax = 120.0...225.0
-    /// How far down the ranked daily peaks to reach for the max.
-    private static let peakRank = 2   // 0-based → third-highest day
+    /// How far a single day's peak may stand above the next one before it is
+    /// treated as a sensor artifact rather than a hard effort.
+    ///
+    /// This used to reach for the *third*-highest day outright, which is very
+    /// robust and reliably lands a few beats under the real ceiling — and a
+    /// max heart rate that is a few beats low drags every zone boundary down
+    /// with it, which is why Currimus placed runs a zone higher than Apple
+    /// Fitness did. Apple takes the highest it has seen; so does this now,
+    /// with one guard for the lone spike that nothing else comes near.
+    private static let spikeMargin = 12.0
 
     struct Result: Equatable {
         var maxHR: Int
@@ -62,7 +70,8 @@ enum HeartRateProfile {
 
     // MARK: - Health queries
 
-    /// The third-highest daily peak heart rate of the past year.
+    /// The highest believable daily peak of the past year — Apple's rule,
+    /// with a guard against a single glitch setting the ceiling.
     private static func measuredPeak(_ store: HKHealthStore) async -> (bpm: Int, day: Date)? {
         let unit = HKUnit.count().unitDivided(by: .minute())
         let end = Date.now
@@ -91,9 +100,12 @@ enum HeartRateProfile {
         let ranked = peaks
             .filter { plausibleMax.contains($0.bpm) }
             .sorted { $0.bpm > $1.bpm }
-        // Demand enough hard days that a third-place peak means something.
-        guard ranked.count > peakRank else { return nil }
-        let pick = ranked[peakRank]
+        // Enough hard days that the top one has something to be judged against.
+        guard ranked.count >= 3 else { return nil }
+        // A day that stands more than `spikeMargin` above the next two is a
+        // reading, not a runner: an optical sensor losing contact reports one
+        // wild value, and a genuine ceiling has near-misses under it.
+        let pick = ranked[0].bpm - ranked[2].bpm > spikeMargin ? ranked[1] : ranked[0]
         return (Int(pick.bpm.rounded()), pick.day)
     }
 

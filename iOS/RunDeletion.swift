@@ -58,6 +58,15 @@ struct SwipeToRevealRow<Content: View>: View {
     var isMuted = false
     @Binding var openRow: UUID?
     var action: () -> Void
+    /// What a tap on the row itself does — but only when the row is closed.
+    ///
+    /// The row owns this rather than the content, because the content used to
+    /// be a `Button` and that was the whole bug: a horizontal drag never
+    /// leaves a full-width button's bounds, so SwiftUI did not cancel it, and
+    /// lifting the finger fired the tap that closed the row again. The button
+    /// is gone; a `TapGesture` alongside the drag will not fire once the
+    /// finger has travelled.
+    var onTap: () -> Void
     @ViewBuilder var content: Content
 
     /// Wide enough for the glyph and its word at the design's type sizes.
@@ -87,6 +96,19 @@ struct SwipeToRevealRow<Content: View>: View {
             // which is everywhere. Sharing it lets the scroll view keep the
             // vertical drags, while the guard below ignores them here.
             .simultaneousGesture(swipe)
+            // A tap, not a Button. The content used to be one, and a drag that
+            // never leaves a full-width button's bounds is not cancelled by
+            // SwiftUI — so lifting the finger fired the row's own tap, which
+            // closed the row again before the delete tile could be hit. A
+            // TapGesture does not fire once the finger has travelled.
+            .onTapGesture {
+                guard offset == 0 else {
+                    withAnimation(.snappy(duration: 0.25)) { offset = 0 }
+                    openRow = nil
+                    return
+                }
+                onTap()
+            }
             .onChange(of: openRow) { _, now in
                 // Somebody else opened, or everything was put away. This is
                 // authoritative even mid-drag: a gesture the scroll view took
@@ -117,7 +139,11 @@ struct SwipeToRevealRow<Content: View>: View {
         // Nothing to hit while the row is closed — the row itself covers it,
         // but a stray tap through the corners should not delete a run either.
         .allowsHitTesting(offset < -20)
-        .accessibilityHidden(true)
+        // A real button once revealed, rather than hidden from accessibility:
+        // VoiceOver reaches it, and so does the UI test that guards this
+        // gesture — which is the only way anything but a finger can.
+        .accessibilityIdentifier("swipe-action")
+        .accessibilityHidden(offset > -20)
     }
 
     private var swipe: some Gesture {

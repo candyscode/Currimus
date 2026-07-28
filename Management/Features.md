@@ -64,7 +64,9 @@ Swipe gesture does not work properly. Dragging to reveal delete button works, bu
 
 All three fixed.
 
-- **The swipe snapping back.** Two causes, both removed. The row derived its offset from `openRow` (parent state) plus a live drag, so the settle animation depended on the parent's update landing inside the same transaction — when it did not, the row animated back to zero under the finger. The row now owns a single `offset` and `openRow` is used only to close the *others*. Second, each row carried a `.contextMenu` for the same long-press delete; `UIContextMenuInteraction` competes with the drag for the touch and cancels it. The context menu is gone — the swipe, the marking mode and the detail screen are three ways in already.
+**Second round (2026-07-28): the swipe still snapped back, and this time it is verified by machine.** The real cause was the row's content being a `Button`: a horizontal drag never leaves a full-width button's bounds, so SwiftUI never cancelled its tap, and lifting the finger fired the row's own tap — which closed the row before the delete tile could be pressed. The content is a plain view with a `TapGesture` now, which does not fire once the finger has travelled. A new **`CurrimusUITests`** target drives the actual gesture and asserts the tile is *hittable* after the swipe, stays open, and that a tap on a closed row still opens the run — none of which a unit test can express, `simctl` can inject, or a screenshot can show. That is why this broke twice.
+
+- **The swipe snapping back (first attempt, insufficient).** Two causes, both removed. The row derived its offset from `openRow` (parent state) plus a live drag, so the settle animation depended on the parent's update landing inside the same transaction — when it did not, the row animated back to zero under the finger. The row now owns a single `offset` and `openRow` is used only to close the *others*. Second, each row carried a `.contextMenu` for the same long-press delete; `UIContextMenuInteraction` competes with the drag for the touch and cancels it. The context menu is gone — the swipe, the marking mode and the detail screen are three ways in already.
 - **The dialog** is a plain `.alert` now, on both the log and the run detail. It was a `confirmationDialog` (an action sheet) — also standard, but it evidently did not read that way.
 - **Imported runs swipe too.** The tile is greyed and still pressable; pressing it explains that Apple Health only lets the app that recorded a run delete it, and where to do it instead. A row that silently swallows the gesture looks broken, which was exactly your point.
 
@@ -442,6 +444,56 @@ Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 
 Maybe based on trail run mode but with different metrics? How to exclude from progress page? How to make this clear in the UI?
 
+### CUR-17: Heart rate zones should match Apple Fitness
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Ein Lauf, den Apple Fitness überwiegend als Zone 3 (Rest Zone 2, nie Zone 4) zeigt, erscheint in Currimus als Z3 und Z4. Die Pulszonen sollen 1 zu 1 wie in Apple Fitness sein.
+
+#### Agent Comments
+
+**What can and cannot be done today.** Apple keeps the zone configuration in Health's own store and does not publish it: until iOS 27 there is *no* API to read a person's heart-rate zones, which is a long-standing developer request. iOS 27 / watchOS 27 add exactly that — `zoneGroupsByType` on `HKWorkout`/`HKWorkoutActivity`, live zone updates, and the person's preferred zone configuration ([WWDC26 session 207](https://developer.apple.com/videos/play/wwdc2026/207/)). This app builds against the iOS 26.5 SDK, so it cannot use them yet. Worth a ticket the moment the deployment target moves — and worth weighing against CUR-11, which proposes moving the floor *down*.
+
+Until then the two can only be brought together by matching Apple's model and its inputs, which is what this does:
+
+- **The max heart rate was the culprit.** Currimus took the *third*-highest daily peak of the past year — very robust, and reliably a few beats under the real ceiling. A max that is low drags every boundary down with it, which is exactly the direction of the mismatch: runs landing one zone too high. It now takes the highest believable peak, as Apple does, with one guard: a day standing more than 12 bpm above the third-highest is a sensor artefact, not a runner, and is skipped.
+- **Zone 1's floor** was half of *max*; Apple's model puts it at half of the heart-rate *reserve*. The four upper bounds already used the reserve ladder (60 / 70 / 80 / 90 %), so this was the one boundary out of step.
+- **The zones screen says so plainly**, including that Apple does not publish its numbers and that setting the max by hand is the way to force agreement.
+
+Expect them to line up now, or to be a beat or two apart where the underlying max differs. Exact equality needs the iOS 27 API.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-17
+
+### CUR-18: Lags in Settings and in the log's marking mode
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Auf dem iPhone 14 Pro Max ruckelt es in den Settings und beim Markieren von Läufen. Vermutung: Arbeit auf dem UI-Thread.
+
+#### Agent Comments
+
+Correct on both counts, and they were two different pieces of main-thread work.
+
+**Settings.** Every toggle wrote the settings blob synchronously: a `JSONEncoder` pass plus three `UserDefaults` writes, and then `updateApplicationContext` — a synchronous hop into another process — to push the same settings to the watch. All of it on the main thread, behind the switch the finger was still on. Both now run on the store's existing serial io queue, so the order is preserved and the widget cannot tell the difference.
+
+**Marking mode.** The log is an eager `VStack`, so every state change rebuilds every row — and a row was expensive: two `Date.formatted` calls, three number formats, and `run.classification`, which walks the run's splits twice to get their spread. At a year of running that is roughly a thousand formatter invocations per checkbox tap. The strings a row draws are now computed once per log change and cached in the store (`RunStore.logText`), alongside the month grouping, which was also re-grouping and re-sorting the whole log on every pass.
+
+**Not done: making the list lazy.** A `LazyVStack` is the obvious answer and it breaks the swipe — the delete tile lives in the row's background and loses its definite height under a lazy container, so the button stops being hittable. The UI test caught that within a minute of trying it. Left eager on purpose; the note is in `LogView` so the next person does not repeat it.
+
+**Also off the main thread:** encoding a finished run for the watch→phone transfer, which ran while the watch was drawing the summary.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-18
+
 ### CUR-16: Code review of CUR-1…CUR-15
 
 [ ] In Specification
@@ -486,6 +538,11 @@ Both were there in Health all along; Currimus was only reading the workout's sum
 - **The route** comes from the workout's `HKWorkoutRoute` series and is cached in the same sidecar file every Currimus run uses, so the map, the elevation profile and the GPX export all work on it unchanged.
 - **On demand, not on refresh.** Both are fetched when a detail screen opens (`RunStore.hydrateImported`), because pulling every sample of eighteen months of other apps' workouts on each foreground would spend a lot of battery filling screens nobody had opened. The second visit is free.
 - Two things this needed on the way: the detail screen was reading `store.runs`, which never contains an imported run, so it kept showing the copy it was pushed with; and the sample-file prune ran against the owned list alone, so a fetched route was deleted on the next save.
+
+**Second round (2026-07-28), from testing on device:**
+
+- **No GPX track.** `HKSeriesType.workoutRoute()` was added to the read set *after* the install had already answered the Health prompt, so it sat undetermined and every route query came back empty — silently, because Health never reports a denied read. Authorization is now re-requested once per session at the first hydration, which raises the sheet for types that are new and is a no-op for the rest.
+- **Zone times vanishing while the detail screen was open.** Same shape as review finding 1: the imported list is replaced wholesale on every refresh, and anything living only in it is one foreground away from being lost. The rebuilt zone seconds are written to the run's sidecar file now — the same place the route already lived, which is exactly why the route survived and the zones did not.
 
 #### Link to completed work
 

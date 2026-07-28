@@ -472,11 +472,14 @@ struct HRZonesView: View {
     /// design — so the one place that owns these numbers has to say it out
     /// loud, along with what stops it.
     private var maintenanceExplanation: String {
-        let base = String(localized: "Currimus reads your max heart rate and your resting heart rate from Apple Health every time it opens, and rebuilds the boundaries from them — fitness moves, and zones built on last year's numbers describe last year's runner. Max comes from the third-highest daily peak of the past year (one sensor glitch must not set your ceiling), resting from Health's own 60-day average.")
+        let base = String(localized: "Currimus reads your max heart rate and your resting heart rate from Apple Health every time it opens, and rebuilds the boundaries from them — fitness moves, and zones built on last year's numbers describe last year's runner. Max is the highest believable daily peak of the past year, resting is Health's own 60-day average, and the five zones split the span between them at 50 / 60 / 70 / 80 / 90 %, which is the model the Fitness app uses.")
+        // Said plainly, because "why are these not the same as Fitness" is the
+        // obvious question and the honest answer is not "they are".
+        let apple = String(localized: " Apple keeps its own copy of these zones and does not publish them to other apps, so the two can still differ by a beat or two where the underlying max heart rate differs. If Fitness shows something else, set the max here by hand and the boundaries follow.")
         if !store.zones.isAutomatic {
-            return base + String(localized: " These are yours right now — you changed them by hand, so the automatic update leaves them alone until you tap Recalculate.")
+            return base + apple + String(localized: " These are yours right now — you changed them by hand, so the automatic update leaves them alone until you tap Recalculate.")
         }
-        return base + String(localized: " Change anything here by hand and the automatic update stops, until you tap Recalculate.")
+        return base + apple + String(localized: " Change anything here by hand and the automatic update stops, until you tap Recalculate.")
     }
 
     /// Says plainly where the boundaries came from — a personalised number the

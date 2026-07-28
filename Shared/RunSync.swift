@@ -75,6 +75,11 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
 
     // MARK: - Send
 
+    /// Encoding and handing over happen off the caller's thread: a finished
+    /// run carries its whole GPS track, and that encode ran on the main thread
+    /// at the exact moment the watch was drawing the summary.
+    private let queue = DispatchQueue(label: "com.currimus.app.sync", qos: .utility)
+
     func send(_ run: Run) {
         guard WCSession.isSupported() else { return }
         // A transfer queued before activation is dropped, and a finished run
@@ -83,10 +88,12 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
             Log.sync.error("run not sent: session not activated")
             return
         }
-        do {
-            WCSession.default.transferUserInfo(["run": try JSONEncoder().encode(run)])
-        } catch {
-            Log.sync.error("run not encoded: \(error.localizedDescription, privacy: .public)")
+        queue.async {
+            do {
+                WCSession.default.transferUserInfo(["run": try JSONEncoder().encode(run)])
+            } catch {
+                Log.sync.error("run not encoded: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 

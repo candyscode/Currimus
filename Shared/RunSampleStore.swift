@@ -4,14 +4,24 @@ import Foundation
 struct RunSamples: Codable, Equatable {
     var altitude: [Double]?
     var route: [Coordinate]?
+    /// Seconds per zone, for runs whose zones had to be rebuilt from Health
+    /// rather than recorded. Kept here rather than only on the run: the
+    /// imported list is replaced wholesale on every refresh, and anything
+    /// living only in it is one foreground away from being lost.
+    var zoneSeconds: [TimeInterval]?
 
     static let empty = RunSamples()
 
-    var isEmpty: Bool { (altitude?.isEmpty ?? true) && (route?.isEmpty ?? true) }
+    var isEmpty: Bool {
+        (altitude?.isEmpty ?? true) && (route?.isEmpty ?? true)
+            && (zoneSeconds?.isEmpty ?? true)
+    }
 
-    init(altitude: [Double]? = nil, route: [Coordinate]? = nil) {
+    init(altitude: [Double]? = nil, route: [Coordinate]? = nil,
+         zoneSeconds: [TimeInterval]? = nil) {
         self.altitude = altitude
         self.route = route
+        self.zoneSeconds = zoneSeconds
     }
 
     init(_ run: Run) {
@@ -110,6 +120,11 @@ extension Run {
         var copy = self
         copy.altitudeSamples = samples.altitude ?? altitudeSamples
         copy.route = samples.route ?? route
+        // Only when the run has none of its own: a recorded run's zones are
+        // the authority, and this is the fallback for one rebuilt from Health.
+        if zoneSeconds.reduce(0, +) < 1, let rebuilt = samples.zoneSeconds, rebuilt.count == 5 {
+            copy.zoneSeconds = rebuilt
+        }
         return copy
     }
 

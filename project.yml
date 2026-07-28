@@ -73,6 +73,14 @@ schemes:
       config: Debug
       targets:
         - CurrimusTests
+  CurrimusUITests:
+    build:
+      targets:
+        CurrimusUITests: all
+    test:
+      config: Debug
+      targets:
+        - CurrimusUITests
 
 targets:
   Currimus:
@@ -195,6 +203,22 @@ targets:
         CFBundleDisplayName: Currimus
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  # Gestures cannot be asserted in a unit test and cannot be driven by
+  # `simctl` — the log's swipe-to-delete broke twice before anything could
+  # catch it. This target exists for interactions, and holds only those.
+  CurrimusUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+    dependencies:
+      - target: Currimus
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Currimus
 
   CurrimusTests:
     type: bundle.unit-test

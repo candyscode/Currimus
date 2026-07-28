@@ -370,7 +370,15 @@ struct HRZones: Codable, Equatable {
     func range(forZone zone: Int) -> (lower: Int, upper: Int) {
         let b = bounds
         switch zone {
-        case 1: return (Int((Double(maxHR) * 0.5).rounded()), b[0])
+        // Zone 1 starts at half the heart-rate reserve when there is one —
+        // Apple's model, and the same ladder the upper bounds already use.
+        // It used to start at half of *max*, which is a different (lower)
+        // number and made zone 1 read wider than Apple Fitness shows it.
+        case 1:
+            if let restingHR, restingHR > 30, restingHR < maxHR {
+                return (Int((Double(restingHR) + Double(maxHR - restingHR) * 0.5).rounded()), b[0])
+            }
+            return (Int((Double(maxHR) * 0.5).rounded()), b[0])
         case 2: return (b[0], b[1])
         case 3: return (b[1], b[2])
         case 4: return (b[2], b[3])
@@ -425,6 +433,50 @@ struct HRDerivation: Codable, Equatable {
         return "Zones use your heart-rate reserve — the span between your resting "
              + "\(restingHR) bpm\(days) and your max. Each boundary sits at 60 / 70 / 80 / 90 % "
              + "of that span, which fits you far better than a plain share of max."
+    }
+}
+
+/// Everything one log row draws, worked out once instead of on every pass.
+///
+/// A row costs two date formats, three number formats and the classification
+/// heuristic — which walks the run's splits twice to get their spread. None of
+/// it changes between renders, and the log rebuilds every row whenever
+/// anything on the screen moves: a filter chip, a checkbox in the marking
+/// mode, a swipe. At a year of running that was visible on the phone.
+struct LogRowText: Equatable {
+    /// "SUN\n26.07"
+    var day: String
+    var distance: String
+    var pace: String
+    var isTrail: Bool
+    /// The plain part of the second line.
+    var detail: String
+    /// The benchmark tag that closes the second line, drawn in signal.
+    var prTag: String?
+
+    init(run: Run, prTag: String?) {
+        day = run.date.formatted(.dateTime.weekday(.abbreviated)).uppercased()
+            + "\n" + run.date.formatted(.dateTime.day(.twoDigits).month(.twoDigits))
+        distance = Format.km(run.distanceKm)
+        pace = Format.pace(run.paceSecPerKm)
+        isTrail = run.isTrail
+
+        let clock = Format.clock(run.duration)
+        if run.isImported {
+            // Another app recorded it: name the source instead of claiming
+            // zone data Currimus never captured.
+            detail = "\(run.name) · \(clock)"
+            self.prTag = nil
+        } else if run.isTrail {
+            detail = "Trail · \(clock) · +\(Int(run.climbMeters ?? 0)) m"
+            self.prTag = nil
+        } else if let prTag, prTag != "Longest" {
+            detail = "\(clock) · "
+            self.prTag = prTag
+        } else {
+            detail = "\(run.classification.label) · \(clock) · Z\(run.dominantZone)"
+            self.prTag = nil
+        }
     }
 }
 
