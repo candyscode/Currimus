@@ -467,7 +467,7 @@ Expect them to line up now, or to be a beat or two apart where the underlying ma
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-17
+https://github.com/candyscode/Currimus/commit/2d73f16
 
 ### CUR-18: Lags in Settings and in the log's marking mode
 
@@ -492,7 +492,7 @@ Correct on both counts, and they were two different pieces of main-thread work.
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-18
+https://github.com/candyscode/Currimus/commit/2d73f16
 
 ### CUR-16: Code review of CUR-1…CUR-15
 
