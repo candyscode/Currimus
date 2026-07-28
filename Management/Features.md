@@ -273,7 +273,7 @@ Runs recorded before this ticket have no per-zone distance and cannot get one, s
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-7B
+https://github.com/candyscode/Currimus/commit/e8eae58
 
 ### CUR-8: Show hints to improve running style in run detail view
 
