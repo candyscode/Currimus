@@ -44,12 +44,12 @@ enum SampleData {
         ]
 
         var runs: [Run] = []
-        for daysBack in 0...181 {
+        for daysBack in 0...364 {
             guard let day = cal.date(byAdding: .day, value: -daysBack, to: today) else { continue }
             let weekday = cal.component(.weekday, from: day)
             guard var slot = week.first(where: { $0.weekday == weekday }) else { continue }
 
-            let progress = 1 - Double(daysBack) / 181           // 0 old → 1 now
+            let progress = 1 - Double(daysBack) / 364           // 0 old → 1 now
             let wave = sin(Double(daysBack) / 8)
 
             // Volume grows, pace sharpens toward race day.
@@ -122,11 +122,24 @@ enum SampleData {
             climbMeters: climb, descentMeters: descent, highPointMeters: high,
             altitudeSamples: alt,
             route: route(km: km, duration: duration, altitudes: alt),
+            zoneDistanceKm: zoneDistance(km: km, zoneSeconds: zones.map { $0 * duration }),
             // Quicker steps at quicker paces, as a real runner's cadence goes
             // — and a demo long run that sits under the mark, so the form hint
             // has something to fire on.
             cadenceSpm: cadence(for: slot)
         )
+    }
+
+    /// Splits a run's distance across the zones it was spent in. Ground is
+    /// covered faster in the harder zones, so the shares are not the same as
+    /// the time shares — which is the entire reason the app records this
+    /// rather than deriving it.
+    private static func zoneDistance(km: Double, zoneSeconds: [TimeInterval]) -> [Double] {
+        let speed: [Double] = [0.85, 0.95, 1.0, 1.12, 1.2]
+        let weights = zip(zoneSeconds, speed).map { $0 * $1 }
+        let total = weights.reduce(0, +)
+        guard total > 0 else { return [0, 0, 0, 0, 0] }
+        return weights.map { km * $0 / total }
     }
 
     /// Deterministic cadence per session type: the long run deliberately

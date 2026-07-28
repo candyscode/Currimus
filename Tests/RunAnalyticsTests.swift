@@ -223,63 +223,127 @@ final class RunAnalyticsTests: XCTestCase {
     private var testZones: HRZones { HRZones(maxHR: 190) }
 
     private func zoneRun(_ seconds: [TimeInterval], avgHR: Int = 0,
-                         km: Double = 10, duration: TimeInterval = 3000) -> Run {
-        Run(date: .now, name: "run", distanceKm: km, duration: duration,
-            avgHR: avgHR, zoneSeconds: seconds)
+                         km: Double = 10, duration: TimeInterval = 3000,
+                         perZoneKm: [Double]? = nil, date: Date = .now) -> Run {
+        Run(date: date, name: "run", distanceKm: km, duration: duration,
+            avgHR: avgHR, zoneSeconds: seconds, zoneDistanceKm: perZoneKm)
     }
 
-    func testARunIsPlacedByWhereItSpentItsTime() {
-        // 70 % of the run in zone 2 — that is a zone 2 run.
+    // MARK: … measured, when the run recorded it
+
+    func testAMeasuredRunContributesOnlyItsZoneTwoPortion() throws {
+        // 40 minutes and 8 km of the run were zone 2; the rest was harder.
+        let run = zoneRun([0, 2400, 1200, 0, 0], km: 12, duration: 3600,
+                          perZoneKm: [0, 8, 4, 0, 0])
+        let effort = try XCTUnwrap(RunAnalytics.effort(of: run, inZone: 2, zones: testZones))
+        XCTAssertTrue(effort.isMeasured)
+        XCTAssertEqual(effort.km, 8, accuracy: 0.001)
+        XCTAssertEqual(effort.seconds, 2400, accuracy: 0.001)
+        // 5:00 /km in zone 2, against 5:00 for the whole run only by accident
+        // — what matters is that the zone-3 kilometres are not in it.
+        XCTAssertEqual(effort.pace, 300, accuracy: 0.5)
+    }
+
+    func testAMeasuredRunWithNoZoneTwoInItContributesNothing() {
+        let run = zoneRun([0, 0, 1800, 1200, 0], km: 10, duration: 3000,
+                          perZoneKm: [0, 0, 6, 4, 0])
+        XCTAssertNil(RunAnalytics.effort(of: run, inZone: 2, zones: testZones))
+    }
+
+    func testAFewSecondsInAZoneIsNotAContribution() {
+        // Passing through zone 2 on the way to zone 4 is not zone-2 running.
+        let run = zoneRun([0, 20, 0, 2980, 0], km: 10, duration: 3000,
+                          perZoneKm: [0, 0.05, 0, 9.95, 0])
+        XCTAssertNil(RunAnalytics.effort(of: run, inZone: 2, zones: testZones))
+    }
+
+    // MARK: … approximated, when it did not
+
+    func testAnOlderRunIsPlacedByWhereItSpentItsTime() throws {
+        // 70 % of the run in zone 2 and no per-zone distance recorded — the
+        // whole run counts, and says so.
         let easy = zoneRun([200, 2100, 700, 0, 0])
-        XCTAssertTrue(RunAnalytics.isRun(easy, mostlyIn: 2, zones: testZones))
-        XCTAssertFalse(RunAnalytics.isRun(easy, mostlyIn: 3, zones: testZones))
+        let effort = try XCTUnwrap(RunAnalytics.effort(of: easy, inZone: 2, zones: testZones))
+        XCTAssertFalse(effort.isMeasured)
+        XCTAssertEqual(effort.km, 10, accuracy: 0.001)
+        XCTAssertNil(RunAnalytics.effort(of: easy, inZone: 3, zones: testZones))
     }
 
     func testARunSplitAcrossZonesBelongsToNone() {
-        // Leading zone, but not the majority of the run: a session that spent
-        // 40 % easy and 35 % hard is not an easy run.
+        // Leading zone, but not the majority: 40 % easy and 35 % hard is not
+        // an easy run.
         let mixed = zoneRun([0, 1200, 1050, 750, 0])
-        XCTAssertFalse(RunAnalytics.isRun(mixed, mostlyIn: 2, zones: testZones))
-        XCTAssertFalse(RunAnalytics.isRun(mixed, mostlyIn: 3, zones: testZones))
+        XCTAssertNil(RunAnalytics.effort(of: mixed, inZone: 2, zones: testZones))
+        XCTAssertNil(RunAnalytics.effort(of: mixed, inZone: 3, zones: testZones))
     }
 
-    func testAnImportedRunIsPlacedByItsAverageHeartRate() {
-        // Another app recorded it, so there is no zone breakdown — only the
-        // average heart rate Health carries.
+    func testAnImportedRunIsPlacedByItsAverageHeartRateUntilHealthIsAsked() throws {
+        // Another app recorded it and its detail screen has not been opened,
+        // so there is no zone breakdown yet — only the average heart rate.
         var imported = zoneRun([0, 0, 0, 0, 0], avgHR: 125)
         imported.imported = true
-        XCTAssertTrue(RunAnalytics.isRun(imported, mostlyIn: 2, zones: testZones))
+        XCTAssertNotNil(RunAnalytics.effort(of: imported, inZone: 2, zones: testZones))
 
         var hard = imported; hard.avgHR = 160
-        XCTAssertTrue(RunAnalytics.isRun(hard, mostlyIn: 4, zones: testZones))
+        XCTAssertNotNil(RunAnalytics.effort(of: hard, inZone: 4, zones: testZones))
+        XCTAssertNil(RunAnalytics.effort(of: hard, inZone: 2, zones: testZones))
     }
 
     func testARunWithNoHeartRateAtAllIsLeftOutRatherThanGuessed() {
         let blind = zoneRun([0, 0, 0, 0, 0], avgHR: 0)
         for zone in 1...5 {
-            XCTAssertFalse(RunAnalytics.isRun(blind, mostlyIn: zone, zones: testZones))
+            XCTAssertNil(RunAnalytics.effort(of: blind, inZone: zone, zones: testZones))
         }
     }
 
-    func testTheZoneTwoTrendCountsOnlyEasyRunsIncludingImportedOnes() throws {
-        let easy = zoneRun([100, 2600, 300, 0, 0], km: 10, duration: 3000)      // 5:00 /km
-        let hard = zoneRun([0, 200, 400, 2000, 400], km: 10, duration: 2400)    // 4:00 /km
-        var imported = zoneRun([0, 0, 0, 0, 0], avgHR: 124, km: 10, duration: 3600)
-        imported.imported = true                                                // 6:00 /km
+    // MARK: … and aggregated by month
 
-        let overall = RunAnalytics.weeklyAvgPace(runs: [easy, hard, imported], weeks: 1)
-        let zoneTwo = RunAnalytics.weeklyAvgPace(runs: [easy, hard, imported], weeks: 1,
-                                                 inZone: 2, zones: testZones)
-        // 30 km in 9000 s overall; 20 km in 6600 s once the hard session drops
-        // out and the imported easy run stays in.
-        XCTAssertEqual(try XCTUnwrap(overall.last!), 300, accuracy: 0.5)
-        XCTAssertEqual(try XCTUnwrap(zoneTwo.last!), 330, accuracy: 0.5)
+    func testTheMonthlyZonePaceIsTimeOverDistanceNotAMeanOfMeans() throws {
+        let now = Date()
+        // One long easy run at 5:00 and one short one at 6:00 in the same
+        // month: 30 km in 9600 s → 5:20, not the 5:30 a mean of the two gives.
+        let long = zoneRun([0, 6000, 0, 0, 0], km: 20, duration: 6000,
+                           perZoneKm: [0, 20, 0, 0, 0], date: now)
+        let short = zoneRun([0, 3600, 0, 0, 0], km: 10, duration: 3600,
+                            perZoneKm: [0, 10, 0, 0, 0], date: now)
+        let months = RunAnalytics.monthlyZonePace(runs: [long, short], zone: 2,
+                                                  zones: testZones, months: 1, now: now)
+        let month = try XCTUnwrap(months.last)
+        XCTAssertEqual(try XCTUnwrap(month.pace), 320, accuracy: 0.5)
+        XCTAssertEqual(month.runs, 2)
+        XCTAssertEqual(month.km, 30, accuracy: 0.001)
+        XCTAssertFalse(month.isApproximate)
     }
 
-    func testAWeekWithoutAnEasyRunHasNoZoneTwoPoint() {
+    func testAMonthWithoutEasyRunningIsAGapNotAZero() {
         let hard = zoneRun([0, 100, 400, 2100, 400])
-        let series = RunAnalytics.weeklyAvgPace(runs: [hard], weeks: 1, inZone: 2, zones: testZones)
-        XCTAssertNil(series.last!, "an empty week is a gap in the line, not a zero")
+        let months = RunAnalytics.monthlyZonePace(runs: [hard], zone: 2,
+                                                  zones: testZones, months: 1)
+        XCTAssertNil(months.last?.pace)
+        XCTAssertEqual(months.last?.runs, 0)
+    }
+
+    func testAMonthCarryingAnOlderRunSaysItIsApproximate() throws {
+        let now = Date()
+        let old = zoneRun([0, 2400, 600, 0, 0], km: 10, duration: 3000, date: now)
+        let months = RunAnalytics.monthlyZonePace(runs: [old], zone: 2,
+                                                  zones: testZones, months: 1, now: now)
+        XCTAssertTrue(try XCTUnwrap(months.last).isApproximate)
+    }
+
+    // MARK: … and read as a trend
+
+    func testTheTrendComparesBothEndsRatherThanTwoLonePoints() throws {
+        // A line that improves steadily, with one freak month at each end.
+        let series: [TimeInterval?] = [400, 350, 348, 344, 340, 300]
+        let change = try XCTUnwrap(RunAnalytics.trendChange(series, window: 3))
+        // Mean of the first three (366) against the last three (328).
+        XCTAssertEqual(change, -38, accuracy: 0.5)
+    }
+
+    func testATooShortLineHasNoTrendToReport() {
+        XCTAssertNil(RunAnalytics.trendChange([300, nil, 310]))
+        XCTAssertNil(RunAnalytics.trendChange([nil, nil, nil, nil]))
     }
 
     // MARK: Sync codecs

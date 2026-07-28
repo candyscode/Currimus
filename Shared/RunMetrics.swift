@@ -47,6 +47,10 @@ struct RunMetrics: Equatable {
     private(set) var altitudeProfile: [Double] = []
     private(set) var coordinates: [Coordinate] = []
     private(set) var zoneSeconds: [TimeInterval] = [0, 0, 0, 0, 0]
+    /// Distance covered while in each zone. The tick already knows both the
+    /// zone and the distance; keeping only the seconds threw away the half
+    /// that makes "pace in zone 2" a measurement rather than an estimate.
+    private(set) var zoneDistanceKm: [Double] = [0, 0, 0, 0, 0]
 
     /// Mean of every heart-rate reading seen, not just the last one.
     var averageHR: Int { hrSampleCount > 0 ? hrSampleSum / hrSampleCount : 0 }
@@ -54,6 +58,9 @@ struct RunMetrics: Equatable {
     // MARK: - Internals
 
     private var lastKmMark: Double = 0
+    /// Where the last recorded second left off, so a tick knows how far this
+    /// one came.
+    private var lastTickDistanceKm: Double = 0
     private var kmStartElapsed: TimeInterval = 0
     private var hrSampleSum = 0
     private var hrSampleCount = 0
@@ -73,6 +80,7 @@ struct RunMetrics: Equatable {
             && lhs.climbRatePerHour == rhs.climbRatePerHour
             && lhs.altitudeProfile == rhs.altitudeProfile
             && lhs.coordinates == rhs.coordinates && lhs.zoneSeconds == rhs.zoneSeconds
+            && lhs.zoneDistanceKm == rhs.zoneDistanceKm
     }
 
     // MARK: - Per-second tick
@@ -85,8 +93,14 @@ struct RunMetrics: Equatable {
         if heartRate > 0 {
             hrSampleSum += heartRate
             hrSampleCount += 1
-            if (1...5).contains(zone) { zoneSeconds[zone - 1] += 1 }
+            if (1...5).contains(zone) {
+                zoneSeconds[zone - 1] += 1
+                // Whatever ground was covered since the last tick belongs to
+                // the zone the runner was in for it.
+                zoneDistanceKm[zone - 1] += max(distanceKm - lastTickDistanceKm, 0)
+            }
         }
+        lastTickDistanceKm = distanceKm
         updateRollingPace(elapsed: elapsed, distanceKm: distanceKm)
         updateClimbRate(elapsed: elapsed)
         return closeKilometer(elapsed: elapsed, distanceKm: distanceKm)

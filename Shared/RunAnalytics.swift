@@ -160,18 +160,10 @@ enum RunAnalytics {
 
     /// Average pace (s/km) per ISO week for the last `weeks`, oldest first.
     /// nil weeks (no runs) are dropped from the polyline but reserve their slot.
-    /// `inZone` narrows the source to runs actually spent in one heart-rate
-    /// zone — the aerobic-base read: zone 2 pace getting faster at the same
-    /// heart rate is the whole point of easy running, and it is invisible in
-    /// an overall average that mixes in every tempo and interval session.
     static func weeklyAvgPace(runs: [Run], weeks: Int, roadOnly: Bool = true,
-                              inZone zone: Int? = nil, zones: HRZones = HRZones(),
                               now: Date = .now) -> [TimeInterval?] {
         let cal = Calendar.runWeek
-        var source = roadOnly ? runs.filter { !$0.isTrail } : runs
-        if let zone {
-            source = source.filter { isRun($0, mostlyIn: zone, zones: zones) }
-        }
+        let source = roadOnly ? runs.filter { !$0.isTrail } : runs
         return (0..<weeks).reversed().map { offset -> TimeInterval? in
             guard let weekDate = cal.date(byAdding: .weekOfYear, value: -offset, to: now) else { return nil }
             let inWeek = source.filter { cal.isDate($0.date, equalTo: weekDate, toGranularity: .weekOfYear) }
@@ -182,27 +174,118 @@ enum RunAnalytics {
         }
     }
 
-    /// Whether a run was *spent* in one heart-rate zone, rather than merely
-    /// touching it.
+    /// What one run contributes to a zone's pace: the time it spent there and
+    /// the ground it covered there.
+    struct ZoneEffort: Equatable {
+        var seconds: TimeInterval
+        var km: Double
+        /// True when this came from the run's own per-zone record rather than
+        /// from treating the whole run as belonging to the zone.
+        var isMeasured: Bool
+
+        var pace: TimeInterval { km > 0.05 ? seconds / km : 0 }
+    }
+
+    /// A run's contribution to one zone, or nil if it made none.
     ///
-    /// The honest limit, stated once here rather than implied everywhere: a
-    /// run stores how long it spent in each zone, not what pace it held while
-    /// it was in each of them. So the unit is the whole run — one the runner
-    /// spent the majority of in the zone, whose average pace is then that
-    /// zone's pace, near enough. Splitting pace by zone properly would need
-    /// per-second pace and zone stored together, which no run in the log has.
+    /// Two sources, in order of trust:
     ///
-    /// Runs another app recorded carry no zone breakdown at all, only an
-    /// average heart rate — so they are placed by that. Without it they cannot
-    /// be placed, and are left out rather than guessed at.
-    static func isRun(_ run: Run, mostlyIn zone: Int, zones: HRZones) -> Bool {
-        guard zone >= 1, zone <= 5 else { return false }
-        let total = run.zoneSeconds.reduce(0, +)
-        if total > 0 {
-            return run.zoneSeconds[zone - 1] / total >= 0.5
+    /// 1. **Measured.** Runs recorded since Currimus started keeping per-zone
+    ///    distance carry the seconds *and* the kilometres they spent in each
+    ///    zone, so the answer is exact: the zone-2 portion of a run counts,
+    ///    the rest of it does not.
+    /// 2. **Approximated.** Older runs, and any run whose per-zone distance is
+    ///    missing, only know how long they spent in each zone. There the unit
+    ///    has to be the whole run: one that spent the majority of its time in
+    ///    the zone counts entirely, at its overall pace. That flatters the
+    ///    number slightly — the harder minutes of a mostly-easy run are in it
+    ///    — which is why the measured path exists.
+    ///
+    /// A run another app recorded has real zone seconds once its detail screen
+    /// has been opened (Health is asked for the heart-rate trace then); until
+    /// that happens it is placed by its average heart rate, which is the best
+    /// available and is wrong for interval sessions. Without any heart rate at
+    /// all it contributes nothing rather than being guessed at.
+    static func effort(of run: Run, inZone zone: Int, zones: HRZones) -> ZoneEffort? {
+        guard zone >= 1, zone <= 5, run.hasUsableDistance else { return nil }
+
+        if let perZone = run.zoneDistanceKm, perZone.count == 5 {
+            let km = perZone[zone - 1]
+            let seconds = run.zoneSeconds[zone - 1]
+            guard km > 0.2, seconds > 30 else { return nil }
+            return ZoneEffort(seconds: seconds, km: km, isMeasured: true)
         }
-        guard run.avgHR > 0 else { return false }
-        return zones.zone(for: run.avgHR) == zone
+
+        let total = run.zoneSeconds.reduce(0, +)
+        let belongs: Bool
+        if total > 0 {
+            belongs = run.zoneSeconds[zone - 1] / total >= 0.5
+        } else if run.avgHR > 0 {
+            belongs = zones.zone(for: run.avgHR) == zone
+        } else {
+            belongs = false
+        }
+        guard belongs else { return nil }
+        return ZoneEffort(seconds: run.duration, km: run.distanceKm, isMeasured: false)
+    }
+
+    /// One month of running in a zone: the pace, and how much it rests on.
+    struct ZoneMonth: Equatable {
+        var month: Date
+        /// nil when nothing was run in that zone that month — a gap in the
+        /// line rather than a zero.
+        var pace: TimeInterval?
+        var km: Double
+        var runs: Int
+        /// True while any part of the month is still an approximation.
+        var isApproximate: Bool
+    }
+
+    /// Pace in one heart-rate zone, month by month, oldest first.
+    ///
+    /// Months rather than weeks: an easy-run pace at a fixed heart rate moves
+    /// over a training block, not over seven days, and a month gathers enough
+    /// runs that one bad Tuesday does not become a data point.
+    ///
+    /// Aggregated as total time over total distance, so a month with four easy
+    /// runs is not outweighed by a month with one — the same way the overall
+    /// pace above it is computed.
+    static func monthlyZonePace(runs: [Run], zone: Int, zones: HRZones,
+                                months: Int, roadOnly: Bool = true,
+                                now: Date = .now) -> [ZoneMonth] {
+        let calendar = Calendar.current
+        let source = roadOnly ? runs.filter { !$0.isTrail } : runs
+        return (0..<months).reversed().compactMap { offset -> ZoneMonth? in
+            guard let date = calendar.date(byAdding: .month, value: -offset, to: now),
+                  let start = calendar.dateInterval(of: .month, for: date)?.start else { return nil }
+            let efforts = source
+                .filter { calendar.isDate($0.date, equalTo: date, toGranularity: .month) }
+                .compactMap { effort(of: $0, inZone: zone, zones: zones) }
+            let km = efforts.reduce(0) { $0 + $1.km }
+            let seconds = efforts.reduce(0) { $0 + $1.seconds }
+            return ZoneMonth(
+                month: start,
+                pace: km > 0.2 ? seconds / km : nil,
+                km: km,
+                runs: efforts.count,
+                isApproximate: efforts.contains { !$0.isMeasured }
+            )
+        }
+    }
+
+    /// The change across a series, smoothed at both ends.
+    ///
+    /// Comparing the first present point to the last made the headline swing
+    /// on two single months — and on a sparse line those two can be a lone run
+    /// each. Averaging `window` points at each end says what actually moved.
+    /// nil when there is not enough of a line to say anything.
+    static func trendChange(_ values: [TimeInterval?], window: Int = 3) -> TimeInterval? {
+        let present = values.compactMap { $0 }
+        guard present.count >= 4 else { return nil }
+        let size = min(window, present.count / 2)
+        let first = present.prefix(size).reduce(0, +) / Double(size)
+        let last = present.suffix(size).reduce(0, +) / Double(size)
+        return last - first
     }
 
     /// Average climb rate (m/h) per week for the last `weeks`, trail only.

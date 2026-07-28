@@ -215,16 +215,7 @@ As a runner, I want to track my progress on my pace while running in zone 2. So 
 
 #### Agent Comments
 
-- The zone-2 chart sits directly under the overall pace chart and **shares its month axis** — the pair covers the same twelve weeks, and reading the second against the first is the point of stacking them. Its headline is set at 40 pt against the hero's 64 pt, so the two blocks read as a lead and a follow-up rather than as two competing heroes. No redesign of the rest of Progress was needed.
-- **Both charts already read `allRuns`**, so runs from other apps were counted in the overall pace before this ticket; the new chart counts them too — placed by the average heart rate Health carries, since another app's workout has no zone breakdown.
-- **The honest limit** (`RunAnalytics.isRun(_:mostlyIn:zones:)`): a run stores how long it spent in each zone, not what pace it held *while* in each of them. So the unit is the whole run — one that spent at least half its time in zone 2 counts, and its average pace is that week's zone-2 pace. True per-zone pace would need per-second pace and zone stored together, which no run in the log has. Doable from now on if you want it: it would mean recording a new series during the run.
-- A run with no heart rate at all is left out rather than guessed at, and a week without an easy run is a gap in the line rather than a zero.
-- Below two data points the chart is replaced by one line of explanation — a near-empty chart reads as a fault rather than as a log that has not filled up yet.
-- The existing chart is **12 weeks, not 12 months** (the ticket says months). Left as is so the two share an axis; say the word and both can go to twelve months.
-
-#### Link to completed work
-
-https://github.com/candyscode/Currimus/commit/baeb68e
+_Superseded by the rework below — see "Agent Response to the review"._
 
 #### Andi's Review
 
@@ -263,6 +254,26 @@ One more thing, since it's related: your ticket said twelve months and I built t
 Want me to do the headline fix now and write the zone-distance recording up as CUR-15?
 
 ##### End of Claude Review
+
+#### Agent Response to the review
+
+Everything on the list is in, except the two items it marked optional (grade-adjusted road pace, and letting the chart follow CUR-6's coaching zone). Zone 2 stays fixed, as you asked.
+
+**1 + 2 + 5 — the whole-run unit and the 50 % cliff are gone.** `RunMetrics` now records the distance covered in each zone alongside the seconds it already kept, and a run carries `zoneDistanceKm`. Zone-2 pace for such a run is exactly `zoneSeconds[1] / zoneDistanceKm[1]`: its zone-2 portion counts, the rest of it does not, and there is no threshold to fall either side of. The month is aggregated as total time over total distance — the same arithmetic as the overall pace above it, which fixes the mean-of-means headline as well.
+
+Runs recorded before this ticket have no per-zone distance and cannot get one, so they keep the old approximation (majority of time in the zone → the whole run counts). The chart says so under itself when any month rests on one: "Older runs count whole, so the early months are approximate." That sentence disappears by itself as the log turns over.
+
+**3 + 4 — imported runs.** Reading the heart-rate trace out of Health turned out to be its own ticket, so it is CUR-15: an imported run's real zone seconds are built from its samples the first time its detail screen is opened, and they are persisted. Once that has happened the run is placed by what it actually did rather than by an average heart rate that means nothing for an interval session — and because the result is stored, a later change to the zone boundaries cannot silently reclassify it. Until a run has been opened it still falls back to average heart rate, which is the best available.
+
+**6 — the delta and the sparsity.** `RunAnalytics.trendChange` averages three months at each end instead of comparing two lone points. Under the chart, in plain text: how many runs and how many kilometres the line is built from.
+
+**Window and axes.** The zone-2 chart is twelve months, on its own axis (every third month labelled). The overall pace chart keeps its twelve weeks and gets its own axis back. They are separated by a divider rather than stacked under one shared axis, since they no longer cover the same period.
+
+**Demo data** now spans a full year and carries per-zone distance, so the twelve-month chart has twelve months to draw and the measured path is what you see.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-7B
 
 ### CUR-8: Show hints to improve running style in run detail view
 

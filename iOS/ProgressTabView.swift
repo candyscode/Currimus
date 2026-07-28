@@ -8,12 +8,36 @@ import SwiftUI
 /// every month since. It sat under both charts, so the axis and the line
 /// above it described different periods.
 struct TrendMonthAxis: View {
-    var weeks: Int
+    /// A weekly chart: one tick at the first week of each month it covers.
+    var weeks: Int?
+    /// A monthly chart: the months themselves, oldest first. Twelve labels in
+    /// a row would collide, so every third one is drawn.
+    var months: [Date]?
     /// Enough for an abbreviated month at 12 pt, in any locale that keeps
     /// them to three or four characters.
     private let labelWidth: CGFloat = 38
 
+    init(weeks: Int) { self.weeks = weeks }
+    init(months: [Date]) { self.months = months }
+
     private var ticks: [(label: String, fraction: Double)] {
+        if let months { return monthTicks(months) }
+        return weekTicks(weeks ?? 0)
+    }
+
+    private func monthTicks(_ months: [Date]) -> [(String, Double)] {
+        guard months.count > 1 else { return [] }
+        // Every third month, and always the last one, so the axis ends where
+        // the line does.
+        let step = max(months.count / 4, 1)
+        return months.enumerated().compactMap { index, month in
+            guard index % step == 0 || index == months.count - 1 else { return nil }
+            return (month.formatted(.dateTime.month(.abbreviated)),
+                    Double(index) / Double(months.count - 1))
+        }
+    }
+
+    private func weekTicks(_ weeks: Int) -> [(String, Double)] {
         let calendar = Calendar.runWeek
         var seenMonths: Set<Int> = []
         var out: [(String, Double)] = []
@@ -98,12 +122,10 @@ struct ProgressScreen: View {
                        format: { Format.pace($0) },
                        describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 18)
-
-            // The two charts share one axis rather than repeating it: they
-            // cover the same twelve weeks, and reading the second against the
-            // first is the point of stacking them.
-            zoneTwoBlock
             monthAxis.padding(.top, 4)
+
+            divider
+            zoneTwoBlock
 
             divider
             driftRow
@@ -117,45 +139,75 @@ struct ProgressScreen: View {
         }
     }
 
-    /// The same twelve weeks, over easy runs only.
+    /// Twelve months of easy running, on its own axis.
     ///
     /// An overall average mixes tempo, intervals and easy running together, so
-    /// it moves with what the week happened to contain rather than with
+    /// it moves with what the block happened to contain rather than with
     /// fitness. Zone 2 pace does not: same heart rate, same effort, and a line
-    /// that falls means the aerobic base is growing. It sits directly under
-    /// the overall pace, sharing its axis, because the pair is the read.
+    /// that falls means the aerobic base is growing.
+    ///
+    /// Months, not weeks: this moves over a training block, and a month
+    /// gathers enough easy running that one bad Tuesday is not a data point.
     @ViewBuilder
     private var zoneTwoBlock: some View {
-        let series = RunAnalytics.weeklyAvgPace(runs: store.allRuns, weeks: 12,
-                                                roadOnly: true, inZone: 2, zones: store.zones)
-        let present = series.compactMap { $0 }
-        let change = (present.last ?? 0) - (present.first ?? 0)
-        let average = present.isEmpty ? 0 : present.reduce(0, +) / Double(present.count)
+        let months = RunAnalytics.monthlyZonePace(runs: store.allRuns, zone: 2,
+                                                  zones: store.zones, months: 12)
+        let series = months.map(\.pace)
+        let km = months.reduce(0) { $0 + $1.km }
+        let seconds = months.reduce(0.0) { $0 + ($1.pace ?? 0) * $1.km }
+        // Time over distance across the whole window — the same arithmetic as
+        // the overall pace above, so the two numbers can be read against each
+        // other. It used to be the mean of the monthly means, which let a
+        // month with one short run weigh as much as a month with twenty.
+        let average = km > 0 ? seconds / km : 0
+        let change = RunAnalytics.trendChange(series)
 
-        Text("IN ZONE 2 · EASY RUNS").kicker(13, color: Theme.bright, tracking: 0.12)
-            .padding(.top, 26)
-        if present.count >= 2 {
+        Text("IN ZONE 2 · LAST 12 MONTHS").kicker(13, color: Theme.bright, tracking: 0.12)
+        if months.filter({ $0.pace != nil }).count >= 2 {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(Format.pace(average)).font(.stat(40)).kerning(-1.6)
                 Text("/km").font(.sg(15)).foregroundStyle(Theme.bright)
                 Spacer()
-                trendDelta(Format.paceDelta(change), improved: change <= 0)
+                if let change {
+                    trendDelta(Format.paceDelta(change), improved: change <= 0,
+                               since: months.first?.month)
+                }
             }
             .padding(.top, 6)
             TrendChart(values: series, headroom: 8, lowerIsBetter: true,
-                       accessibilityTitle: "Average pace in zone 2 per week, last 12 weeks",
+                       accessibilityTitle: "Average pace in zone 2 per month, last 12 months",
                        format: { Format.pace($0) },
                        describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 14)
+            TrendMonthAxis(months: months.map(\.month)).padding(.top, 4)
+            zoneTwoFootnote(months)
         } else {
-            // One week of easy running is a data point, not a trend, and a
-            // near-empty chart reads as a fault rather than as a log that has
-            // not filled up yet.
-            Text("Appears once a few runs have been spent mostly in zone 2. Runs from other apps count too, placed by their average heart rate.")
+            // A month or two of easy running is a data point, not a trend, and
+            // a near-empty chart reads as a fault rather than as a log that
+            // has not filled up yet.
+            Text("Appears once a couple of months carry runs spent in zone 2. Runs from other apps count too.")
                 .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 8)
         }
+    }
+
+    /// What the line rests on. A pace drawn from three easy runs and one drawn
+    /// from forty look identical on a chart, and they are not the same claim.
+    private func zoneTwoFootnote(_ months: [RunAnalytics.ZoneMonth]) -> some View {
+        let runs = months.reduce(0) { $0 + $1.runs }
+        let km = months.reduce(0) { $0 + $1.km }
+        let approximate = months.contains { $0.isApproximate }
+        let base = String(localized: "\(runs) runs · \(Format.km(km, decimals: 0)) km in zone 2")
+        return Text(approximate
+                    // Runs recorded before Currimus kept per-zone distance
+                    // cannot be split, so they count whole. Say so rather than
+                    // present an estimate as a measurement.
+                    ? base + String(localized: ". Older runs count whole, so the early months are approximate.")
+                    : base)
+            .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 10)
     }
 
     /// The card teases the 5 K record; without one it must not read "— 5K",
@@ -288,8 +340,9 @@ struct ProgressScreen: View {
     /// marks an improvement and nothing else — a regression is stated plainly
     /// rather than dressed in the same accent. Which direction counts as an
     /// improvement differs per metric, hence the parameter.
-    private func trendDelta(_ text: String, improved: Bool) -> some View {
-        Text("\(text) since \(windowStartMonth)")
+    private func trendDelta(_ text: String, improved: Bool, since: Date? = nil) -> some View {
+        let month = since?.formatted(.dateTime.month(.abbreviated)) ?? windowStartMonth
+        return Text("\(text) since \(month)")
             .font(.stat(14))
             .foregroundStyle(improved ? Theme.signal : Theme.bright)
     }

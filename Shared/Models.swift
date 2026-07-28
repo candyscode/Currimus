@@ -101,6 +101,10 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// persisted before it existed — i.e. wipe the log. New fields stay
     /// optional; read it through `isImported`.
     var imported: Bool?
+    /// Distance covered in each of the five zones. Optional like every field
+    /// added later: runs recorded before this existed have no such record, and
+    /// their zone-2 pace can only ever be approximated from the run as a whole.
+    var zoneDistanceKm: [Double]?
     /// Average steps per minute over the run. Optional like every field added
     /// later — and genuinely absent for runs recorded before Currimus counted
     /// steps, and for those another app recorded without them.

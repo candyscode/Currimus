@@ -245,6 +245,7 @@ final class RunSession: NSObject, ObservableObject {
             highPointMeters: metrics.altitudeProfile.max().map { $0.rounded() },
             altitudeSamples: metrics.altitudeProfile.isEmpty ? nil : metrics.altitudeProfile,
             route: metrics.coordinates.isEmpty ? nil : metrics.coordinates,
+            zoneDistanceKm: metrics.zoneDistanceKm,
             cadenceSpm: cadenceSpm
         )
 
