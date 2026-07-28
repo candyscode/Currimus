@@ -434,10 +434,23 @@ Maybe based on trail run mode but with different metrics? How to exclude from pr
 ### CUR-15: Imported runs from Apple Fitness app does not show heart rate zones and track on map.
 
 [ ] In Specification
-[X] Open
+[ ] Open
 [ ] WIP
-[ ] Done
+[X] Done
 
-Imported runs from Apple Fitness, Strava & Co. must also show heart rate zones and track on map in the run detail view. Currently shows "No GPS track for this run" and "No heart rate zones was recorded for this run". 
+Imported runs from Apple Fitness, Strava & Co. must also show heart rate zones and track on map in the run detail view. Currently shows "No GPS track for this run" and "No heart rate zones was recorded for this run".
+
+#### Agent Comments
+
+Both were there in Health all along; Currimus was only reading the workout's summary.
+
+- **Zones** are rebuilt from the workout's heart-rate trace (`HealthImport.zoneSeconds`): every sample stands for the time until the next one, capped at a minute, so a strap that dropped out for an hour does not count as an hour in whatever zone it last saw. The samples are asked for by time window rather than by association — plenty of apps save a workout without tying the heart rate to it.
+- **The route** comes from the workout's `HKWorkoutRoute` series and is cached in the same sidecar file every Currimus run uses, so the map, the elevation profile and the GPX export all work on it unchanged.
+- **On demand, not on refresh.** Both are fetched when a detail screen opens (`RunStore.hydrateImported`), because pulling every sample of eighteen months of other apps' workouts on each foreground would spend a lot of battery filling screens nobody had opened. The second visit is free.
+- Two things this needed on the way: the detail screen was reading `store.runs`, which never contains an imported run, so it kept showing the copy it was pushed with; and the sample-file prune ran against the owned list alone, so a fetched route was deleted on the next save.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-15
 
 

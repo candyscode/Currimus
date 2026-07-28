@@ -13,8 +13,13 @@ struct RunDetailView: View {
     /// screen further in is reflected on the way back out. The log carries
     /// metadata only, so the track and elevation series come from the store's
     /// sidecar files, cached after the first ask.
+    ///
+    /// `allRuns`, not `runs`: an imported run is not in the owned list, and
+    /// looking only there meant this screen kept showing the copy it was
+    /// pushed with — including the empty zone breakdown it arrived with,
+    /// however much Health had since filled in.
     private var run: Run {
-        store.hydrated(store.runs.first { $0.id == storedRun.id } ?? storedRun)
+        store.hydrated(store.allRuns.first { $0.id == storedRun.id } ?? storedRun)
     }
 
     var body: some View {
@@ -25,6 +30,10 @@ struct RunDetailView: View {
                 deleteAction
             }
         }
+        // A run another app recorded arrives as bare metadata. Its zones and
+        // its route are still in Health; this is where they are asked for,
+        // because this is the only screen that draws them.
+        .task { await store.hydrateImported(storedRun) }
         // Plain system alert, like the log's — one question, asked one way.
         .alert(
             DeletePrompt.title([run]),

@@ -202,6 +202,35 @@ final class RunStore: ObservableObject {
     /// screen or an export needs, and nothing else does.
     func hydrated(_ run: Run) -> Run { run.merging(samples(for: run)) }
 
+    #if canImport(HealthKit)
+    /// Fills in what a run another app recorded keeps in Health rather than in
+    /// the log — its heart-rate zones and its GPS track.
+    ///
+    /// On demand, when a detail screen asks: pulling every sample of eighteen
+    /// months of other apps' workouts on each refresh would spend a lot of
+    /// battery filling screens nobody opened. What comes back is cached like
+    /// any other run's samples, so the second visit costs nothing.
+    func hydrateImported(_ run: Run) async {
+        guard run.isImported, !isDemo, needsHydration(run) else { return }
+        guard let detail = await HealthImport.detail(for: run, zones: zones, in: healthStore),
+              !detail.isEmpty else { return }
+        if !detail.route.isEmpty {
+            let samples = RunSamples(route: detail.route)
+            sampleCache[run.id] = samples
+            RunSampleStore.save(samples, for: run.id)
+        }
+        if detail.zoneSeconds.reduce(0, +) >= 1,
+           let index = importedRuns.firstIndex(where: { $0.id == run.id }) {
+            importedRuns[index].zoneSeconds = detail.zoneSeconds
+        }
+    }
+
+    /// Whether Health still holds something this run does not.
+    private func needsHydration(_ run: Run) -> Bool {
+        run.zoneSeconds.reduce(0, +) < 1 || (samples(for: run).route?.isEmpty ?? true)
+    }
+    #endif
+
     private func storeSamples(of run: Run) {
         guard run.carriesSamples else { return }
         let samples = RunSamples(run)
@@ -357,8 +386,11 @@ final class RunStore: ObservableObject {
     private func persist() {
         write(runs, forKey: AppDefaults.runsKey)
         guard !isLoading, !isDemo else { return }
-        // A deleted run must not leave its track behind.
-        let live = Set(runs.map(\.id))
+        // A deleted run must not leave its track behind — but an imported
+        // run's track was fetched from Health and cached here too, and it is
+        // not in `runs`. Pruning against the owned list alone deleted it on
+        // the next save.
+        let live = Set(runs.map(\.id)).union(importedRuns.map(\.id))
         Self.ioQueue.async { RunSampleStore.prune(keeping: live) }
     }
 

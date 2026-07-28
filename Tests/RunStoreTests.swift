@@ -311,6 +311,41 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(store.importedRuns.count, 1)
     }
 
+    // MARK: - Zones from another app's heart-rate trace
+
+    /// Zones at max 190: 115 / 133 / 152 / 171.
+    private var zones: HRZones { HRZones(maxHR: 190) }
+
+    private func trace(_ readings: [(Int, TimeInterval)], from start: Date) -> [(bpm: Int, at: Date)] {
+        readings.map { (bpm: $0.0, at: start.addingTimeInterval($0.1)) }
+    }
+
+    func testAHeartRateTraceBecomesTimeInZones() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        // Ten seconds apart: 120 (Z2), 120 (Z2), 160 (Z4), then the end.
+        let samples = trace([(120, 0), (120, 10), (160, 20)], from: start)
+        let seconds = HealthImport.zoneSeconds(from: samples, zones: zones,
+                                               end: start.addingTimeInterval(30))
+        XCTAssertEqual(seconds[1], 20, accuracy: 0.01, "two ten-second spans in zone 2")
+        XCTAssertEqual(seconds[3], 10, accuracy: 0.01)
+        XCTAssertEqual(seconds[0] + seconds[2] + seconds[4], 0, accuracy: 0.01)
+    }
+
+    func testAGapInTheTraceIsNotCountedAsTimeInTheLastZone() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        // The strap dropped for an hour between two readings.
+        let samples = trace([(120, 0), (120, 3600)], from: start)
+        let seconds = HealthImport.zoneSeconds(from: samples, zones: zones,
+                                               end: start.addingTimeInterval(3660))
+        XCTAssertEqual(seconds.reduce(0, +), 2 * HealthImport.maxSampleSpan, accuracy: 0.01,
+                       "each reading stands for a minute at most, not for the silence after it")
+    }
+
+    func testATraceWithNoReadingsIsAllZeros() {
+        let seconds = HealthImport.zoneSeconds(from: [], zones: zones, end: .now)
+        XCTAssertEqual(seconds, [0, 0, 0, 0, 0])
+    }
+
     // MARK: - Matching a run to its workout in Health
 
     func testAWorkoutStartingWithTheRunIsTheSameOuting() {

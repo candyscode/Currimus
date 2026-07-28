@@ -1,5 +1,6 @@
 import Foundation
 import HealthKit
+import CoreLocation
 
 /// Runs recorded by *other* apps — Apple Fitness, Nike, Strava — pulled out of
 /// Apple Health so the weekly totals, progress and widgets describe everything
@@ -21,6 +22,9 @@ enum HealthImport {
             HKQuantityType(.restingHeartRate),
             HKQuantityType(.distanceWalkingRunning),
             HKQuantityType(.stepCount),
+            // The GPS track of a run another app recorded, so its detail
+            // screen can draw a map instead of an apology.
+            HKSeriesType.workoutRoute(),
             HKCharacteristicType(.dateOfBirth),
         ]
     }
@@ -71,6 +75,143 @@ enum HealthImport {
                 let mineRange = mine.date...(mine.date + mine.duration)
                 return range.overlaps(mineRange)
             }
+        }
+    }
+
+    // MARK: - The heavy half of an imported workout
+
+    /// What a run another app recorded keeps in Health but not in the log: the
+    /// heart-rate trace and the GPS route.
+    ///
+    /// Fetched on demand, when a detail screen actually asks. Pulling the
+    /// route and every heart-rate sample of eighteen months of workouts on
+    /// each refresh would spend a lot of battery filling screens nobody opened.
+    struct WorkoutDetail: Equatable {
+        var zoneSeconds: [TimeInterval]
+        var route: [Coordinate]
+
+        var isEmpty: Bool { zoneSeconds.reduce(0, +) < 1 && route.isEmpty }
+    }
+
+    /// How long one heart-rate sample is taken to stand for: until the next
+    /// one, but never longer than this. A gap where nothing was recorded is
+    /// not time spent in whatever zone was last seen.
+    static let maxSampleSpan: TimeInterval = 60
+
+    /// Seconds per zone from a heart-rate trace. Pure, so the arithmetic can
+    /// be tested without a Health store.
+    static func zoneSeconds(from samples: [(bpm: Int, at: Date)],
+                            zones: HRZones, end: Date) -> [TimeInterval] {
+        var seconds = [TimeInterval](repeating: 0, count: 5)
+        for (index, sample) in samples.enumerated() {
+            let next = index + 1 < samples.count ? samples[index + 1].at : end
+            let span = min(max(next.timeIntervalSince(sample.at), 0), maxSampleSpan)
+            let zone = zones.zone(for: sample.bpm)
+            guard zone >= 1, zone <= 5 else { continue }
+            seconds[zone - 1] += span
+        }
+        return seconds
+    }
+
+    static func detail(for run: Run, zones: HRZones, in store: HKHealthStore) async -> WorkoutDetail? {
+        guard isAvailable, run.isImported else { return nil }
+        // The imported run carries the workout's own UUID as its id, so the
+        // workout can be asked for directly rather than searched for by time.
+        guard let workout = await workout(with: run.id, in: store) else { return nil }
+        let samples = await heartRateSamples(of: workout, in: store)
+        let locations = await routeLocations(of: workout, in: store)
+        return WorkoutDetail(
+            zoneSeconds: zoneSeconds(from: samples, zones: zones, end: workout.endDate),
+            route: locations.map {
+                Coordinate(lat: $0.coordinate.latitude, lon: $0.coordinate.longitude,
+                           elevation: $0.altitude,
+                           t: max($0.timestamp.timeIntervalSince(workout.startDate), 0))
+            }
+        )
+    }
+
+    private static func workout(with id: UUID, in store: HKHealthStore) async -> HKWorkout? {
+        await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: .workoutType(),
+                predicate: HKQuery.predicateForObject(with: id),
+                limit: 1,
+                sortDescriptors: nil
+            ) { _, samples, _ in
+                continuation.resume(returning: samples?.first as? HKWorkout)
+            }
+            store.execute(query)
+        }
+    }
+
+    private static func heartRateSamples(of workout: HKWorkout,
+                                         in store: HKHealthStore) async -> [(bpm: Int, at: Date)] {
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: HKQuantityType(.heartRate),
+                // By time rather than by association: plenty of apps save a
+                // workout without tying the heart-rate samples to it, and the
+                // watch's own readings during that window are the same trace.
+                predicate: HKQuery.predicateForSamples(withStart: workout.startDate,
+                                                       end: workout.endDate),
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+            ) { _, samples, _ in
+                let readings = (samples as? [HKQuantitySample] ?? []).map {
+                    (bpm: Int($0.quantity.doubleValue(for: unit).rounded()), at: $0.startDate)
+                }
+                continuation.resume(returning: readings)
+            }
+            store.execute(query)
+        }
+    }
+
+    /// The route arrives in batches, so the locations are collected in a box
+    /// the query's own queue can safely append to, and the continuation is
+    /// resumed exactly once — twice would trap.
+    private final class RouteBuffer: @unchecked Sendable {
+        private let lock = NSLock()
+        private var locations: [CLLocation] = []
+        private var finished = false
+
+        /// Appends a batch; returns everything when this was the last one.
+        func add(_ batch: [CLLocation]?, done: Bool) -> [CLLocation]? {
+            lock.lock()
+            defer { lock.unlock() }
+            locations.append(contentsOf: batch ?? [])
+            guard done, !finished else { return nil }
+            finished = true
+            return locations
+        }
+    }
+
+    private static func routeLocations(of workout: HKWorkout,
+                                       in store: HKHealthStore) async -> [CLLocation] {
+        guard let series = await routeSeries(of: workout, in: store) else { return [] }
+        return await withCheckedContinuation { continuation in
+            let buffer = RouteBuffer()
+            let query = HKWorkoutRouteQuery(route: series) { _, locations, done, _ in
+                if let all = buffer.add(locations, done: done) {
+                    continuation.resume(returning: all)
+                }
+            }
+            store.execute(query)
+        }
+    }
+
+    private static func routeSeries(of workout: HKWorkout,
+                                    in store: HKHealthStore) async -> HKWorkoutRoute? {
+        await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: HKSeriesType.workoutRoute(),
+                predicate: HKQuery.predicateForObjects(from: workout),
+                limit: 1,
+                sortDescriptors: nil
+            ) { _, samples, _ in
+                continuation.resume(returning: samples?.first as? HKWorkoutRoute)
+            }
+            store.execute(query)
         }
     }
 
