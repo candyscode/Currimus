@@ -73,6 +73,31 @@ baseline is pinned to iPhone 17 Pro / Apple Watch Ultra 3 (49mm) — running it
 with `WATCH_SIM` pointed elsewhere silently replaces the baseline with captures
 from the wrong device. Recover with `git checkout -- Tests/UISnapshots/reference`.
 
+## Gestures need the UI-test target
+
+`CurrimusUITests` exists because the log's swipe-to-delete broke twice and
+nothing could catch it: a unit test cannot express a drag, `simctl` cannot
+inject one, and a screenshot only shows a resting state.
+
+```bash
+xcodebuild test -scheme CurrimusUITests -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+```
+
+Run it after touching anything in `iOS/RunDeletion.swift` or the log's rows.
+Two things it has already caught:
+
+- **A `Button` inside a swipeable row is a trap.** A horizontal drag never
+  leaves a full-width button's bounds, so SwiftUI does not cancel its tap and
+  lifting the finger fires it. Use a `TapGesture` alongside the drag instead —
+  a tap does not fire once the finger has travelled.
+- **A `LazyVStack` breaks the swipe.** The action tile lives in the row's
+  background and loses its definite height under a lazy container, so the
+  button renders but stops being hittable. The log stays eager on purpose.
+
+Elements need identifiers to be addressable: rows carry `log-row`, the swipe
+tile carries `swipe-action`. Matching on visible text is fragile — the log's
+own header ends in " km" just like every row does.
+
 ## HealthKit, learned the hard way
 
 - **Deleting** a workout is a *write*: it needs share authorization for
@@ -86,6 +111,14 @@ from the wrong device. Recover with `git checkout -- Tests/UISnapshots/reference
   predicate: nil)` is what makes cadence possible at all.
 - Read authorization is never observable — a denied type returns an empty
   result. Only *share* denial can be detected.
+- **Adding a type to `readTypes` does nothing on its own.** Installs that have
+  already answered the prompt leave the new type undetermined, and it returns
+  empty forever until `requestAuthorization` is called again. That is what hid
+  the workout routes of imported runs. Re-requesting is cheap: the sheet only
+  appears for types that are new.
+- There is **no API for a person's heart-rate zones before iOS 27**
+  (`zoneGroupsByType`, WWDC26 session 207). Until the target moves, "the same
+  zones as Apple Fitness" can only mean the same model and the same inputs.
 - The simulator has no Health data whatsoever. Anything derived from Health
   (zones, cadence, imported runs) needs a DEBUG injection to be seen at all —
   see the `-zones derived|updated|coach` flags.
@@ -98,6 +131,19 @@ anything is audible is the wearer's Silent Mode setting. `.notification` and
 `.success` are the two that sound like a little tune — both were removed in
 CUR-6. Patterns are built by repeating tap types (`.click`, `.directionUp`,
 `.directionDown`) on a `Task` with `Task.sleep` between them.
+
+## Main-thread work to avoid
+
+Two that caused visible stutter on an iPhone 14 Pro Max, both fixed, both easy
+to reintroduce:
+
+- `RunStore.persistSettings()` / `pushSettings()` run on the io queue. A
+  `JSONEncoder` pass, three `UserDefaults` writes and `updateApplicationContext`
+  — a synchronous hop into another process — behind every toggle in Settings.
+- The log rebuilds **every** row on every state change (eager `VStack`, see
+  above), so a row must stay cheap. Date formatting, number formatting and
+  `run.classification` (which walks the splits twice) are precomputed once per
+  log change in `RunStore.logText`. Do not put formatting back into `LogRow`.
 
 ## Demo settings leak into the app group
 
