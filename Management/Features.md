@@ -634,5 +634,5 @@ Aus derselben Route fallen außerdem **echte Kilometer-Splits** ab (`RunAnalytic
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-21
+https://github.com/candyscode/Currimus/commit/934d291
 
