@@ -27,6 +27,7 @@ Every feature has a unique ID: CUR-1, CUR-2, CUR-3 etc. Commit and and branch na
 
 ## Features
 
+
 ### CUR-1: Option to delete runs
 
 [ ] In Specification
@@ -205,7 +206,6 @@ There is no Zone 0! Only Zone 1 to Zone 5.
 
 Correct — zero was an internal sentinel ("no heart rate yet", which draws the bar unlit) that leaked into the way I described the feature. `ZoneCoach.update` now takes `zone: Int?`, so the absence of a reading is expressed as an absence rather than as a sixth zone, and the comments and tests say so. Behaviour is unchanged: no reading still means no vibration.
 
-
 ### CUR-7: Show progress over pace in heart rate zone 2
 
 [ ] In Specification
@@ -316,7 +316,6 @@ https://github.com/candyscode/Currimus/commit/3d03070
 
 Are you happy with the solution or does it have significant shortcomings, we have to address?
 
-
 ### CUR-9: Coaching Mode (for beginners)
  [X] In Specification
 [ ] Open
@@ -377,7 +376,6 @@ iOS 18 is the sweet spot — it recovers the whole supported device range for tw
 
 Proposal only: https://github.com/candyscode/Currimus/commit/04a0a83
 
-
 ### CUR-12: iOS Widgets
  [X] In Specification
 [ ] Open
@@ -435,7 +433,6 @@ Trail Summary's profile shows "1.024…" where the Ultra shows the full "1.024 m
 
 Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 
-
 ### CUR-14: Hiking mode
  [X] In Specification
 [ ] Open
@@ -443,6 +440,60 @@ Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 [ ] Done
 
 Maybe based on trail run mode but with different metrics? How to exclude from progress page? How to make this clear in the UI?
+
+### CUR-15: Imported runs from Apple Fitness app does not show heart rate zones and track on map.
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Imported runs from Apple Fitness, Strava & Co. must also show heart rate zones and track on map in the run detail view. Currently shows "No GPS track for this run" and "No heart rate zones was recorded for this run".
+
+#### Agent Comments
+
+Both were there in Health all along; Currimus was only reading the workout's summary.
+
+- **Zones** are rebuilt from the workout's heart-rate trace (`HealthImport.zoneSeconds`): every sample stands for the time until the next one, capped at a minute, so a strap that dropped out for an hour does not count as an hour in whatever zone it last saw. The samples are asked for by time window rather than by association — plenty of apps save a workout without tying the heart rate to it.
+- **The route** comes from the workout's `HKWorkoutRoute` series and is cached in the same sidecar file every Currimus run uses, so the map, the elevation profile and the GPX export all work on it unchanged.
+- **On demand, not on refresh.** Both are fetched when a detail screen opens (`RunStore.hydrateImported`), because pulling every sample of eighteen months of other apps' workouts on each foreground would spend a lot of battery filling screens nobody had opened. The second visit is free.
+- Two things this needed on the way: the detail screen was reading `store.runs`, which never contains an imported run, so it kept showing the copy it was pushed with; and the sample-file prune ran against the owned list alone, so a fetched route was deleted on the next save.
+
+**Second round (2026-07-28), from testing on device:**
+
+- **No GPX track.** `HKSeriesType.workoutRoute()` was added to the read set *after* the install had already answered the Health prompt, so it sat undetermined and every route query came back empty — silently, because Health never reports a denied read. Authorization is now re-requested once per session at the first hydration, which raises the sheet for types that are new and is a no-op for the rest.
+- **Zone times vanishing while the detail screen was open.** Same shape as review finding 1: the imported list is replaced wholesale on every refresh, and anything living only in it is one foreground away from being lost. The rebuilt zone seconds are written to the run's sidecar file now — the same place the route already lived, which is exactly why the route survived and the zones did not.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/2ea9c45
+
+### CUR-16: Code review of CUR-1…CUR-15
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+A review of the whole CUR-1…CUR-15 series and the working tree, run on 2026-07-28. Nine findings, all confirmed against the code and all fixed.
+
+#### Agent Comments
+
+Two of them meant a shipped feature quietly did not do what its ticket claims:
+
+1. **Every foreground threw away the zones CUR-15 had fetched.** `refreshImportedRuns` replaces the imported list wholesale with what Health returns, and a workout *summary* carries no zone breakdown — so a run whose heart-rate trace had been read went back to zeros on the next return to the app, and the zone-2 chart silently fell back to placing it by its average heart rate. Hydrated zones are now carried across the refresh (`carryingHydratedZones`), and a fresher answer from Health still wins.
+2. **Zone coaching went silent for the second run of an app session.** `RunSession` lives for the lifetime of the app, and the coach was only rebuilt when the target zone *changed* — so run two inherited run one's `lastFired`, sitting on the previous run's elapsed clock, and suppressed every cue until the new run passed the same elapsed time. The coach is rebuilt in `resetMetrics`, along with clearing a stale zone warning.
+3. **The out-of-zone alarm fired during the warm-up.** Any zone that was not the target counted as "left", so a run that starts in zone 1 got three seconds of buzzing and a full-screen warning within seconds of starting, repeating every minute until the runner reached zone 2. A zone cannot be left before it has been reached; `ZoneCoach` now waits for the first arrival.
+4. A route query that failed without setting `done` never resumed its continuation, leaving the detail screen waiting on it for the rest of the session.
+5. An imported treadmill run has no route and never will, so "has no route yet" meant it re-queried Health on every single visit. Hydration is remembered instead.
+6. The zone number under the bar dimmed with the wrist down — CUR-5 says it stays lit, and so did the comment above it. (Trail's climb stats moved to the secondary ink at the same time, so they no longer sit a step brighter than the numbers beside them.)
+7. A swipe the scroll view took over left `isDragging` set, so the row stuck half-open and the close-all path refused to touch it.
+8. The zone-2 headline divided by months that had contributed no time, and the delta was labelled with the first month of the *window* rather than the first month with a point in it.
+9. A zone-update notice could be cleared before it was read, by a later refresh that found nothing to say.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/24028c7
 
 ### CUR-17: Heart rate zones should match Apple Fitness
 
@@ -524,59 +575,3 @@ Acht Punkte aus dem Praxistest (2026-07-28): 0,0-km-Läufe im Log obwohl die Wat
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/fbfd965
-
-### CUR-16: Code review of CUR-1…CUR-15
-
-[ ] In Specification
-[ ] Open
-[ ] WIP
-[X] Done
-
-A review of the whole CUR-1…CUR-15 series and the working tree, run on 2026-07-28. Nine findings, all confirmed against the code and all fixed.
-
-#### Agent Comments
-
-Two of them meant a shipped feature quietly did not do what its ticket claims:
-
-1. **Every foreground threw away the zones CUR-15 had fetched.** `refreshImportedRuns` replaces the imported list wholesale with what Health returns, and a workout *summary* carries no zone breakdown — so a run whose heart-rate trace had been read went back to zeros on the next return to the app, and the zone-2 chart silently fell back to placing it by its average heart rate. Hydrated zones are now carried across the refresh (`carryingHydratedZones`), and a fresher answer from Health still wins.
-2. **Zone coaching went silent for the second run of an app session.** `RunSession` lives for the lifetime of the app, and the coach was only rebuilt when the target zone *changed* — so run two inherited run one's `lastFired`, sitting on the previous run's elapsed clock, and suppressed every cue until the new run passed the same elapsed time. The coach is rebuilt in `resetMetrics`, along with clearing a stale zone warning.
-3. **The out-of-zone alarm fired during the warm-up.** Any zone that was not the target counted as "left", so a run that starts in zone 1 got three seconds of buzzing and a full-screen warning within seconds of starting, repeating every minute until the runner reached zone 2. A zone cannot be left before it has been reached; `ZoneCoach` now waits for the first arrival.
-4. A route query that failed without setting `done` never resumed its continuation, leaving the detail screen waiting on it for the rest of the session.
-5. An imported treadmill run has no route and never will, so "has no route yet" meant it re-queried Health on every single visit. Hydration is remembered instead.
-6. The zone number under the bar dimmed with the wrist down — CUR-5 says it stays lit, and so did the comment above it. (Trail's climb stats moved to the secondary ink at the same time, so they no longer sit a step brighter than the numbers beside them.)
-7. A swipe the scroll view took over left `isDragging` set, so the row stuck half-open and the close-all path refused to touch it.
-8. The zone-2 headline divided by months that had contributed no time, and the delta was labelled with the first month of the *window* rather than the first month with a point in it.
-9. A zone-update notice could be cleared before it was read, by a later refresh that found nothing to say.
-
-#### Link to completed work
-
-https://github.com/candyscode/Currimus/commit/24028c7
-
-### CUR-15: Imported runs from Apple Fitness app does not show heart rate zones and track on map.
-
-[ ] In Specification
-[ ] Open
-[ ] WIP
-[X] Done
-
-Imported runs from Apple Fitness, Strava & Co. must also show heart rate zones and track on map in the run detail view. Currently shows "No GPS track for this run" and "No heart rate zones was recorded for this run".
-
-#### Agent Comments
-
-Both were there in Health all along; Currimus was only reading the workout's summary.
-
-- **Zones** are rebuilt from the workout's heart-rate trace (`HealthImport.zoneSeconds`): every sample stands for the time until the next one, capped at a minute, so a strap that dropped out for an hour does not count as an hour in whatever zone it last saw. The samples are asked for by time window rather than by association — plenty of apps save a workout without tying the heart rate to it.
-- **The route** comes from the workout's `HKWorkoutRoute` series and is cached in the same sidecar file every Currimus run uses, so the map, the elevation profile and the GPX export all work on it unchanged.
-- **On demand, not on refresh.** Both are fetched when a detail screen opens (`RunStore.hydrateImported`), because pulling every sample of eighteen months of other apps' workouts on each foreground would spend a lot of battery filling screens nobody had opened. The second visit is free.
-- Two things this needed on the way: the detail screen was reading `store.runs`, which never contains an imported run, so it kept showing the copy it was pushed with; and the sample-file prune ran against the owned list alone, so a fetched route was deleted on the next save.
-
-**Second round (2026-07-28), from testing on device:**
-
-- **No GPX track.** `HKSeriesType.workoutRoute()` was added to the read set *after* the install had already answered the Health prompt, so it sat undetermined and every route query came back empty — silently, because Health never reports a denied read. Authorization is now re-requested once per session at the first hydration, which raises the sheet for types that are new and is a no-op for the rest.
-- **Zone times vanishing while the detail screen was open.** Same shape as review finding 1: the imported list is replaced wholesale on every refresh, and anything living only in it is one foreground away from being lost. The rebuilt zone seconds are written to the run's sidecar file now — the same place the route already lived, which is exactly why the route survived and the zones did not.
-
-#### Link to completed work
-
-https://github.com/candyscode/Currimus/commit/2ea9c45
-
-
