@@ -180,6 +180,10 @@ struct ChevronRow<Trailing: View>: View {
                 Chevron()
             }
         }
+        // Padding *and* a minimum height: a short row is centred in 56 pt as
+        // before, and a row whose subtitle wraps keeps the same gap to the
+        // hairlines instead of growing tight against them.
+        .padding(.vertical, 10)
         .frame(minHeight: minHeight)
         .contentShape(Rectangle())
     }

@@ -208,8 +208,10 @@ struct ProgressScreen: View {
         return Text(approximate
                     // Runs recorded before Currimus kept per-zone distance
                     // cannot be split, so they count whole. Say so rather than
-                    // present an estimate as a measurement.
-                    ? base + String(localized: ". Older runs count whole, so the early months are approximate.")
+                    // present an estimate as a measurement — and say it in
+                    // words that mean something without knowing the app's
+                    // history.
+                    ? base + String(localized: ". For older runs Currimus only knows the pace of the whole run, not of its easy part alone, so those months are a close estimate rather than a measurement.")
                     : base)
             .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
@@ -234,24 +236,46 @@ struct ProgressScreen: View {
             VStack(alignment: .leading, spacing: 3) {
                 // The pace comes from the runner's own easy runs, so the
                 // heading names theirs instead of a number this app picked.
-                Text(reference.map { "Heart rate at \(Format.pace($0)) pace" }
+                Text(reference.map { "Heart rate at \(Format.pace($0)) /km" }
                      ?? "Heart rate at your steady pace")
                     .font(.sg(16))
-                // The subtitle carries the empty state: a heading with a lone
-                // em dash beside it reads as a fault, not as a log that has
-                // not filled up yet.
-                Text(drift == nil
-                     ? "Appears once a few easy runs sit at a similar pace"
-                     : "Same effort, less work")
-                    .font(.sg(13)).foregroundStyle(Theme.muted)
+                // The subtitle carries the empty state, says where the pace
+                // came from, and — this is the part that was wrong — reads the
+                // direction off the number instead of claiming an improvement
+                // whichever way it went.
+                Text(driftSubtitle(drift))
+                    .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             if let drift {
-                Text("\(drift.avg) \(Text(drift.delta <= 0 ? "\(drift.delta)" : "+\(drift.delta)").font(.stat(14)).foregroundStyle(Theme.signal))")
-                    .font(.stat(26))
+                // Signal marks an improvement and nothing else, here as
+                // everywhere else on this screen.
+                let delta = Text(drift.delta <= 0 ? "\(drift.delta)" : "+\(drift.delta)")
+                    .font(.stat(14))
+                    .foregroundStyle(drift.delta <= 0 ? Theme.signal : Theme.bright)
+                Text("\(drift.avg) \(delta)").font(.stat(26))
             }
         }
+    }
+
+    /// Where the number comes from, and which way it points.
+    ///
+    /// It used to read "Same effort, less work" in every case, including a
+    /// heart rate that had gone *up* — which is the one reading a runner
+    /// actually needs to notice.
+    private func driftSubtitle(_ drift: (avg: Int, delta: Int)?) -> String {
+        guard let drift else {
+            return String(localized: "Your own median easy pace. Appears once a few easy runs sit near it.")
+        }
+        let median = String(localized: "Your own median easy pace, across the runs that sat near it.")
+        if drift.delta < 0 {
+            return median + String(localized: " Same pace, \(-drift.delta) bpm lower than it used to be — that is fitness.")
+        }
+        if drift.delta > 0 {
+            return median + String(localized: " Same pace, \(drift.delta) bpm higher than it used to be. Heat, fatigue or a hard block will do that.")
+        }
+        return median + String(localized: " Same pace, same heart rate.")
     }
 
     // MARK: - Trail
@@ -291,6 +315,12 @@ struct ProgressScreen: View {
                       unit: "metres of climb") { climb in
                 climb >= 1000 ? String(format: "%.1fk", climb / 1000) : "\(Int(climb))"
             }
+            // The chart above this one is trail-only; these bars are not, and
+            // the difference is worth a line rather than a guess.
+            Text("Every metre climbed counts here, on trails and on the road — including runs another app recorded, where it saved the elevation. The climb rate above counts trail runs only.")
+                .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
 
             recordsCard(title: "Most climb", value: (store.mostClimbRun?.climbMeters).map {
                 $0 > 0 ? "\(Int($0)) m" : String(localized: "Nothing set yet")

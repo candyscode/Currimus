@@ -50,4 +50,7 @@ enum DebugFlags {
     /// iOS: open the log already in its marking mode, which is a tab state
     /// rather than a route and so cannot be reached with `-push`.
     static var opensLogSelection: Bool { isSet("select") }
+    /// iOS: open the first log row's swipe action. A drag cannot be injected
+    /// into a screenshot, so this is the only way to look at the open state.
+    static var opensFirstSwipe: Bool { isSet("swipe") }
 }

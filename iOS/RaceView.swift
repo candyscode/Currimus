@@ -85,12 +85,25 @@ struct RaceView: View {
         return "\(pct >= 0 ? "+" : "")\(pct)%"
     }
 
+    /// Where the number comes from, in enough detail to argue with.
+    ///
+    /// "Riegel" on its own tells a runner nothing. What they need is which
+    /// effort it read, when that effort was, and what the model is bad at.
     private func predictionNote(_ race: Race) -> String {
         guard let p = store.prediction else {
-            return "Add a shorter benchmark run and the prediction appears."
+            return "Run a 5 K, 10 K or half — or anything longer — and the prediction appears."
         }
-        let extra = p.underTrained ? " Your longest run is still short of the distance, so treat it as optimistic." : ""
-        return "Prediction uses your \(p.basisLabel) (Riegel). It improves as races and long runs come in — no plans, no coaching, just where you stand.\(extra)"
+        let when = p.basisDate.formatted(.dateTime.month(.wide).year())
+        var note = String(localized: "Scaled from your best \(p.basisLabel) effort (\(when)) with Riegel's model. Nothing else feeds it: no plan, no coaching, just where you stand.")
+        if p.isStale {
+            // A prediction resting on last autumn is a statement about last
+            // autumn, and it should not be read as anything else.
+            note += String(localized: " Nothing in the last four months reached that distance, so this describes the shape you were in then.")
+        }
+        if p.underTrained {
+            note += String(localized: " Your longest run is still well short of the race, which the model cannot see — treat it as optimistic.")
+        }
+        return note
     }
 }
 

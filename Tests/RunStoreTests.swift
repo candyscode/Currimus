@@ -271,6 +271,20 @@ final class RunStoreTests: XCTestCase {
                        "Health owns it — deleting locally would just resurrect it")
     }
 
+    // MARK: - A recording that measured nothing
+
+    func testARunWithoutDistanceIsNotFiled() {
+        let store = makeStore()
+        // The watch says "no distance, this run is not being saved" — and then
+        // sent it to the phone, which filed it anyway. 0.00 km entries drag
+        // every weekly pace average with them.
+        store.add(run("Failed recording", km: 0, minutes: 0.5))
+        XCTAssertTrue(store.runs.isEmpty)
+
+        store.add(run("Real", km: 5, minutes: 25))
+        XCTAssertEqual(store.runs.count, 1)
+    }
+
     // MARK: - Deleting
 
     func testDeletingSeveralRunsAtOnceLeavesTheRest() {

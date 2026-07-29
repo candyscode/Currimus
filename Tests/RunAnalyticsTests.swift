@@ -23,6 +23,61 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertLessThan(half, full)
     }
 
+    func testPredictionPrefersTheClosestBenchmarkBelowTheRace() throws {
+        // A half and a 5 K, both recent. For a marathon the half is by far the
+        // better witness — it used to be asked last, after the 5 K.
+        let half = Run(date: .now, name: "half", distanceKm: 21.1, duration: 21.1 * 300,
+                       avgHR: 165, splits: [])
+        let fiveK = Run(date: .now, name: "5k", distanceKm: 5, duration: 5 * 250,
+                        avgHR: 175, splits: Array(repeating: 250, count: 5))
+        let race = Race(name: "M", distance: .marathon,
+                        date: Calendar.current.date(byAdding: .day, value: 42, to: .now)!,
+                        goalTime: 14340)
+        let prediction = try XCTUnwrap(RunAnalytics.predict(race: race, runs: [half, fiveK]))
+        XCTAssertEqual(prediction.basisLabel, "Half")
+        XCTAssertFalse(prediction.isStale)
+    }
+
+    func testPredictionPrefersRecentFormOverAnOldPersonalBest() throws {
+        let old = Run(date: .now.addingTimeInterval(-300 * 86_400), name: "fast 10k",
+                      distanceKm: 10, duration: 2400, avgHR: 175,
+                      splits: Array(repeating: 240, count: 10))
+        let recent = Run(date: .now.addingTimeInterval(-10 * 86_400), name: "10k",
+                         distanceKm: 10, duration: 3000, avgHR: 165,
+                         splits: Array(repeating: 300, count: 10))
+        let race = Race(name: "M", distance: .marathon,
+                        date: Calendar.current.date(byAdding: .day, value: 42, to: .now)!,
+                        goalTime: 14340)
+        let prediction = try XCTUnwrap(RunAnalytics.predict(race: race, runs: [old, recent]))
+        // The old run is faster and still a PR; the recent one describes the
+        // runner who will actually start the race.
+        XCTAssertFalse(prediction.isStale)
+        XCTAssertGreaterThan(prediction.time,
+                             RunAnalytics.riegel(knownTime: 2400, knownKm: 10, targetKm: 42.195,
+                                                 exponent: 1.08))
+    }
+
+    func testAPredictionWithNothingRecentSaysSo() throws {
+        let old = Run(date: .now.addingTimeInterval(-300 * 86_400), name: "10k",
+                      distanceKm: 10, duration: 2992, avgHR: 170,
+                      splits: Array(repeating: 299.2, count: 10))
+        let race = Race(name: "M", distance: .marathon,
+                        date: Calendar.current.date(byAdding: .day, value: 42, to: .now)!,
+                        goalTime: 14340)
+        let prediction = try XCTUnwrap(RunAnalytics.predict(race: race, runs: [old]))
+        XCTAssertTrue(prediction.isStale)
+        XCTAssertEqual(prediction.basisDate, old.date)
+    }
+
+    func testTheMarathonIsScaledMorePessimisticallyThanTheHalf() {
+        // Riegel's 1.06 stretched from 10 K to 42 K is famously optimistic;
+        // the last ten kilometres are a fuelling problem, not a scaling one.
+        XCTAssertEqual(RunAnalytics.exponent(fromKm: 10, toKm: 42.195), 1.08)
+        XCTAssertEqual(RunAnalytics.exponent(fromKm: 10, toKm: 21.0975), 1.06)
+        // From a half, the gap is small enough for the original exponent.
+        XCTAssertEqual(RunAnalytics.exponent(fromKm: 21.0975, toKm: 42.195), 1.06)
+    }
+
     func testPredictionUsesTenKPRAndFlagsUnderTraining() {
         // A 10K PR but no long runs → under-trained marathon estimate.
         let pr = Run(date: .now, name: "10K", distanceKm: 10, duration: 2992, avgHR: 170,
@@ -32,7 +87,7 @@ final class RunAnalyticsTests: XCTestCase {
                         goalTime: 14340)
         let prediction = RunAnalytics.predict(race: race, runs: [pr])
         XCTAssertNotNil(prediction)
-        XCTAssertEqual(prediction?.basisLabel, "10K PR")
+        XCTAssertEqual(prediction?.basisLabel, "10K")
         XCTAssertTrue(prediction?.underTrained ?? false)
         XCTAssertGreaterThan(prediction?.time ?? 0, 3 * 3600) // > 3h
     }

@@ -71,6 +71,15 @@ struct SwipeToRevealRow<Content: View>: View {
 
     /// Wide enough for the glyph and its word at the design's type sizes.
     private static var actionWidth: CGFloat { 88 }
+    /// Air between the row's own trailing edge and the tile, so the pace does
+    /// not sit flush against the delete button once the row settles.
+    private static var actionGap: CGFloat { 14 }
+    /// How far the list is inset from the screen. The row slides *past* it:
+    /// text disappearing at the display edge reads as a row moving off screen,
+    /// text disappearing 26 pt early reads as a rendering fault.
+    private static var listInset: CGFloat { 26 }
+    /// Where an open row rests.
+    private static var openOffset: CGFloat { -(actionWidth + actionGap) }
     /// How far past the action the row may be dragged, so the gesture has
     /// somewhere to go instead of ending against a wall.
     private static var overshoot: CGFloat { 28 }
@@ -89,7 +98,12 @@ struct SwipeToRevealRow<Content: View>: View {
             // Applied outside the offset: `offset` moves what is drawn, not
             // the layout, so this background stays put while the row slides.
             .background(alignment: .trailing) { actionTile }
-            .clipped()
+            // Masked rather than clipped, and widened to the screen edge: a
+            // mask has no say in layout, so the row keeps its place in the
+            // list while its content is free to slide off the display.
+            .mask(alignment: .leading) {
+                Rectangle().padding(.leading, -Self.listInset)
+            }
             .contentShape(Rectangle())
             // Simultaneous, not exclusive: a plain `gesture` here wins the
             // touch outright and the log stops scrolling wherever a row is,
@@ -109,12 +123,23 @@ struct SwipeToRevealRow<Content: View>: View {
                 }
                 onTap()
             }
+            .onAppear {
+                // A row can be created already open: the marking mode leaves
+                // and re-enters, and the screenshot route opens one on launch.
+                if openRow == id, offset == 0 { offset = Self.openOffset }
+            }
             .onChange(of: openRow) { _, now in
+                // Opened from outside the gesture — the screenshot route does
+                // this, and so would any future "reveal the row I just added".
+                if now == id {
+                    guard !isDragging, offset == 0 else { return }
+                    withAnimation(.snappy(duration: 0.25)) { offset = Self.openOffset }
+                    return
+                }
                 // Somebody else opened, or everything was put away. This is
                 // authoritative even mid-drag: a gesture the scroll view took
                 // over never gets its `onEnded`, and treating that as "still
                 // dragging" left the row stuck half-open with no way back.
-                guard now != id else { return }
                 isDragging = false
                 guard offset != 0 else { return }
                 withAnimation(.snappy(duration: 0.25)) { offset = 0 }
@@ -169,15 +194,15 @@ struct SwipeToRevealRow<Content: View>: View {
                 // Flicks count: where the row would come to rest decides, not
                 // where the finger happened to leave the glass.
                 let projected = base + value.predictedEndTranslation.width
-                let opens = projected < -Self.actionWidth / 2
+                let opens = projected < Self.openOffset / 2
                 withAnimation(.snappy(duration: 0.25)) {
-                    offset = opens ? -Self.actionWidth : 0
+                    offset = opens ? Self.openOffset : 0
                 }
                 openRow = opens ? id : nil
             }
     }
 
     private func clamp(_ x: CGFloat) -> CGFloat {
-        min(0, max(-Self.actionWidth - Self.overshoot, x))
+        min(0, max(Self.openOffset - Self.overshoot, x))
     }
 }

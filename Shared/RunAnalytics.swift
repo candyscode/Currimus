@@ -6,10 +6,19 @@ enum RunAnalytics {
 
     // MARK: - Riegel race prediction
 
-    /// Riegel's endurance model: T₂ = T₁ · (D₂/D₁)^1.06.
-    /// Widely used, and honest for nearby distances; extrapolating a 10K to a
-    /// marathon is optimistic (endurance a short race never shows). Callers
-    /// should present the result as an estimate.
+    /// Riegel's endurance model: T₂ = T₁ · (D₂/D₁)^exponent. Widely used, and
+    /// honest for nearby distances. Callers present the result as an estimate.
+    ///
+    /// Riegel's exponent is 1.06, fitted on races within reach of each other.
+    /// Stretched from 10 K to a marathon it is famously optimistic — the last
+    /// ten kilometres are not a scaling problem, they are a fuelling and
+    /// durability problem. 1.08 over that gap is the widely used correction,
+    /// and it is the difference between a number a runner can plan around and
+    /// one that flatters them.
+    static func exponent(fromKm: Double, toKm: Double) -> Double {
+        toKm > 30 && fromKm <= 12 ? 1.08 : 1.06
+    }
+
     static func riegel(knownTime: TimeInterval, knownKm: Double, targetKm: Double,
                        exponent: Double = 1.06) -> TimeInterval {
         guard knownKm > 0, knownTime > 0 else { return 0 }
@@ -20,27 +29,63 @@ enum RunAnalytics {
     struct Prediction {
         var time: TimeInterval
         var basisLabel: String       // e.g. "10K PR"
+        /// When the effort it rests on was run. A prediction built on a race
+        /// from last autumn is a statement about last autumn.
+        var basisDate: Date
         /// True when the longest run is far short of the race — the estimate
         /// is then especially optimistic and we say so.
         var underTrained: Bool
+        /// True when nothing recent qualified and the basis is an old effort.
+        var isStale: Bool
     }
 
-    /// Predict a race finish. Prefers the 10K PR (as the design does), else the
-    /// best shorter benchmark available.
-    static func predict(race: Race, runs: [Run]) -> Prediction? {
-        let prs = personalBests(runs: runs)
-        // Prefer 10K, then 5K, then half — a benchmark shorter than the race.
-        let candidates: [(km: Double, label: String)] = [
-            (10, "10K PR"), (5, "5K PR"), (21.0975, "Half PR"),
-        ]
-        guard let basis = candidates.first(where: { c in
-            prs[c.km] != nil && c.km < race.distance.km * 1.2
-        }), let known = prs[basis.km] else { return nil }
+    /// How long an effort still counts as describing current form.
+    static let predictionWindowDays = 120
 
-        let time = riegel(knownTime: known, knownKm: basis.km, targetKm: race.distance.km)
+    /// Predict a race finish from the best evidence the log holds: the closest
+    /// benchmark below the race, run recently if anything recent qualifies.
+    static func predict(race: Race, runs: [Run], now: Date = .now) -> Prediction? {
+        // The closest benchmark *below* the race, not the shortest one
+        // available: a half says far more about a marathon than a 5 K does,
+        // and it used to be asked last. Riegel's error grows with the gap it
+        // has to bridge, so the gap is made as small as the log allows.
+        let candidates: [(km: Double, label: String)] = [
+            (21.0975, "Half"), (10, "10K"), (5, "5K"),
+        ].filter { $0.km < race.distance.km * 0.95 }
+
+        // Recent form first. A personal best from a year ago is a fact about
+        // last year; if anything in the last few months reaches the distance,
+        // that is the better witness even when it is slower.
+        let cutoff = Calendar.current.date(byAdding: .day, value: -predictionWindowDays, to: now) ?? now
+        let recent = runs.filter { $0.date >= cutoff }
+
+        guard let basis = best(from: recent, candidates: candidates)
+                ?? best(from: runs, candidates: candidates) else { return nil }
+        let isStale = basis.holder.run.date < cutoff
+
+        let time = riegel(knownTime: basis.holder.seconds, knownKm: basis.km,
+                          targetKm: race.distance.km,
+                          exponent: exponent(fromKm: basis.km, toKm: race.distance.km))
         let longest = runs.map(\.distanceKm).max() ?? 0
         let underTrained = longest < race.distance.km * 0.6
-        return Prediction(time: time, basisLabel: basis.label, underTrained: underTrained)
+        return Prediction(
+            time: time,
+            basisLabel: isStale ? "\(basis.label) PR" : basis.label,
+            basisDate: basis.holder.run.date,
+            underTrained: underTrained,
+            isStale: isStale
+        )
+    }
+
+    private static func best(from runs: [Run],
+                             candidates: [(km: Double, label: String)])
+        -> (km: Double, label: String, holder: (run: Run, seconds: TimeInterval))? {
+        for candidate in candidates {
+            if let holder = bestEffortHolder(km: candidate.km, runs: runs) {
+                return (candidate.km, candidate.label, holder)
+            }
+        }
+        return nil
     }
 
     // MARK: - Personal records

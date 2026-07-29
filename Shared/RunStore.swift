@@ -116,6 +116,15 @@ final class RunStore: ObservableObject {
 
     func add(_ run: Run) {
         guard !runs.contains(where: { $0.id == run.id }) else { return }
+        // The watch refused to file these locally and told the runner so —
+        // but it sent them to the phone anyway, and the phone took them. The
+        // claim on the watch ("no distance, this run is not being saved") was
+        // therefore false, and the log filled with 0.00 km entries that drag
+        // every weekly pace average with them.
+        guard run.hasUsableDistance else {
+            Log.store.notice("run without distance not filed")
+            return
+        }
         storeSamples(of: run)
         // The log keeps metadata; the track and profile went to their sidecar.
         runs.insert(run.strippingSamples, at: 0)
@@ -721,6 +730,13 @@ final class RunStore: ObservableObject {
         /// How much it beat the previous best, when there was one.
         var delta: String?
         var date: Date
+
+        /// Whether "NEW" is a fair thing to call it.
+        ///
+        /// The banner said NEW whatever the date was, so a personal best from
+        /// last October announced itself as news every time the screen opened.
+        /// A record does not stop being a record; it does stop being new.
+        var isRecent: Bool { date > Date.now.addingTimeInterval(-60 * 86_400) }
     }
 
     /// Cached because it is O(runs × splits) and the Records screen used to

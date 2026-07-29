@@ -494,6 +494,37 @@ Correct on both counts, and they were two different pieces of main-thread work.
 
 https://github.com/candyscode/Currimus/commit/2d73f16
 
+### CUR-19: Eight findings from using the app
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Acht Punkte aus dem Praxistest (2026-07-28): 0,0-km-Läufe im Log obwohl die Watch das Gegenteil behauptet; unverständlicher Satz im Zone-2-Chart; das Herzfrequenz-Widget in Progress; wie Records einem 5K/10K zugeordnet werden; woraus sich Monthly Climb im Trail-Progress speist; Optik des Swipe-to-delete; Herkunft und Belastbarkeit der Marathon-Prognose; Abstand einer Zeile in den Settings.
+
+#### Agent Comments
+
+**1 · 0,00 km-Läufe wurden doch gespeichert — die Behauptung der Watch war schlicht falsch.** Der Guard stand nur an *einer* Stelle: `WatchApp.finish()` weigerte sich, den Lauf lokal abzulegen. `RunSession.end()` hat ihn aber bedingungslos ans iPhone geschickt, und `RunStore.add` hat alles genommen, was ankam. Jetzt lehnt `add` einen Lauf ohne verwertbare Distanz ab (der eine Punkt, durch den beide Wege laufen), und die Watch verschickt ihn gar nicht erst. Bereits vorhandene 0,00-km-Einträge bleiben liegen — sie lassen sich seit CUR-1 wegwischen; automatisch löschen wollte ich fremde Daten nicht.
+
+**2 · "Older runs count whole, so the early months are approximate"** setzte voraus, dass man die Historie der App kennt. Jetzt: *"Für ältere Läufe kennt Currimus nur das Tempo des ganzen Laufs, nicht das seines lockeren Teils — diese Monate sind daher eine gute Schätzung, keine Messung."*
+
+**3 · Das Herzfrequenz-Widget war halb kaputt.** Die 6:55 sind der Median deiner eigenen lockeren Läufe (Easy + Long), auf fünf Sekunden gerundet — das stand nirgends. Der Untertitel lautete außerdem *immer* "Same effort, less work", auch bei +2 bpm. Genau der Fall, den man wissen muss, wurde als Fortschritt verkauft. Jetzt nennt der Untertitel die Herkunft der Pace und liest die Richtung ab ("Same pace, 2 bpm higher than it used to be. Heat, fatigue or a hard block will do that."), und die Delta-Zahl ist nur noch orange, wenn sie eine Verbesserung ist.
+
+**4 · Records.** Ein 5K/10K-Rekord ist die schnellste *zusammenhängende* Strecke dieser Länge in irgendeinem Lauf — der Lauf muss dort nicht enden. Läufe aus fremden Apps kommen ohne Kilometer-Splits, die zählen daher mit ihrer Durchschnitts-Pace über den ganzen Lauf. Dein Oktober-10K steht also da, weil seither nichts schneller *war*, nicht weil die Sommerläufe ignoriert werden. Zwei Änderungen: das Banner sagt nur noch "NEW", wenn der Rekord jünger als 60 Tage ist, sonst "YOUR BEST" (und ohne Signal-Akzent) — eine neun Monate alte Bestzeit als Neuigkeit anzukündigen war irreführend; und die Erklärung steht jetzt unter der Liste.
+
+**5 · Monthly Climb im Trail-Progress** zählt *jeden* Höhenmeter des Monats — Trail und Straße, inklusive importierter Läufe, sofern die aufzeichnende App die Höhe mitgeschrieben hat. Die Climb-Rate darüber zählt dagegen nur Trailläufe. Der Unterschied war nicht erkennbar und steht jetzt als Zeile unter den Balken.
+
+**6 · Swipe-Optik.** Der Eintrag schiebt jetzt bis zum Displayrand statt am 26-pt-Rand der Liste abzuschneiden (Maske statt Clip — eine Maske hat kein Mitspracherecht am Layout), und zwischen Pace und Löschen-Button liegen 14 pt. Neuer Screenshot-Schalter `-swipe 1`, weil sich ein Drag nicht in einen Screenshot injizieren lässt.
+
+**7 · Marathon-Prognose.** Riegel: T₂ = T₁ · (D₂/D₁)^n, aus einer Benchmark hochgerechnet. Drei Schwächen, alle behoben: sie nahm den *10K zuerst* statt der nächstgelegenen Distanz unter dem Rennen (ein Halbmarathon sagt über einen Marathon weit mehr aus); sie nahm die absolute Bestzeit, auch wenn die ein Jahr alt war; und sie nutzte n = 1,06 auch über die Marathondistanz, wo das notorisch zu optimistisch ist — die letzten zehn Kilometer sind kein Skalierungs-, sondern ein Verpflegungsproblem. Jetzt: nächstgelegene Benchmark, bevorzugt aus den letzten 120 Tagen, n = 1,08 beim Sprung von ≤ 12 km auf > 30 km. Der Text unter der Zahl nennt jetzt die Grundlage *mit Datum* und sagt es ausdrücklich, wenn nichts Aktuelles vorlag. Belastbar ist sie damit als grobe Standortbestimmung — mehr kann eine Formel ohne Langlauf-Umfang, Hitze und Verpflegung nicht leisten, und genau das steht jetzt dort.
+
+**8 · Settings-Abstand.** `ChevronRow` hatte nur `minHeight: 56` und kein vertikales Padding: kurze Zeilen wirkten dadurch gepolstert, eine Zeile mit umbrechendem Untertitel klebte an der Trennlinie. Jetzt 10 pt Padding *und* die Mindesthöhe — kurze Zeilen sehen aus wie vorher, lange bekommen denselben Abstand.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-19
+
 ### CUR-16: Code review of CUR-1…CUR-15
 
 [ ] In Specification

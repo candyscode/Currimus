@@ -13,6 +13,8 @@ struct LogView: View {
     /// it back to explain why the delete cannot happen here.
     @State private var notDeletable: Run?
     @State private var isSelecting = DebugFlags.opensLogSelection
+    /// Screenshot route only: the first row starts swiped open.
+    @State private var openFirstSwipe = DebugFlags.opensFirstSwipe
     @State private var selection: Set<UUID> = []
 
     var body: some View {
@@ -63,6 +65,11 @@ struct LogView: View {
             // Room for the floating delete bar, so the last run of the log is
             // never parked underneath it.
             .padding(.bottom, isSelecting ? 80 : 0)
+            .onAppear {
+                guard openFirstSwipe, openRow == nil else { return }
+                openRow = store.runsByMonth(filter).first?.runs.first?.id
+                openFirstSwipe = false
+            }
         }
         // The bar takes the tab bar's place while marking, the way a selection
         // mode does everywhere else on the phone. "Done" gives it back.

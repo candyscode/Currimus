@@ -24,6 +24,7 @@ home-norace      | loose  | -demo 1 -home norace
 home-raceday     | loose  | -demo 1 -home raceday
 log              | loose  | -demo 1 -tab log
 log-select       | loose  | -demo 1 -tab log -select 1
+log-swipe        | loose  | -demo 1 -tab log -swipe 1
 progress-road    | loose  | -demo 1 -tab progress
 race             | loose  | -demo 1 -push race
 race-setup       | loose  | -demo 1 -push raceSetup
