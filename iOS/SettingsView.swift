@@ -91,6 +91,20 @@ struct SettingsScreen: View {
                         Text(watchLabel).foregroundStyle(watchTint)
                     }
                     hairline
+                    // A deliberate act with its progress on screen: each run
+                    // costs two or three Health queries, and a log of a year
+                    // takes a while.
+                    Button { store.rebuildEverythingFromHealth() } label: {
+                        ChevronRow(title: "Rebuild runs from Health",
+                                   subtitle: rebuildSubtitle, showsChevron: false) {
+                            Text(store.runsAwaitingRebuild == 0
+                                 ? String(localized: "All done")
+                                 : Format.plural(store.runsAwaitingRebuild, "run", "runs"))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(store.runsAwaitingRebuild == 0 || store.rebuild != nil)
+                    hairline
                     Button(action: exportRuns) {
                         ChevronRow(title: "Export all runs", showsChevron: false) { Text("GPX / CSV") }
                     }.buttonStyle(.plain)
@@ -104,9 +118,23 @@ struct SettingsScreen: View {
         .sheet(item: Binding(get: { exportURLs.map(ExportPayload.init) }, set: { exportURLs = $0?.urls })) { payload in
             ActivityView(items: payload.urls)
         }
+        .sheet(isPresented: Binding(get: { store.rebuild != nil },
+                                    set: { if !$0 { store.clearRebuild() } })) {
+            if let progress = store.rebuild {
+                RebuildSheet(progress: progress,
+                             onCancel: { store.cancelRebuild() },
+                             onDone: { store.clearRebuild() })
+            }
+        }
     }
 
     private var pacerDistanceLabel: String { Format.pacerDistance(store.pacerDefaultDistanceKm) }
+
+    private var rebuildSubtitle: String {
+        store.runsAwaitingRebuild == 0
+            ? String(localized: "Every run has its zones, track and splits.")
+            : String(localized: "Reads the heart-rate trace and GPS track of older runs out of Health, so their zone-2 pace, records and splits are measured rather than missing. A dozen are done on each launch anyway; this finishes the lot.")
+    }
 
     /// Version and build, where a support email can be asked for it.
     private var appVersion: String {
@@ -603,5 +631,76 @@ struct GPSAccuracyView: View {
         }
         .padding(.vertical, 16)
         .contentShape(Rectangle())
+    }
+}
+
+/// The progress of a full rebuild.
+///
+/// A modal rather than a spinner in the row: this can run for minutes on a
+/// long log, and a screen the runner can walk away from should say what it is
+/// doing and let them stop it.
+struct RebuildSheet: View {
+    var progress: RunStore.Rebuild
+    var onCancel: () -> Void
+    var onDone: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private var fraction: Double {
+        progress.total > 0 ? Double(progress.done) / Double(progress.total) : 1
+    }
+
+    var body: some View {
+        ZStack {
+            Theme.bg.ignoresSafeArea()
+            VStack(alignment: .leading, spacing: 0) {
+                Text(progress.isFinished ? "Rebuilt" : "Rebuilding from Health")
+                    .font(.sg(24, weight: .semibold)).kerning(-0.4)
+
+                Text(progress.isFinished
+                     ? String(localized: "\(Format.plural(progress.total, "run", "runs")) read back out of Apple Health.")
+                     : String(localized: "Reading the heart-rate trace and GPS track of each run. You can leave this running or stop it — what is done stays done."))
+                    .font(.sg(14)).foregroundStyle(Theme.bright).lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
+
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(progress.done)").font(.stat(56)).kerning(-2.2)
+                    Text("of \(progress.total)").font(.sg(16)).foregroundStyle(Theme.bright)
+                }
+                .padding(.top, 26)
+
+                // The bar carries the same number the digits do; it is there
+                // for the glance, not for precision.
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Theme.trackIdle)
+                        Capsule().fill(Theme.signal)
+                            .frame(width: max(proxy.size.width * fraction, fraction > 0 ? 4 : 0))
+                    }
+                }
+                .frame(height: 8)
+                .padding(.top, 16)
+                .animation(.snappy(duration: 0.3), value: fraction)
+
+                Spacer()
+
+                Button {
+                    if progress.isFinished { onDone() } else { onCancel() }
+                    dismiss()
+                } label: {
+                    Text(progress.isFinished ? "Done" : "Stop")
+                        .font(.sg(17, weight: .bold))
+                        .foregroundStyle(progress.isFinished ? Theme.bg : Theme.ink)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .background(progress.isFinished ? AnyShapeStyle(Theme.signal)
+                                                        : AnyShapeStyle(Theme.chipFill),
+                                    in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(EdgeInsets(top: 44, leading: 26, bottom: 24, trailing: 26))
+        }
+        .presentationDetents([.height(360)])
+        .interactiveDismissDisabled(!progress.isFinished)
     }
 }

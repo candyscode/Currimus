@@ -225,8 +225,13 @@ final class RunStore: ObservableObject {
     /// months of other apps' workouts on each refresh would spend a lot of
     /// battery filling screens nobody opened. What comes back is cached like
     /// any other run's samples, so the second visit costs nothing.
-    func hydrateImported(_ run: Run) async {
-        guard run.isImported, !isDemo, needsHydration(run) else { return }
+    func hydrateImported(_ run: Run) async { await hydrate(run) }
+
+    /// Rebuilds what Health can still tell us about one run — zones, route,
+    /// distance per zone and per-kilometre splits — for a run of ours as much
+    /// as for one another app recorded.
+    func hydrate(_ run: Run, force: Bool = false) async {
+        guard !isDemo, force || needsHydration(run) else { return }
         // The route type was added to the read set after most installs had
         // already answered the Health prompt, so it sits undetermined and
         // every query comes back empty. Asking again raises the sheet for the
@@ -235,7 +240,9 @@ final class RunStore: ObservableObject {
             askedHealth = true
             await HealthImport.requestAuthorization(healthStore)
         }
-        guard let detail = await HealthImport.detail(for: run, zones: zones, in: healthStore) else { return }
+        guard let detail = await HealthImport.detail(for: run, zones: zones,
+                                                     fallbackRoute: samples(for: run).route,
+                                                     in: healthStore) else { return }
         // Asked, and answered.
         hydratedImported.insert(run.id)
 
@@ -255,7 +262,70 @@ final class RunStore: ObservableObject {
             if let rebuilt { importedRuns[index].zoneSeconds = rebuilt }
             importedRuns[index].zoneDistanceKm = detail.zoneDistanceKm
             if !detail.splits.isEmpty { importedRuns[index].splits = detail.splits }
+        } else if let index = runs.firstIndex(where: { $0.id == run.id }) {
+            // One of ours, recorded before it kept distance per zone. Its own
+            // splits and zone seconds stay — they were measured live and are
+            // the better record.
+            runs[index].zoneDistanceKm = detail.zoneDistanceKm
         }
+    }
+
+    // MARK: - Rebuilding the whole log from Health
+
+    /// How far a full rebuild has got, for the sheet that shows it.
+    struct Rebuild: Equatable {
+        var done: Int
+        var total: Int
+        var isFinished: Bool { done >= total }
+    }
+
+    @Published private(set) var rebuild: Rebuild?
+    private var rebuildTask: Task<Void, Never>?
+
+    /// Reconstructs every run the log holds that has no measured distance per
+    /// zone — all of them, not the dozen a launch does on its own.
+    ///
+    /// Each run costs two or three Health queries, so this is a deliberate act
+    /// with its progress on screen rather than something the app does behind
+    /// the runner's back.
+    func rebuildEverythingFromHealth() {
+        guard rebuildTask == nil else { return }
+        let pending = rebuildable.sorted { $0.date > $1.date }
+        rebuild = Rebuild(done: 0, total: pending.count)
+        rebuildTask = Task { @MainActor [weak self] in
+            for (index, run) in pending.enumerated() {
+                if Task.isCancelled { break }
+                await self?.hydrate(run, force: true)
+                self?.rebuild = Rebuild(done: index + 1, total: pending.count)
+            }
+            self?.rebuildTask = nil
+        }
+    }
+
+    func cancelRebuild() {
+        rebuildTask?.cancel()
+        rebuildTask = nil
+    }
+
+    /// Cleared when the sheet is dismissed, so the row goes back to offering
+    /// the rebuild rather than reporting the last one forever.
+    func clearRebuild() {
+        guard rebuildTask == nil else { return }
+        rebuild = nil
+    }
+
+    /// How many runs a rebuild would still have to fetch.
+    var runsAwaitingRebuild: Int { rebuildable.count }
+
+    /// Runs with no measured distance per zone that have not already been
+    /// asked about this session.
+    ///
+    /// The second half matters: a run whose workout Health no longer holds, or
+    /// one that never had a route, can never gain the measurement — without
+    /// this it would sit in the count for ever and the button would promise
+    /// something it cannot deliver.
+    private var rebuildable: [Run] {
+        allRuns.filter { $0.zoneDistanceKm == nil && !hydratedImported.contains($0.id) }
     }
 
     /// Fills in what Health can still tell us about imported runs, a few at a
@@ -273,7 +343,7 @@ final class RunStore: ObservableObject {
             .filter { $0.date >= cutoff && $0.zoneDistanceKm == nil }
             .sorted { $0.date > $1.date }
             .prefix(limit)
-        for run in pending { await hydrateImported(run) }
+        for run in pending { await hydrate(run) }
     }
 
 

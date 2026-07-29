@@ -121,18 +121,30 @@ enum HealthImport {
         return seconds
     }
 
-    static func detail(for run: Run, zones: HRZones, in store: HKHealthStore) async -> WorkoutDetail? {
-        guard isAvailable, run.isImported else { return nil }
-        // The imported run carries the workout's own UUID as its id, so the
-        // workout can be asked for directly rather than searched for by time.
-        guard let workout = await workout(with: run.id, in: store) else { return nil }
+    /// `fallbackRoute` is used when Health has no route of its own for the
+    /// workout — a run Currimus recorded keeps its track in its own sidecar,
+    /// and there is no reason to fetch it twice.
+    static func detail(for run: Run, zones: HRZones,
+                       fallbackRoute: [Coordinate]? = nil,
+                       in store: HKHealthStore) async -> WorkoutDetail? {
+        guard isAvailable else { return nil }
+        // An imported run carries the workout's own UUID as its id, so it can
+        // be asked for directly. A run Currimus recorded has an id of its own
+        // and has to be found by when it happened — the same match the delete
+        // uses, and the same reason: the two ids were never tied together.
+        var found = await workout(with: run.id, in: store)
+        if found == nil, !run.isImported {
+            found = await ownWorkouts(matching: run, in: store).first
+        }
+        guard let workout = found else { return nil }
         let samples = await heartRateSamples(of: workout, in: store)
         let locations = await routeLocations(of: workout, in: store)
-        let route = locations.map {
+        var route = locations.map {
             Coordinate(lat: $0.coordinate.latitude, lon: $0.coordinate.longitude,
                        elevation: $0.altitude,
                        t: max($0.timestamp.timeIntervalSince(workout.startDate), 0))
         }
+        if route.isEmpty, let fallbackRoute, !fallbackRoute.isEmpty { route = fallbackRoute }
         // Both halves were recorded over the same run; pairing them puts back
         // everything the workout's summary threw away.
         let trace = samples.map {
