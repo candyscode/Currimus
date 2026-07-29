@@ -105,6 +105,10 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// added later: runs recorded before this existed have no such record, and
     /// their zone-2 pace can only ever be approximated from the run as a whole.
     var zoneDistanceKm: [Double]?
+    /// Flat-equivalent pace (s/km) worked out from this run's own gradients,
+    /// after Minetti. Optional like every field added later; without it the
+    /// screens fall back to a rule of thumb and say so.
+    var gradeAdjustedSecPerKm: Double?
     /// Average steps per minute over the run. Optional like every field added
     /// later — and genuinely absent for runs recorded before Currimus counted
     /// steps, and for those another app recorded without them.

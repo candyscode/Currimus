@@ -15,6 +15,7 @@ struct RunSamples: Codable, Equatable {
     /// refresh, so anything living only there is one foreground from gone.
     var zoneDistanceKm: [Double]?
     var splits: [TimeInterval]?
+    var gradeAdjustedSecPerKm: Double?
 
     static let empty = RunSamples()
 
@@ -25,12 +26,13 @@ struct RunSamples: Codable, Equatable {
 
     init(altitude: [Double]? = nil, route: [Coordinate]? = nil,
          zoneSeconds: [TimeInterval]? = nil, zoneDistanceKm: [Double]? = nil,
-         splits: [TimeInterval]? = nil) {
+         splits: [TimeInterval]? = nil, gradeAdjustedSecPerKm: Double? = nil) {
         self.altitude = altitude
         self.route = route
         self.zoneSeconds = zoneSeconds
         self.zoneDistanceKm = zoneDistanceKm
         self.splits = splits
+        self.gradeAdjustedSecPerKm = gradeAdjustedSecPerKm
     }
 
     init(_ run: Run) {
@@ -140,6 +142,7 @@ extension Run {
         if splits.isEmpty, let rebuilt = samples.splits, !rebuilt.isEmpty {
             copy.splits = rebuilt
         }
+        copy.gradeAdjustedSecPerKm = gradeAdjustedSecPerKm ?? samples.gradeAdjustedSecPerKm
         return copy
     }
 

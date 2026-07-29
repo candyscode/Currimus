@@ -14,6 +14,7 @@ enum Source: CaseIterable {
     case tanda
     case tanaka
     case heiderscheit
+    case minetti
 
     var label: String {
         switch self {
@@ -21,6 +22,7 @@ enum Source: CaseIterable {
         case .tanda: return "Tanda (2011)"
         case .tanaka: return "Tanaka et al. (2001)"
         case .heiderscheit: return "Heiderscheit et al. (2011)"
+        case .minetti: return "Minetti et al. (2002)"
         }
     }
 
@@ -35,6 +37,8 @@ enum Source: CaseIterable {
             return String(localized: "Estimating maximum heart rate from age, when Apple Health has never seen a hard effort to measure it from.")
         case .heiderscheit:
             return String(localized: "What a five to ten per cent quicker step rate does to the load a knee absorbs — the reason for the cadence hint.")
+        case .minetti:
+            return String(localized: "The energy a runner spends per metre at every gradient from −45 % to +45 %, measured. It is what turns a climb into the flat pace that cost the same.")
         }
     }
 
@@ -44,6 +48,7 @@ enum Source: CaseIterable {
         case .tanda: return "https://pubmed.ncbi.nlm.nih.gov/21957197/"
         case .tanaka: return "https://www.sciencedirect.com/science/article/pii/S0735109700010548"
         case .heiderscheit: return "https://pmc.ncbi.nlm.nih.gov/articles/PMC3022995/"
+        case .minetti: return "https://journals.physiology.org/doi/full/10.1152/japplphysiol.01177.2001"
         }
     }
 

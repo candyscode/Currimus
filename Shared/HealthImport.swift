@@ -95,6 +95,8 @@ enum HealthImport {
         var zoneDistanceKm: [Double]?
         /// Per-kilometre splits recovered from the route.
         var splits: [TimeInterval]
+        /// Flat-equivalent pace from the route's own gradients, after Minetti.
+        var gradeAdjustedSecPerKm: Double?
 
         var isEmpty: Bool {
             zoneSeconds.reduce(0, +) < 1 && route.isEmpty
@@ -154,7 +156,9 @@ enum HealthImport {
             zoneSeconds: zoneSeconds(from: samples, zones: zones, end: workout.endDate),
             route: route,
             zoneDistanceKm: RunAnalytics.zoneDistanceKm(route: route, heartRate: trace, zones: zones),
-            splits: RunAnalytics.splits(fromRoute: route)
+            splits: RunAnalytics.splits(fromRoute: route),
+            gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(route: route,
+                                                                  duration: workout.duration)
         )
     }
 

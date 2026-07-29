@@ -228,20 +228,81 @@ enum RunAnalytics {
 
     // MARK: - Grade-adjusted pace
 
-    /// Flat-equivalent pace (s/km). Climbing makes you slower, so the
-    /// grade-adjusted pace is *faster* than the raw pace. Approximation:
-    /// ~0.40 s added per metre climbed, ~0.18 s given back per metre descended
-    /// (downhill helps, but less than uphill hurts). Coarse without
-    /// per-segment grade — presented as an estimate.
+    /// What a metre at this gradient costs, relative to a metre on the flat.
+    ///
+    /// Minetti et al. (2002) put ten runners on a treadmill from −45 % to
+    /// +45 % and measured the oxygen they used; the fifth-order fit through
+    /// those points is the standard answer to "how much harder was that hill",
+    /// and it is what a grade-adjusted pace ought to rest on. Outside the
+    /// measured range the polynomial is extrapolation, so it is clamped.
+    static func gradeCostFactor(_ gradient: Double) -> Double {
+        let i = min(max(gradient, -0.45), 0.45)
+        let cost = 155.4 * pow(i, 5) - 30.4 * pow(i, 4) - 43.3 * pow(i, 3)
+            + 46.3 * pow(i, 2) + 19.5 * i + 3.6
+        // 3.6 J/kg/m is the flat cost in the same fit.
+        return cost / 3.6
+    }
+
+    /// Over how much ground a gradient is worked out. A fix every few metres
+    /// with a metre of altitude noise on it would otherwise report ramps that
+    /// were never there.
+    static let gradeSegmentKm = 0.02
+
+    /// Flat-equivalent pace (s/km) from a route: every stretch is converted to
+    /// the flat distance that would have cost the same, and the run's time is
+    /// spread over that instead.
+    ///
+    /// nil without a track — the gradients are the whole calculation, and
+    /// total climb alone cannot say whether it came as one wall or forty
+    /// rolling metres.
+    static func gradeAdjustedPace(route: [Coordinate], duration: TimeInterval) -> TimeInterval? {
+        guard route.count >= 2, duration > 0 else { return nil }
+        var flatKm = 0.0
+        var pendingKm = 0.0
+        var pendingClimb = 0.0
+
+        for (from, to) in zip(route, route.dropFirst()) {
+            let km = haversineKm(from, to)
+            guard km > 0, km <= maxSegmentKm else { continue }
+            pendingKm += km
+            pendingClimb += to.elevation - from.elevation
+            guard pendingKm >= gradeSegmentKm else { continue }
+            let gradient = pendingClimb / (pendingKm * 1000)
+            flatKm += pendingKm * gradeCostFactor(gradient)
+            pendingKm = 0
+            pendingClimb = 0
+        }
+        // Whatever is left of the last stretch counts on the flat.
+        flatKm += pendingKm
+        guard flatKm > 0.05 else { return nil }
+        return duration / flatKm
+    }
+
+    /// The coarse fallback for a run with no track: about 0.4 s of the run's
+    /// time attributed to each metre climbed and rather less than half of that
+    /// given back on the way down. Nobody's research — the app's own rule of
+    /// thumb, and named as such wherever it is shown.
     static let climbCostPerMeter = 0.40
     static let descentGainPerMeter = 0.18
 
     static func gradeAdjustedPace(_ run: Run) -> TimeInterval {
         guard run.distanceKm > 0.05 else { return 0 }
+        // Measured from the run's own gradients when it has them.
+        if let measured = run.gradeAdjustedSecPerKm { return measured }
+        if let route = run.route,
+           let fromRoute = gradeAdjustedPace(route: route, duration: run.duration) {
+            return fromRoute
+        }
         let climb = run.climbMeters ?? 0
         let descent = run.descentMeters ?? 0
         let flatTime = run.duration - climb * climbCostPerMeter + descent * descentGainPerMeter
         return max(flatTime, 0) / run.distanceKm
+    }
+
+    /// Whether a run's flat-equivalent pace was worked out from its gradients
+    /// rather than from the rule of thumb — the screens say which.
+    static func hasMeasuredGradeAdjustment(_ run: Run) -> Bool {
+        run.gradeAdjustedSecPerKm != nil || (run.route?.count ?? 0) >= 2
     }
 
     /// Raw and flat-equivalent pace across a set of runs.

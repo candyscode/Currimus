@@ -254,7 +254,8 @@ final class RunStore: ObservableObject {
             let samples = RunSamples(route: detail.route.isEmpty ? nil : detail.route,
                                      zoneSeconds: rebuilt,
                                      zoneDistanceKm: detail.zoneDistanceKm,
-                                     splits: detail.splits.isEmpty ? nil : detail.splits)
+                                     splits: detail.splits.isEmpty ? nil : detail.splits,
+                                     gradeAdjustedSecPerKm: detail.gradeAdjustedSecPerKm)
             sampleCache[run.id] = samples
             RunSampleStore.save(samples, for: run.id)
         }
@@ -262,11 +263,13 @@ final class RunStore: ObservableObject {
             if let rebuilt { importedRuns[index].zoneSeconds = rebuilt }
             importedRuns[index].zoneDistanceKm = detail.zoneDistanceKm
             if !detail.splits.isEmpty { importedRuns[index].splits = detail.splits }
+            importedRuns[index].gradeAdjustedSecPerKm = detail.gradeAdjustedSecPerKm
         } else if let index = runs.firstIndex(where: { $0.id == run.id }) {
             // One of ours, recorded before it kept distance per zone. Its own
             // splits and zone seconds stay — they were measured live and are
             // the better record.
             runs[index].zoneDistanceKm = detail.zoneDistanceKm
+            runs[index].gradeAdjustedSecPerKm = detail.gradeAdjustedSecPerKm
         }
     }
 
@@ -325,7 +328,10 @@ final class RunStore: ObservableObject {
     /// this it would sit in the count for ever and the button would promise
     /// something it cannot deliver.
     private var rebuildable: [Run] {
-        allRuns.filter { $0.zoneDistanceKm == nil && !hydratedImported.contains($0.id) }
+        allRuns.filter {
+            ($0.zoneDistanceKm == nil || $0.gradeAdjustedSecPerKm == nil)
+                && !hydratedImported.contains($0.id)
+        }
     }
 
     /// Fills in what Health can still tell us about imported runs, a few at a

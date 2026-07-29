@@ -123,6 +123,8 @@ enum SampleData {
             altitudeSamples: alt,
             route: route(km: km, duration: duration, altitudes: alt),
             zoneDistanceKm: zoneDistance(km: km, zoneSeconds: zones.map { $0 * duration }),
+            gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(
+                route: route(km: km, duration: duration, altitudes: alt), duration: duration),
             // Quicker steps at quicker paces, as a real runner's cadence goes
             // — and a demo long run that sits under the mark, so the form hint
             // has something to fire on.

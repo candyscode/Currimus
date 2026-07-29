@@ -257,6 +257,49 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertLessThan(try XCTUnwrap(summary?.adjusted), 400)   // climbing explains the pace
     }
 
+    // MARK: Grade-adjusted pace, from the gradients themselves
+
+    func testFlatGroundCostsExactlyWhatItSays() {
+        XCTAssertEqual(RunAnalytics.gradeCostFactor(0), 1.0, accuracy: 0.001)
+    }
+
+    func testClimbingCostsMoreAndDescendingLess() {
+        // A 10 % climb is far dearer than the flat; a gentle descent is
+        // cheaper — which is the shape Minetti measured.
+        XCTAssertGreaterThan(RunAnalytics.gradeCostFactor(0.10), 1.5)
+        XCTAssertLessThan(RunAnalytics.gradeCostFactor(-0.10), 1.0)
+        // And a steep descent stops being a bargain again.
+        XCTAssertGreaterThan(RunAnalytics.gradeCostFactor(-0.40),
+                             RunAnalytics.gradeCostFactor(-0.20))
+    }
+
+    func testTheCurveIsClampedToWhatWasActuallyMeasured() {
+        XCTAssertEqual(RunAnalytics.gradeCostFactor(0.9), RunAnalytics.gradeCostFactor(0.45))
+        XCTAssertEqual(RunAnalytics.gradeCostFactor(-0.9), RunAnalytics.gradeCostFactor(-0.45))
+    }
+
+    func testAFlatRouteIsItsOwnGradeAdjustedPace() throws {
+        // Fifteen minutes at 5:00 /km on the level.
+        let route = straightRoute(seconds: 900)
+        let gap = try XCTUnwrap(RunAnalytics.gradeAdjustedPace(route: route, duration: 900))
+        XCTAssertEqual(gap, 300, accuracy: 6)
+    }
+
+    func testAClimbIsWorthAFasterPaceOnTheFlat() throws {
+        // The same 5:00 /km, but 8 % uphill throughout: the effort was worth
+        // considerably more than 5:00 on the level.
+        let climbing = straightRoute(seconds: 900).map {
+            Coordinate(lat: $0.lat, lon: $0.lon,
+                       elevation: $0.t * (1000.0 / 300.0) * 0.08, t: $0.t)
+        }
+        let gap = try XCTUnwrap(RunAnalytics.gradeAdjustedPace(route: climbing, duration: 900))
+        XCTAssertLessThan(gap, 300 / 1.4)
+    }
+
+    func testWithoutATrackThereIsNoGradientToRead() {
+        XCTAssertNil(RunAnalytics.gradeAdjustedPace(route: [], duration: 900))
+    }
+
     // MARK: Cardiac drift
 
     private func easyRun(_ pace: TimeInterval, hr: Int, daysAgo: Int) -> Run {

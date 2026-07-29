@@ -695,7 +695,14 @@ Verlinkt und benannt:
 - **Kadenz-Hinweis** → Heiderscheit et al. (2011).
 - **Acknowledgements** bekommt einen Abschnitt „RESEARCH" mit allen vieren und je einer Zeile, wofür sie benutzt werden.
 
-Und eine Stelle, die ausdrücklich *keine* Quelle bekommt: die **grade-adjusted pace** ist Currimus' eigene grobe Näherung (0,4 s pro Höhenmeter, knapp die Hälfte zurück beim Abstieg). Die stand bisher unkommentiert neben lauter gemessenen Werten; jetzt steht dort, dass sie eine Schätzung des Hauses ist. Eine erfundene Zitation wäre schlimmer als keine.
+**Nachtrag (Andi): auch die grade-adjusted pace gehört auf eine wissenschaftliche Basis, und wo es keine gibt, muss die Rechnung erklärt werden.**
+
+Es gibt eine, und zwar die kanonische: [Minetti et al. (2002)](https://journals.physiology.org/doi/full/10.1152/japplphysiol.01177.2001) haben zehn Läufer von −45 % bis +45 % Steigung auf dem Laufband vermessen und den Energieverbrauch pro Meter bestimmt. Genau darauf beruht auch Stravas GAP. Currimus rechnet jetzt damit: jedes Streckenstück wird über seine tatsächliche Steigung in die Flachdistanz umgerechnet, die denselben Energieaufwand gekostet hätte, und die Laufzeit verteilt sich darüber.
+
+- Die Steigung wird über mindestens 20 m Strecke gebildet — bei einem Fix alle paar Meter und einem Meter Höhenrauschen entstünden sonst Rampen, die es nie gab.
+- Außerhalb von ±45 % wird das Polynom gekappt: dort ist es Extrapolation, nicht Messung.
+- Der Wert wird **einmal berechnet und gespeichert** (auf der Uhr am Laufende, für alles andere beim Rebuild aus Health), weil das Log selbst keine Route trägt.
+- **Wo keine Route existiert**, bleibt die alte Faustregel (≈0,4 s pro Höhenmeter, knapp die Hälfte zurück beim Abstieg) — und der Text sagt dann genau das, samt Hinweis auf den Rebuild-Button. Eine erfundene Zitation wäre schlimmer als keine.
 
 #### Link to completed work
 

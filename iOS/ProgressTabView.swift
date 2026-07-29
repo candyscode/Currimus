@@ -314,8 +314,7 @@ struct ProgressScreen: View {
             divider
             gapRow
 
-            Explainer(markdown: String(localized: "Grade-adjusted pace is Currimus' own estimate — about 0.4 s per metre climbed given back, less than half of that for the descent. Coarse without per-segment grade, and shown as an estimate rather than a measurement."),
-                      top: 14)
+            Explainer(markdown: gradeAdjustedExplanation, top: 14)
 
             divider
             Text("MONTHLY CLIMB · M").kicker(13, color: Theme.bright, tracking: 0.12).padding(.bottom, 14)
@@ -334,6 +333,23 @@ struct ProgressScreen: View {
                 $0 > 0 ? "\(Int($0)) m" : String(localized: "Nothing set yet")
             } ?? String(localized: "Nothing set yet"))
         }
+    }
+
+    /// How the flat-equivalent pace was arrived at — and it is not always the
+    /// same way, which is the part worth saying.
+    private var gradeAdjustedExplanation: String {
+        let trail = store.filteredRuns(.trail)
+        let measured = trail.filter { RunAnalytics.hasMeasuredGradeAdjustment($0) }.count
+        let base = String(localized: "Grade-adjusted pace is what your climbing would have cost you on the flat: every stretch of the run is converted using the energy a runner actually spends at that gradient, measured by \(Source.minetti.link) from −45 % to +45 %.")
+        if measured == trail.count {
+            return base
+        }
+        if measured == 0 {
+            // No tracks at all: the rule of thumb is all there is, and it must
+            // not be presented as the model above.
+            return base + String(localized: " None of your trail runs carries a GPS track yet, so these use Currimus' own rule of thumb instead — roughly 0.4 s of the run's time attributed to each metre climbed, and less than half of that given back on the way down. Rebuild from Health in Settings to replace it with the real thing.")
+        }
+        return base + String(localized: " \(Format.plural(trail.count - measured, "run", "runs")) here has no GPS track, so it falls back to Currimus' own rule of thumb — roughly 0.4 s per metre climbed. Rebuild from Health in Settings to replace it.")
     }
 
     private var gapRow: some View {

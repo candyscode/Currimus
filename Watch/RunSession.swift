@@ -246,6 +246,8 @@ final class RunSession: NSObject, ObservableObject {
             altitudeSamples: metrics.altitudeProfile.isEmpty ? nil : metrics.altitudeProfile,
             route: metrics.coordinates.isEmpty ? nil : metrics.coordinates,
             zoneDistanceKm: metrics.zoneDistanceKm,
+            gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(
+                route: metrics.coordinates, duration: elapsed),
             cadenceSpm: cadenceSpm
         )
 

@@ -66,7 +66,9 @@ struct RaceView: View {
                     .foregroundStyle(delta?.isUp == true ? Theme.signal : Theme.bright)
                     .lineLimit(1).fixedSize()
             }
-            WeekVolumeBars(items: store.last4Weeks()).padding(.top, 18)
+            // The bars carry their own value labels on top, so 18 pt put the
+            // first number almost against the heading.
+            WeekVolumeBars(items: store.last4Weeks()).padding(.top, 30)
 
             Explainer(markdown: predictionNote(race), top: 18)
 
