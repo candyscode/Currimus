@@ -523,7 +523,7 @@ Acht Punkte aus dem Praxistest (2026-07-28): 0,0-km-Läufe im Log obwohl die Wat
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-19
+https://github.com/candyscode/Currimus/commit/fbfd965
 
 ### CUR-16: Code review of CUR-1…CUR-15
 
