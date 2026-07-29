@@ -607,5 +607,5 @@ Nicht geändert, aber geprüft und für richtig befunden: `–:––` bei fehle
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-20
+https://github.com/candyscode/Currimus/commit/154cfc6
 
