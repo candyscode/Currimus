@@ -575,3 +575,37 @@ Acht Punkte aus dem Praxistest (2026-07-28): 0,0-km-Läufe im Log obwohl die Wat
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/fbfd965
+
+### CUR-20: Audit aller Texte, die dem Nutzer etwas behaupten
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Alle Texte in iOS-App und Watch-App daraufhin prüfen, ob sie für *jeden* Wert stimmen, den das zugehörige Feld annehmen kann — besonders dort, wo ein Satz unter einer Zahl steht und diese Zahl deutet.
+
+#### Agent Comments
+
+Neun Befunde, alle bestätigt und behoben. Das Muster ist fast überall dasselbe: der Text beschreibt den *erwarteten* Wert, nicht den möglichen.
+
+| # | Wo | Was behauptet wurde | Wann es falsch war |
+|---|---|---|---|
+| 1 | Home (letzter Lauf), Log-Zeile | `MOSTLY Z0` / `… · Z0` | Immer, wenn ein Lauf keine Herzfrequenz hat. Zone 0 gibt es nicht (dein eigener Hinweis aus CUR-6) — die Watch zeigte hier längst „–", das iPhone nicht. |
+| 2 | Watch, Pacer | `PACER · ON TARGET 5:15` | Sobald keine laufende Pace vorliegt: beim Start vor dem ersten GPS-Fix und an jeder Ampel. `paceDelta` ist dann 0, und 0 hieß „genau im Ziel". Die Hero-Zahl darüber zeigte gleichzeitig `–:––`. |
+| 3 | Race, „LAST 4 WEEKS" | z. B. `284 km · +118 %` | Immer bei importierten Läufen: der aktuelle Wert zählte *alle* Läufe, der Vergleichswert nur die von Currimus selbst aufgezeichneten. Zwei verschiedene Grundgesamtheiten. Zusätzlich war die Zahl immer orange — ein Volumenrückgang las sich als Erfolg. |
+| 4 | Race Setup | „so the goal sits inside what you have already held" | Beim Marathon: verglichen wurde die nötige Renn-Pace mit der besten *Tempo*-Einheit, meist 5–12 km. 5:00/km über 8 km sagt fast nichts über 42 km. |
+| 5 | Settings, Progress, Records, Race Setup | `1 runs read`, `1 runs · 9 km in zone 2`, `race day in 1 days` | Bei genau eins. Es gab keine Pluralbehandlung. |
+| 6 | Settings, Zeile „Target race" | `Marathon · -3 days` | Nach dem Renntag. |
+| 7 | Run Detail (Trail-Hero) | `0 m climb`, `0 CLIMB M/H` | Bei importierten Läufen ohne Höhendaten: eine fehlende Messung wurde als gemessene Null dargestellt. |
+| 8 | Progress, Trend-Delta | `+0:00 since May`, in Signal-Orange | Bei exakt null Veränderung — als Verbesserung markiert. |
+| 9 | Records | `race day in 0 days` | Am Renntag selbst. |
+
+Behoben, und zwar an der Wurzel statt im Text: eine fehlende Messung wird jetzt als fehlend dargestellt (`–`), nicht als Null; `Format.plural` erledigt die Ein-/Mehrzahl an einer Stelle; der Pacer kennt einen Zustand „noch keine Pace" und behauptet dort nichts; der Vier-Wochen-Vergleich rechnet auf beiden Seiten mit denselben Läufen; und Signal-Orange markiert weiterhin ausschließlich eine Verbesserung.
+
+Nicht geändert, aber geprüft und für richtig befunden: `–:––` bei fehlender Pace, die leeren Zustände der Records („no 10 km effort yet"), die Erklärungen der Pulszonen-Herleitung, die Recording-Issue-Texte auf der Watch, sowie die Zonen-Warnung und die Vibrationsbeschreibungen aus CUR-6.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-20
+

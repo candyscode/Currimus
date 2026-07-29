@@ -473,8 +473,13 @@ struct LogRowText: Equatable {
         } else if let prTag, prTag != "Longest" {
             detail = "\(clock) · "
             self.prTag = prTag
-        } else {
+        } else if run.dominantZone > 0 {
             detail = "\(run.classification.label) · \(clock) · Z\(run.dominantZone)"
+            self.prTag = nil
+        } else {
+            // No heart rate on this one. There is no zone 0 to name, so the
+            // line simply stops rather than inventing one.
+            detail = "\(run.classification.label) · \(clock)"
             self.prTag = nil
         }
     }
@@ -524,6 +529,12 @@ enum Format {
         if km == RaceDistance.half.km { return "21.1 km" }
         if km == RaceDistance.marathon.km { return "42.2 km" }
         return "\(Int(km)) km"
+    }
+
+    /// "1 run", "2 runs". Every naive "\(n) runs" in the app read "1 runs"
+    /// at exactly one, which is the count a new log spends its first week at.
+    static func plural(_ count: Int, _ singular: String, _ plural: String) -> String {
+        "\(count) \(count == 1 ? singular : plural)"
     }
 
     /// Signed pace delta, e.g. "−0:06" / "+0:12"

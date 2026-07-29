@@ -119,7 +119,7 @@ struct SettingsScreen: View {
     private var healthLabel: String {
         switch store.healthAccess {
         case .unavailable: return "Unavailable"
-        case .reading(let runs): return "\(runs) runs read"
+        case .reading(let runs): return Format.plural(runs, "run", "runs") + " read"
         case .nothingRead: return "Nothing read"
         }
     }
@@ -163,7 +163,11 @@ struct SettingsScreen: View {
 
     private var raceLabel: String {
         guard let race = store.race else { return "None" }
-        return "\(race.distance.name) · \(race.daysUntil()) days"
+        // A race that has been and gone is not "-3 days" away.
+        let days = race.daysUntil()
+        if days < 0 { return "\(race.distance.name) · past" }
+        if days == 0 { return "\(race.distance.name) · today" }
+        return "\(race.distance.name) · " + Format.plural(days, "day", "days")
     }
 
     private func exportRuns() {

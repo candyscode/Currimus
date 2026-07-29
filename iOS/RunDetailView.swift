@@ -113,7 +113,7 @@ struct RunDetailView: View {
             HStack(alignment: .top, spacing: run.cadenceSpm == nil ? 28 : 20) {
                 DetailStat(value: Format.clock(run.duration), label: "TIME")
                 DetailStat(value: Format.pace(run.paceSecPerKm), label: "AVG /KM", accent: true)
-                DetailStat(value: "\(Int(run.climbMeters ?? 0)) m", label: "CLIMB")
+                DetailStat(value: run.climbMeters.map { "\(Int($0)) m" } ?? "–", label: "CLIMB")
                 if let cadence = run.cadenceSpm {
                     DetailStat(value: "\(cadence)", label: "SPM")
                 }
@@ -179,7 +179,9 @@ struct RunDetailView: View {
             Text(run.name).font(.sg(30, weight: .semibold)).kerning(-0.6).padding(.top, 4)
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(grouped(Int(run.climbMeters ?? 0)))
+                // A run another app recorded may carry no elevation at all.
+                // Drawing that as a measured "0" claims a flat mountain.
+                Text(run.climbMeters.map { grouped(Int($0)) } ?? "–")
                     .font(.stat(76)).kerning(-3.4).foregroundStyle(Theme.signal)
                 Text("m climb").font(.sg(20)).foregroundStyle(Theme.bright)
             }
@@ -188,7 +190,8 @@ struct RunDetailView: View {
             HStack(alignment: .top, spacing: 28) {
                 DetailStat(value: Format.km(run.distanceKm, decimals: 1), label: "KM")
                 DetailStat(value: Format.clock(run.duration), label: "TIME")
-                DetailStat(value: "\(Int(climbRate))", label: "CLIMB M/H")
+                DetailStat(value: run.climbMeters == nil ? "–" : "\(Int(climbRate))",
+                           label: "CLIMB M/H")
             }
             .padding(.top, 18)
 

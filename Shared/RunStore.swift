@@ -696,12 +696,20 @@ final class RunStore: ObservableObject {
             // Nothing set over this distance yet. Say which distance is
             // missing rather than printing an em dash that reads as a fault.
             let isTarget = race?.distance.km == km
-            let note = isTarget
-                ? String(localized: "race day in \(race?.daysUntil() ?? 0) days")
-                : kind.emptyHint
+            let days = race?.daysUntil() ?? 0
+            // On the day itself, and after it, "in 0 days" is not what a
+            // runner is looking at the screen to read.
+            let note: String
+            if isTarget, days > 0 {
+                note = String(localized: "race day in \(Format.plural(days, "day", "days"))")
+            } else if isTarget, days == 0 {
+                note = String(localized: "race day is today")
+            } else {
+                note = kind.emptyHint
+            }
             return RecordEntry(kind: kind, value: String(localized: "Not yet"),
                                isUnset: true, date: .now,
-                               delta: note, isRaceCountdown: isTarget)
+                               delta: note, isRaceCountdown: isTarget && days >= 0)
         }
         if let longest = longestRun {
             entries.append(RecordEntry(kind: .longest,

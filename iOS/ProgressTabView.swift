@@ -113,7 +113,11 @@ struct ProgressScreen: View {
                 Text("/km").font(.sg(16)).foregroundStyle(Theme.bright)
                 Spacer()
                 if present.count >= 2 {
-                    trendDelta(Format.paceDelta(change), improved: change <= 0)
+                    // Exactly no change is not an improvement, and "+0:00"
+                    // is not a sentence anyone reads as "the same".
+                    trendDelta(change == 0 ? String(localized: "unchanged")
+                                           : Format.paceDelta(change),
+                               improved: change < 0)
                 }
             }
             .padding(.top, 8)
@@ -204,7 +208,7 @@ struct ProgressScreen: View {
         let runs = months.reduce(0) { $0 + $1.runs }
         let km = months.reduce(0) { $0 + $1.km }
         let approximate = months.contains { $0.isApproximate }
-        let base = String(localized: "\(runs) runs · \(Format.km(km, decimals: 0)) km in zone 2")
+        let base = String(localized: "\(Format.plural(runs, "run", "runs")) · \(Format.km(km, decimals: 0)) km in zone 2")
         return Text(approximate
                     // Runs recorded before Currimus kept per-zone distance
                     // cannot be split, so they count whole. Say so rather than
@@ -294,8 +298,10 @@ struct ProgressScreen: View {
                 if present.count >= 2 {
                     // More metres per hour is the improvement here, so the
                     // sense of "better" is the opposite way round to pace.
-                    trendDelta("\(rateDelta >= 0 ? "+" : "−")\(Int(abs(rateDelta)))",
-                               improved: rateDelta >= 0)
+                    trendDelta(Int(rateDelta) == 0
+                               ? String(localized: "unchanged")
+                               : "\(rateDelta >= 0 ? "+" : "−")\(Int(abs(rateDelta)))",
+                               improved: rateDelta > 0)
                 }
             }
             .padding(.top, 8)

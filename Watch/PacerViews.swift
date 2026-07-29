@@ -217,9 +217,14 @@ struct PacerRunView: View {
     private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
     private var palette: RunPalette { RunPalette(dimmed: dimmed) }
 
-    private enum PaceState { case onPace, fast, slow }
+    private enum PaceState { case noPace, onPace, fast, slow }
 
     private var state: PaceState {
+        // No rolling pace yet — the start of the run, or a standstill at a
+        // crossing. `paceDelta` is 0 there, and 0 used to mean "exactly on
+        // target": the screen claimed the runner was holding a pace while the
+        // hero above it read "–:––".
+        guard session.rollingPace > 0 else { return .noPace }
         if session.paceDelta < -6 { return .fast }
         if session.paceDelta > 6 { return .slow }
         return .onPace
@@ -271,7 +276,9 @@ struct PacerRunView: View {
             }
         } footer: {
             VStack(alignment: .leading, spacing: 0) {
-                PacerGauge(delta: session.paceDelta, offTarget: state != .onPace)
+                // Nothing to be off target from without a pace.
+                PacerGauge(delta: session.paceDelta,
+                           offTarget: state != .onPace && state != .noPace)
                 HStack {
                     Text("FAST")
                         .kicker(state == .fast ? 7 : 8,
@@ -297,6 +304,9 @@ struct PacerRunView: View {
     @ViewBuilder
     private var statusLine: some View {
         switch state {
+        case .noPace:
+            Text("PACER · TARGET \(Format.pace(session.pacerTarget))")
+                .kicker(8, color: palette.label, tracking: 0.1)
         case .onPace:
             Text("PACER · ON TARGET \(Format.pace(session.pacerTarget))")
                 .kicker(8, color: palette.label, tracking: 0.1)
@@ -311,7 +321,11 @@ struct PacerRunView: View {
 
     @ViewBuilder
     private var footerCenter: some View {
-        if state == .onPace {
+        if state == .noPace {
+            Text("waiting for pace")
+                .font(.stat(7, weight: .regular))
+                .foregroundStyle(Theme.muted)
+        } else if state == .onPace {
             Text("±\(Format.clock(abs(session.paceDelta)))")
                 .font(.stat(7))
                 .foregroundStyle(Theme.ink)

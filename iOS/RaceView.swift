@@ -52,8 +52,13 @@ struct RaceView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("LAST 4 WEEKS").kicker(13, color: Theme.bright, tracking: 0.12)
                 Spacer()
-                Text(verbatim: "\(Int(store.last4WeeksKm)) km · \(last4Delta)")
-                    .font(.stat(13)).foregroundStyle(Theme.signal)
+                // Signal marks the direction, it does not decorate the row:
+                // four weeks of *less* running before a race is a taper or a
+                // problem, and either way it is not good news to be coloured.
+                let delta = last4Delta
+                Text(verbatim: "\(Int(store.last4WeeksKm)) km\(delta.map { " · \($0.text)" } ?? "")")
+                    .font(.stat(13))
+                    .foregroundStyle(delta?.isUp == true ? Theme.signal : Theme.bright)
                     .lineLimit(1).fixedSize()
             }
             WeekVolumeBars(items: store.last4Weeks()).padding(.top, 18)
@@ -71,18 +76,23 @@ struct RaceView: View {
         }
     }
 
-    private var last4Delta: String {
+    /// The last four weeks against the four before them.
+    ///
+    /// Both sides read `allRuns`. The previous window used to filter
+    /// `store.runs` — Currimus' own recordings only — while the current one
+    /// counted everything, so anyone whose runs come from another app was
+    /// comparing their whole log against a fraction of it and reading a
+    /// triple-digit increase that had not happened.
+    private var last4Delta: (text: String, isUp: Bool)? {
         let cal = Calendar.current
-        let now = store.last4WeeksKm
-        let prevRuns = store.runs.filter {
-            guard let start = cal.date(byAdding: .weekOfYear, value: -8, to: .now),
-                  let end = cal.date(byAdding: .weekOfYear, value: -4, to: .now) else { return false }
-            return $0.date >= start && $0.date < end
-        }
-        let prev = prevRuns.reduce(0) { $0 + $1.distanceKm }
-        guard prev > 0 else { return "—" }
-        let pct = Int(((now - prev) / prev * 100).rounded())
-        return "\(pct >= 0 ? "+" : "")\(pct)%"
+        guard let start = cal.date(byAdding: .weekOfYear, value: -8, to: .now),
+              let end = cal.date(byAdding: .weekOfYear, value: -4, to: .now) else { return nil }
+        let prev = store.allRuns
+            .filter { $0.date >= start && $0.date < end }
+            .reduce(0) { $0 + $1.distanceKm }
+        guard prev > 0 else { return nil }
+        let pct = Int(((store.last4WeeksKm - prev) / prev * 100).rounded())
+        return ("\(pct >= 0 ? "+" : "")\(pct)%", pct >= 0)
     }
 
     /// Where the number comes from, in enough detail to argue with.
@@ -172,7 +182,8 @@ struct RaceSetupView: View {
                 .background(Theme.glassCardFill, in: RoundedRectangle(cornerRadius: 16))
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.glassCardStroke, lineWidth: 1))
                 .padding(.top, 10)
-                Text("\(daysUntil) days").font(.stat(13, weight: .semibold)).foregroundStyle(Theme.signal)
+                Text(Format.plural(daysUntil, "day", "days"))
+                    .font(.stat(13, weight: .semibold)).foregroundStyle(Theme.signal)
                     .frame(maxWidth: .infinity, alignment: .trailing).padding(.top, 6)
 
                 fieldLabel("GOAL TIME").padding(.top, 20)
@@ -247,9 +258,14 @@ struct RaceSetupView: View {
         guard let best = tempoPaces.min() else {
             return "Set a goal and see the pace it needs."
         }
+        // Named for what it actually is. It used to say the goal "sits inside
+        // what you have already held", comparing a marathon's required pace
+        // against a tempo run of eight kilometres — which says very little
+        // about forty-two.
+        let distance = distance.short
         return requiredPace >= best
-            ? "Your best tempo run is \(Format.pace(best)) /km, so the goal sits inside what you have already held."
-            : "Faster than your best tempo (\(Format.pace(best)) /km) — ambitious, but that is the point."
+            ? "Slower than your best tempo pace (\(Format.pace(best)) /km), which is a start — a \(distance) asks you to hold it far longer."
+            : "Faster than your best tempo pace (\(Format.pace(best)) /km), over a \(distance) — ambitious, but that is the point."
     }
 
     private func fieldLabel(_ t: String) -> some View { Text(t).kicker(13, color: Theme.bright, tracking: 0.12) }

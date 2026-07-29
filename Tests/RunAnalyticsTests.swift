@@ -401,6 +401,33 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNil(RunAnalytics.trendChange([nil, nil, nil, nil]))
     }
 
+    // MARK: What the screens actually print
+
+    func testOneOfSomethingIsNotPlural() {
+        XCTAssertEqual(Format.plural(1, "run", "runs"), "1 run")
+        XCTAssertEqual(Format.plural(0, "run", "runs"), "0 runs")
+        XCTAssertEqual(Format.plural(2, "day", "days"), "2 days")
+    }
+
+    func testARunWithoutHeartRateNamesNoZone() {
+        // Zone 0 does not exist; a run that never saw a heart rate simply has
+        // no zone to name, and the line stops rather than inventing one.
+        let blind = Run(date: .now, name: "Easy", distanceKm: 10, duration: 3000, avgHR: 0)
+        let text = LogRowText(run: blind, prTag: nil)
+        XCTAssertFalse(text.detail.contains("Z0"), text.detail)
+        XCTAssertFalse(text.detail.contains("Z"), text.detail)
+
+        let measured = Run(date: .now, name: "Easy", distanceKm: 10, duration: 3000,
+                           avgHR: 140, zoneSeconds: [0, 2400, 600, 0, 0])
+        XCTAssertTrue(LogRowText(run: measured, prTag: nil).detail.contains("Z2"))
+    }
+
+    func testAPaceOfNothingIsNotAPace() {
+        // A stopped runner, or one before the first GPS fix.
+        XCTAssertEqual(Format.pace(0), "–:––")
+        XCTAssertEqual(Format.pace(-5), "–:––")
+    }
+
     // MARK: Sync codecs
 
     func testWatchSettingsRoundTrips() throws {

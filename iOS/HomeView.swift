@@ -177,7 +177,10 @@ struct RunSummaryCard: View {
                     HStack(spacing: 26) {
                         CardStat(value: Format.km(run.distanceKm), label: "KM")
                         CardStat(value: Format.pace(run.paceSecPerKm), label: "/KM")
-                        CardStat(value: "Z\(run.dominantZone)", label: "MOSTLY", accent: true)
+                        // A run without heart rate has no dominant zone, and
+                        // "Z0" names a zone that does not exist.
+                        CardStat(value: run.dominantZone > 0 ? "Z\(run.dominantZone)" : "–",
+                                 label: "MOSTLY", accent: run.dominantZone > 0)
                     }
                     .padding(.top, 14)
                     ZoneHeatStrip(zoneSeconds: run.zoneSeconds, height: 6).padding(.top, 16)
