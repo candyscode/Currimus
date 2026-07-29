@@ -609,3 +609,30 @@ Nicht geändert, aber geprüft und für richtig befunden: `–:––` bei fehle
 
 https://github.com/candyscode/Currimus/commit/154cfc6
 
+\n\n### CUR-21: Zone-2-Pace nur noch gemessen, nie geschätzt
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Rückfrage von Andi zu CUR-7: Ist es eine gute Idee, angenäherte Werte im Zone-2-Graphen zu zeigen, wenn wir nur die Pace des ganzen Laufs kennen? Vorschlag: solche Läufe gar nicht betrachten.
+
+#### Agent Comments
+
+Zugestimmt — mit einem Zwischenschritt, weil „nur exakte Werte" allein den Graphen bei Andi auf Monate hinaus leer gelassen hätte: `zoneDistanceKm` gab es nur auf Läufen, die Currimus selbst aufgezeichnet hat, und sein Log besteht überwiegend aus Läufen der Apple-Workout-App.
+
+**Also erst messen, dann die Näherung streichen.** Seit CUR-15 holt die App für importierte Läufe die GPS-Route *mit Zeitstempeln* und die vollständige Herzfrequenzspur aus Health. Beides wurde über denselben Lauf aufgezeichnet — man kann sie also wieder zusammenführen und Segment für Segment ausrechnen, wie viel Strecke bei welcher Herzfrequenz zurückgelegt wurde. Das ist dieselbe Rechnung, die die Uhr live macht, nur nachträglich (`RunAnalytics.zoneDistanceKm(route:heartRate:zones:)`, rein und getestet).
+
+Aus derselben Route fallen außerdem **echte Kilometer-Splits** ab (`RunAnalytics.splits(fromRoute:)`) — siehe unten, das repariert nebenbei die Records importierter Läufe.
+
+**Die Regel lautet jetzt: gemessen oder gar nicht.** `RunAnalytics.effort` akzeptiert ausschließlich Läufe mit gemessener Zonen-Distanz. Was nicht messbar ist — Laufband ohne Route, Lauf ohne Herzfrequenz — fällt raus und wird unter dem Graphen gezählt: *„3 runs spent in zone 2 could not be measured exactly — no route or no heart-rate trace — and are left out rather than estimated."* Läufe verschwinden damit nicht stillschweigend.
+
+**Nachladen im Hintergrund** (`RunStore.backfillImported`): bei jedem Refresh werden bis zu zwölf importierte Läufe der letzten zwölf Monate rekonstruiert, neueste zuerst, und dauerhaft gespeichert. Ohne das hätte sich der Graph nur gefüllt, wenn man zufällig alte Detailansichten öffnet — ein Diagramm, das seine Form ändert, weil man woanders hingeschaut hat.
+
+**Grenzen, ehrlich benannt:** Segmente über 60 s Lücke (Pause, GPS-Ausfall) und Sprünge über 500 m zählen nicht mit; ein Herzfrequenzwert gilt höchstens 60 s weit. Läufe, die Currimus vor CUR-7 selbst aufgezeichnet hat, haben keine gespeicherte Herzfrequenzspur — sie liegen aber als Workouts in Health und werden über denselben Weg erfasst, sobald sie an der Reihe sind.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-21
+

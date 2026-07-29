@@ -284,6 +284,81 @@ final class RunAnalyticsTests: XCTestCase {
             avgHR: avgHR, zoneSeconds: seconds, zoneDistanceKm: perZoneKm)
     }
 
+    // MARK: … reconstructed from a route and a heart-rate trace
+
+    /// A straight line east at the equator, one point per second, at a
+    /// constant 5:00 /km — 3.333 m per second.
+    private func straightRoute(seconds: Int, metresPerSecond: Double = 1000.0 / 300.0) -> [Coordinate] {
+        // One degree of longitude at the equator is 111.32 km.
+        let degreesPerMetre = 1 / 111_320.0
+        return (0...seconds).map { t in
+            Coordinate(lat: 0, lon: Double(t) * metresPerSecond * degreesPerMetre,
+                       elevation: 0, t: TimeInterval(t))
+        }
+    }
+
+    func testDistancePerZoneIsPairedBackFromTheRouteAndTheTrace() throws {
+        // Ten minutes: the first five in zone 2 (125 bpm), the last five in
+        // zone 4 (160 bpm), at a steady 5:00 /km throughout.
+        let route = straightRoute(seconds: 600)
+        let trace: [(bpm: Int, at: TimeInterval)] =
+            stride(from: 0, through: 600, by: 10).map { (bpm: $0 < 300 ? 125 : 160, at: TimeInterval($0)) }
+        let distance = try XCTUnwrap(
+            RunAnalytics.zoneDistanceKm(route: route, heartRate: trace, zones: testZones))
+        XCTAssertEqual(distance[1], 1.0, accuracy: 0.05, "five minutes at 5:00 /km is a kilometre")
+        XCTAssertEqual(distance[3], 1.0, accuracy: 0.05)
+        XCTAssertEqual(distance[0] + distance[2] + distance[4], 0, accuracy: 0.001)
+    }
+
+    func testAGapInTheTrackIsNotAttributedToAnyZone() throws {
+        // Two minutes of running, a five-minute pause, two more minutes.
+        var route = straightRoute(seconds: 120)
+        let resumed = straightRoute(seconds: 120).map {
+            Coordinate(lat: 0, lon: $0.lon + 0.01, elevation: 0, t: $0.t + 420)
+        }
+        route.append(contentsOf: resumed)
+        let trace: [(bpm: Int, at: TimeInterval)] =
+            stride(from: 0, through: 540, by: 10).map { (bpm: 125, at: TimeInterval($0)) }
+        let distance = try XCTUnwrap(
+            RunAnalytics.zoneDistanceKm(route: route, heartRate: trace, zones: testZones))
+        // Four minutes of actual running, not four minutes plus a kilometre of
+        // teleportation across the pause.
+        XCTAssertEqual(distance[1], 0.8, accuracy: 0.05)
+    }
+
+    func testARunWithoutOneHalfOrTheOtherCannotBeMeasured() {
+        let route = straightRoute(seconds: 300)
+        XCTAssertNil(RunAnalytics.zoneDistanceKm(route: route, heartRate: [], zones: testZones))
+        XCTAssertNil(RunAnalytics.zoneDistanceKm(route: [], heartRate: [(bpm: 125, at: 0)],
+                                                 zones: testZones))
+    }
+
+    func testSplitsAreRecoveredFromTheRoute() {
+        // A little over fifteen minutes at 5:00 /km, so the third kilometre
+        // mark is genuinely crossed rather than landed on.
+        let splits = RunAnalytics.splits(fromRoute: straightRoute(seconds: 920))
+        XCTAssertEqual(splits.count, 3)
+        for split in splits {
+            XCTAssertEqual(split, 300, accuracy: 6, "each kilometre took five minutes")
+        }
+    }
+
+    func testARecoveredSplitFindsTheFastKilometreInsideALongerRun() throws {
+        // Two kilometres at 5:00, then one at 4:00 — the fastest kilometre is
+        // the last one, and a whole-run average would never show it.
+        var route = straightRoute(seconds: 600)
+        let handover = route[route.count - 1]
+        let fast = straightRoute(seconds: 260, metresPerSecond: 1000.0 / 240.0).map {
+            Coordinate(lat: 0, lon: handover.lon + $0.lon, elevation: 0, t: handover.t + $0.t)
+        }
+        route.append(contentsOf: fast.dropFirst())
+        let splits = RunAnalytics.splits(fromRoute: route)
+        XCTAssertGreaterThanOrEqual(splits.count, 3)
+        XCTAssertEqual(splits[0], 300, accuracy: 6)
+        XCTAssertEqual(splits[1], 300, accuracy: 6)
+        XCTAssertEqual(splits[2], 240, accuracy: 8, "the fast kilometre, found inside the run")
+    }
+
     // MARK: … measured, when the run recorded it
 
     func testAMeasuredRunContributesOnlyItsZoneTwoPortion() throws {
@@ -291,7 +366,6 @@ final class RunAnalyticsTests: XCTestCase {
         let run = zoneRun([0, 2400, 1200, 0, 0], km: 12, duration: 3600,
                           perZoneKm: [0, 8, 4, 0, 0])
         let effort = try XCTUnwrap(RunAnalytics.effort(of: run, inZone: 2, zones: testZones))
-        XCTAssertTrue(effort.isMeasured)
         XCTAssertEqual(effort.km, 8, accuracy: 0.001)
         XCTAssertEqual(effort.seconds, 2400, accuracy: 0.001)
         // 5:00 /km in zone 2, against 5:00 for the whole run only by accident
@@ -314,41 +388,29 @@ final class RunAnalyticsTests: XCTestCase {
 
     // MARK: … approximated, when it did not
 
-    func testAnOlderRunIsPlacedByWhereItSpentItsTime() throws {
-        // 70 % of the run in zone 2 and no per-zone distance recorded — the
-        // whole run counts, and says so.
+    func testARunThatWasNotMeasuredDoesNotCountAtAll() {
+        // 70 % of its time in zone 2, but no per-zone distance: it used to
+        // count whole, at the pace of the *whole* run — an estimate sitting on
+        // a chart that cannot show its own uncertainty.
         let easy = zoneRun([200, 2100, 700, 0, 0])
-        let effort = try XCTUnwrap(RunAnalytics.effort(of: easy, inZone: 2, zones: testZones))
-        XCTAssertFalse(effort.isMeasured)
-        XCTAssertEqual(effort.km, 10, accuracy: 0.001)
-        XCTAssertNil(RunAnalytics.effort(of: easy, inZone: 3, zones: testZones))
+        XCTAssertNil(RunAnalytics.effort(of: easy, inZone: 2, zones: testZones))
+        // It is still counted as having been there, so the screen can say how
+        // many runs it left out.
+        XCTAssertTrue(RunAnalytics.spentTime(easy, inZone: 2))
+        XCTAssertFalse(RunAnalytics.spentTime(easy, inZone: 5))
     }
 
-    func testARunSplitAcrossZonesBelongsToNone() {
-        // Leading zone, but not the majority: 40 % easy and 35 % hard is not
-        // an easy run.
-        let mixed = zoneRun([0, 1200, 1050, 750, 0])
-        XCTAssertNil(RunAnalytics.effort(of: mixed, inZone: 2, zones: testZones))
-        XCTAssertNil(RunAnalytics.effort(of: mixed, inZone: 3, zones: testZones))
-    }
-
-    func testAnImportedRunIsPlacedByItsAverageHeartRateUntilHealthIsAsked() throws {
-        // Another app recorded it and its detail screen has not been opened,
-        // so there is no zone breakdown yet — only the average heart rate.
-        var imported = zoneRun([0, 0, 0, 0, 0], avgHR: 125)
-        imported.imported = true
-        XCTAssertNotNil(RunAnalytics.effort(of: imported, inZone: 2, zones: testZones))
-
-        var hard = imported; hard.avgHR = 160
-        XCTAssertNotNil(RunAnalytics.effort(of: hard, inZone: 4, zones: testZones))
-        XCTAssertNil(RunAnalytics.effort(of: hard, inZone: 2, zones: testZones))
-    }
-
-    func testARunWithNoHeartRateAtAllIsLeftOutRatherThanGuessed() {
-        let blind = zoneRun([0, 0, 0, 0, 0], avgHR: 0)
-        for zone in 1...5 {
-            XCTAssertNil(RunAnalytics.effort(of: blind, inZone: zone, zones: testZones))
-        }
+    func testAnUnmeasurableRunIsReportedRatherThanSilentlyDropped() throws {
+        let now = Date()
+        let measured = zoneRun([0, 3000, 0, 0, 0], km: 10, duration: 3000,
+                               perZoneKm: [0, 10, 0, 0, 0], date: now)
+        let treadmill = zoneRun([0, 2400, 600, 0, 0], km: 8, duration: 3000, date: now)
+        let months = RunAnalytics.monthlyZonePace(runs: [measured, treadmill], zone: 2,
+                                                  zones: testZones, months: 1, now: now)
+        let month = try XCTUnwrap(months.last)
+        XCTAssertEqual(month.runs, 1)
+        XCTAssertEqual(month.unmeasured, 1)
+        XCTAssertEqual(try XCTUnwrap(month.pace), 300, accuracy: 0.5)
     }
 
     // MARK: … and aggregated by month
@@ -367,7 +429,7 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(month.pace), 320, accuracy: 0.5)
         XCTAssertEqual(month.runs, 2)
         XCTAssertEqual(month.km, 30, accuracy: 0.001)
-        XCTAssertFalse(month.isApproximate)
+        XCTAssertEqual(month.unmeasured, 0)
     }
 
     func testAMonthWithoutEasyRunningIsAGapNotAZero() {
@@ -376,14 +438,6 @@ final class RunAnalyticsTests: XCTestCase {
                                                   zones: testZones, months: 1)
         XCTAssertNil(months.last?.pace)
         XCTAssertEqual(months.last?.runs, 0)
-    }
-
-    func testAMonthCarryingAnOlderRunSaysItIsApproximate() throws {
-        let now = Date()
-        let old = zoneRun([0, 2400, 600, 0, 0], km: 10, duration: 3000, date: now)
-        let months = RunAnalytics.monthlyZonePace(runs: [old], zone: 2,
-                                                  zones: testZones, months: 1, now: now)
-        XCTAssertTrue(try XCTUnwrap(months.last).isApproximate)
     }
 
     // MARK: … and read as a trend

@@ -219,59 +219,141 @@ enum RunAnalytics {
         }
     }
 
+    // MARK: - Reconstructing distance per zone
+
+    /// A time gap longer than this between two fixes is a pause or a dropout,
+    /// not a stretch of running, and the ground between them cannot be
+    /// attributed to whatever the heart rate happened to be.
+    static let maxSegmentGap: TimeInterval = 60
+    /// Nor can a jump of half a kilometre between two fixes.
+    static let maxSegmentKm = 0.5
+
+    /// Distance covered in each zone, reconstructed from a GPS track and a
+    /// heart-rate trace recorded over the same run.
+    ///
+    /// This is what makes "pace in zone 2" a measurement for runs Currimus did
+    /// not record itself. The watch keeps this as it goes; for a workout that
+    /// came from Apple Health, both halves are in the store — the route with
+    /// its timestamps and every heart-rate sample — and pairing them back up
+    /// is the same arithmetic after the fact.
+    ///
+    /// nil when there is not enough to measure, which is the point: a
+    /// treadmill run has no route and a run without a strap has no trace, and
+    /// neither should be guessed at.
+    static func zoneDistanceKm(route: [Coordinate],
+                               heartRate: [(bpm: Int, at: TimeInterval)],
+                               zones: HRZones) -> [Double]? {
+        guard route.count >= 2, !heartRate.isEmpty else { return nil }
+        let trace = heartRate.sorted { $0.at < $1.at }
+        var distance = [Double](repeating: 0, count: 5)
+        var index = 0
+
+        for (from, to) in zip(route, route.dropFirst()) {
+            let span = to.t - from.t
+            guard span >= 0, span <= maxSegmentGap else { continue }
+            let km = haversineKm(from, to)
+            guard km > 0, km <= maxSegmentKm else { continue }
+
+            // The heart rate in the middle of the segment: the trace is
+            // sorted, so this walks forward with the route rather than
+            // searching it again for every step.
+            let middle = (from.t + to.t) / 2
+            while index + 1 < trace.count, trace[index + 1].at <= middle { index += 1 }
+            var sample = trace[index]
+            if index + 1 < trace.count,
+               abs(trace[index + 1].at - middle) < abs(sample.at - middle) {
+                sample = trace[index + 1]
+            }
+            guard abs(sample.at - middle) <= HealthImport.maxSampleSpan else { continue }
+
+            let zone = zones.zone(for: sample.bpm)
+            guard (1...5).contains(zone) else { continue }
+            distance[zone - 1] += km
+        }
+        return distance.reduce(0, +) > 0 ? distance : nil
+    }
+
+    /// Per-kilometre splits reconstructed from a GPS track.
+    ///
+    /// A run out of Apple Health arrives as one distance and one duration, so
+    /// its 5 K and 10 K records could only ever be its *average* pace scaled
+    /// onto the distance — which drags a fast ten kilometres down with the
+    /// four slow ones that followed. The route says where the runner was and
+    /// when, so the kilometre marks can be found again.
+    static func splits(fromRoute route: [Coordinate]) -> [TimeInterval] {
+        guard route.count >= 2 else { return [] }
+        var splits: [TimeInterval] = []
+        var covered = 0.0
+        var lastMarkTime = route[0].t
+
+        for (from, to) in zip(route, route.dropFirst()) {
+            let span = to.t - from.t
+            guard span >= 0, span <= maxSegmentGap else { continue }
+            let km = haversineKm(from, to)
+            guard km > 0, km <= maxSegmentKm else { continue }
+
+            var remaining = km
+            var segmentStart = from.t
+            // A single segment can cross a kilometre mark, and on a coarse
+            // track it can cross more than one.
+            while covered + remaining >= Double(splits.count + 1) {
+                let toMark = Double(splits.count + 1) - covered
+                let share = toMark / remaining
+                let markTime = segmentStart + (to.t - segmentStart) * share
+                splits.append(markTime - lastMarkTime)
+                lastMarkTime = markTime
+                segmentStart = markTime
+                covered += toMark
+                remaining -= toMark
+            }
+            covered += remaining
+        }
+        return splits
+    }
+
+    /// Great-circle distance in km. Fine at the scale of one running stride —
+    /// the error against the ellipsoid is far below the GPS's own.
+    private static func haversineKm(_ a: Coordinate, _ b: Coordinate) -> Double {
+        let radius = 6371.0088
+        let dLat = (b.lat - a.lat) * .pi / 180
+        let dLon = (b.lon - a.lon) * .pi / 180
+        let lat1 = a.lat * .pi / 180
+        let lat2 = b.lat * .pi / 180
+        let h = sin(dLat / 2) * sin(dLat / 2)
+            + sin(dLon / 2) * sin(dLon / 2) * cos(lat1) * cos(lat2)
+        return 2 * radius * asin(min(1, h.squareRoot()))
+    }
+
     /// What one run contributes to a zone's pace: the time it spent there and
     /// the ground it covered there.
     struct ZoneEffort: Equatable {
         var seconds: TimeInterval
         var km: Double
-        /// True when this came from the run's own per-zone record rather than
-        /// from treating the whole run as belonging to the zone.
-        var isMeasured: Bool
 
         var pace: TimeInterval { km > 0.05 ? seconds / km : 0 }
     }
 
     /// A run's contribution to one zone, or nil if it made none.
     ///
-    /// Two sources, in order of trust:
+    /// Measured or nothing. A run knows the seconds *and* the kilometres it
+    /// spent in each zone — recorded live by the watch, or reconstructed from
+    /// Health's route and heart-rate trace — and only then does it count.
     ///
-    /// 1. **Measured.** Runs recorded since Currimus started keeping per-zone
-    ///    distance carry the seconds *and* the kilometres they spent in each
-    ///    zone, so the answer is exact: the zone-2 portion of a run counts,
-    ///    the rest of it does not.
-    /// 2. **Approximated.** Older runs, and any run whose per-zone distance is
-    ///    missing, only know how long they spent in each zone. There the unit
-    ///    has to be the whole run: one that spent the majority of its time in
-    ///    the zone counts entirely, at its overall pace. That flatters the
-    ///    number slightly — the harder minutes of a mostly-easy run are in it
-    ///    — which is why the measured path exists.
-    ///
-    /// A run another app recorded has real zone seconds once its detail screen
-    /// has been opened (Health is asked for the heart-rate trace then); until
-    /// that happens it is placed by its average heart rate, which is the best
-    /// available and is wrong for interval sessions. Without any heart rate at
-    /// all it contributes nothing rather than being guessed at.
+    /// It used to fall back to treating a run that spent most of its time in
+    /// the zone as belonging to it whole, at its overall pace. That reads as a
+    /// measurement on a chart that cannot show its own uncertainty, and it
+    /// flatters the number besides: the harder kilometres of a mostly-easy run
+    /// were in it. A run that cannot be measured is left out and counted in
+    /// the line underneath the chart instead.
     static func effort(of run: Run, inZone zone: Int, zones: HRZones) -> ZoneEffort? {
-        guard zone >= 1, zone <= 5, run.hasUsableDistance else { return nil }
-
-        if let perZone = run.zoneDistanceKm, perZone.count == 5 {
-            let km = perZone[zone - 1]
-            let seconds = run.zoneSeconds[zone - 1]
-            guard km > 0.2, seconds > 30 else { return nil }
-            return ZoneEffort(seconds: seconds, km: km, isMeasured: true)
-        }
-
-        let total = run.zoneSeconds.reduce(0, +)
-        let belongs: Bool
-        if total > 0 {
-            belongs = run.zoneSeconds[zone - 1] / total >= 0.5
-        } else if run.avgHR > 0 {
-            belongs = zones.zone(for: run.avgHR) == zone
-        } else {
-            belongs = false
-        }
-        guard belongs else { return nil }
-        return ZoneEffort(seconds: run.duration, km: run.distanceKm, isMeasured: false)
+        guard zone >= 1, zone <= 5, run.hasUsableDistance,
+              let perZone = run.zoneDistanceKm, perZone.count == 5 else { return nil }
+        let km = perZone[zone - 1]
+        let seconds = run.zoneSeconds[zone - 1]
+        // Passing through a zone on the way to another one is not running in
+        // it; a fifth of a kilometre and half a minute are the floor.
+        guard km > 0.2, seconds > 30 else { return nil }
+        return ZoneEffort(seconds: seconds, km: km)
     }
 
     /// One month of running in a zone: the pace, and how much it rests on.
@@ -282,8 +364,16 @@ enum RunAnalytics {
         var pace: TimeInterval?
         var km: Double
         var runs: Int
-        /// True while any part of the month is still an approximation.
-        var isApproximate: Bool
+        /// Runs that month which were spent in the zone but could not be
+        /// measured — no GPS track, or no heart-rate trace to pair it with.
+        /// They are left out of the line and counted here instead.
+        var unmeasured: Int
+    }
+
+    /// Whether a run was in the zone at all, measurable or not.
+    static func spentTime(_ run: Run, inZone zone: Int) -> Bool {
+        guard zone >= 1, zone <= 5, run.zoneSeconds.count == 5 else { return false }
+        return run.zoneSeconds[zone - 1] > 30
     }
 
     /// Pace in one heart-rate zone, month by month, oldest first.
@@ -303,9 +393,13 @@ enum RunAnalytics {
         return (0..<months).reversed().compactMap { offset -> ZoneMonth? in
             guard let date = calendar.date(byAdding: .month, value: -offset, to: now),
                   let start = calendar.dateInterval(of: .month, for: date)?.start else { return nil }
-            let efforts = source
-                .filter { calendar.isDate($0.date, equalTo: date, toGranularity: .month) }
-                .compactMap { effort(of: $0, inZone: zone, zones: zones) }
+            let inMonth = source.filter {
+                calendar.isDate($0.date, equalTo: date, toGranularity: .month)
+            }
+            let efforts = inMonth.compactMap { effort(of: $0, inZone: zone, zones: zones) }
+            let unmeasured = inMonth.filter {
+                spentTime($0, inZone: zone) && effort(of: $0, inZone: zone, zones: zones) == nil
+            }
             let km = efforts.reduce(0) { $0 + $1.km }
             let seconds = efforts.reduce(0) { $0 + $1.seconds }
             return ZoneMonth(
@@ -313,7 +407,7 @@ enum RunAnalytics {
                 pace: km > 0.2 ? seconds / km : nil,
                 km: km,
                 runs: efforts.count,
-                isApproximate: efforts.contains { !$0.isMeasured }
+                unmeasured: unmeasured.count
             )
         }
     }

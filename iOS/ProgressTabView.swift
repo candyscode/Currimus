@@ -207,15 +207,14 @@ struct ProgressScreen: View {
     private func zoneTwoFootnote(_ months: [RunAnalytics.ZoneMonth]) -> some View {
         let runs = months.reduce(0) { $0 + $1.runs }
         let km = months.reduce(0) { $0 + $1.km }
-        let approximate = months.contains { $0.isApproximate }
+        let unmeasured = months.reduce(0) { $0 + $1.unmeasured }
         let base = String(localized: "\(Format.plural(runs, "run", "runs")) · \(Format.km(km, decimals: 0)) km in zone 2")
-        return Text(approximate
-                    // Runs recorded before Currimus kept per-zone distance
-                    // cannot be split, so they count whole. Say so rather than
-                    // present an estimate as a measurement — and say it in
-                    // words that mean something without knowing the app's
-                    // history.
-                    ? base + String(localized: ". For older runs Currimus only knows the pace of the whole run, not of its easy part alone, so those months are a close estimate rather than a measurement.")
+        // Every point on this line is measured. Runs that cannot be — no GPS
+        // track, or no heart-rate trace to pair it with — are left out rather
+        // than estimated, and saying how many keeps that from looking like
+        // runs going missing.
+        return Text(unmeasured > 0
+                    ? base + String(localized: ". \(Format.plural(unmeasured, "run", "runs")) spent in zone 2 could not be measured exactly — no route or no heart-rate trace — and are left out rather than estimated.")
                     : base)
             .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)

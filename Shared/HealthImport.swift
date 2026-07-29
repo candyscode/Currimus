@@ -89,8 +89,16 @@ enum HealthImport {
     struct WorkoutDetail: Equatable {
         var zoneSeconds: [TimeInterval]
         var route: [Coordinate]
+        /// Distance per zone, paired back together from the two above. nil
+        /// when one of them is missing — a treadmill run, or one without a
+        /// strap — and then the run is simply not measured.
+        var zoneDistanceKm: [Double]?
+        /// Per-kilometre splits recovered from the route.
+        var splits: [TimeInterval]
 
-        var isEmpty: Bool { zoneSeconds.reduce(0, +) < 1 && route.isEmpty }
+        var isEmpty: Bool {
+            zoneSeconds.reduce(0, +) < 1 && route.isEmpty
+        }
     }
 
     /// How long one heart-rate sample is taken to stand for: until the next
@@ -120,13 +128,21 @@ enum HealthImport {
         guard let workout = await workout(with: run.id, in: store) else { return nil }
         let samples = await heartRateSamples(of: workout, in: store)
         let locations = await routeLocations(of: workout, in: store)
+        let route = locations.map {
+            Coordinate(lat: $0.coordinate.latitude, lon: $0.coordinate.longitude,
+                       elevation: $0.altitude,
+                       t: max($0.timestamp.timeIntervalSince(workout.startDate), 0))
+        }
+        // Both halves were recorded over the same run; pairing them puts back
+        // everything the workout's summary threw away.
+        let trace = samples.map {
+            (bpm: $0.bpm, at: $0.at.timeIntervalSince(workout.startDate))
+        }
         return WorkoutDetail(
             zoneSeconds: zoneSeconds(from: samples, zones: zones, end: workout.endDate),
-            route: locations.map {
-                Coordinate(lat: $0.coordinate.latitude, lon: $0.coordinate.longitude,
-                           elevation: $0.altitude,
-                           t: max($0.timestamp.timeIntervalSince(workout.startDate), 0))
-            }
+            route: route,
+            zoneDistanceKm: RunAnalytics.zoneDistanceKm(route: route, heartRate: trace, zones: zones),
+            splits: RunAnalytics.splits(fromRoute: route)
         )
     }
 

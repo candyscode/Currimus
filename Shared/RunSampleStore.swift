@@ -9,6 +9,12 @@ struct RunSamples: Codable, Equatable {
     /// imported list is replaced wholesale on every refresh, and anything
     /// living only in it is one foreground away from being lost.
     var zoneSeconds: [TimeInterval]?
+    /// Distance per zone and per-kilometre splits, reconstructed from the two
+    /// above for a run Currimus did not record itself. Same reason as
+    /// `zoneSeconds`: the imported list is replaced wholesale on every
+    /// refresh, so anything living only there is one foreground from gone.
+    var zoneDistanceKm: [Double]?
+    var splits: [TimeInterval]?
 
     static let empty = RunSamples()
 
@@ -18,10 +24,13 @@ struct RunSamples: Codable, Equatable {
     }
 
     init(altitude: [Double]? = nil, route: [Coordinate]? = nil,
-         zoneSeconds: [TimeInterval]? = nil) {
+         zoneSeconds: [TimeInterval]? = nil, zoneDistanceKm: [Double]? = nil,
+         splits: [TimeInterval]? = nil) {
         self.altitude = altitude
         self.route = route
         self.zoneSeconds = zoneSeconds
+        self.zoneDistanceKm = zoneDistanceKm
+        self.splits = splits
     }
 
     init(_ run: Run) {
@@ -124,6 +133,12 @@ extension Run {
         // the authority, and this is the fallback for one rebuilt from Health.
         if zoneSeconds.reduce(0, +) < 1, let rebuilt = samples.zoneSeconds, rebuilt.count == 5 {
             copy.zoneSeconds = rebuilt
+        }
+        if zoneDistanceKm == nil, let rebuilt = samples.zoneDistanceKm, rebuilt.count == 5 {
+            copy.zoneDistanceKm = rebuilt
+        }
+        if splits.isEmpty, let rebuilt = samples.splits, !rebuilt.isEmpty {
+            copy.splits = rebuilt
         }
         return copy
     }

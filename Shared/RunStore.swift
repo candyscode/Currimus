@@ -245,13 +245,35 @@ final class RunStore: ObservableObject {
         let rebuilt = detail.zoneSeconds.reduce(0, +) >= 1 ? detail.zoneSeconds : nil
         if !detail.route.isEmpty || rebuilt != nil {
             let samples = RunSamples(route: detail.route.isEmpty ? nil : detail.route,
-                                     zoneSeconds: rebuilt)
+                                     zoneSeconds: rebuilt,
+                                     zoneDistanceKm: detail.zoneDistanceKm,
+                                     splits: detail.splits.isEmpty ? nil : detail.splits)
             sampleCache[run.id] = samples
             RunSampleStore.save(samples, for: run.id)
         }
-        if let rebuilt, let index = importedRuns.firstIndex(where: { $0.id == run.id }) {
-            importedRuns[index].zoneSeconds = rebuilt
+        if let index = importedRuns.firstIndex(where: { $0.id == run.id }) {
+            if let rebuilt { importedRuns[index].zoneSeconds = rebuilt }
+            importedRuns[index].zoneDistanceKm = detail.zoneDistanceKm
+            if !detail.splits.isEmpty { importedRuns[index].splits = detail.splits }
         }
+    }
+
+    /// Fills in what Health can still tell us about imported runs, a few at a
+    /// time and newest first.
+    ///
+    /// The zone-2 chart counts only runs whose zone distance was measured, so
+    /// without this it would fill in one run at a time as detail screens
+    /// happened to be opened — a chart that changes shape because you went
+    /// looking at an old run. Bounded per launch, because each run costs two
+    /// Health queries.
+    func backfillImported(limit: Int = 12) async {
+        guard !isDemo else { return }
+        let cutoff = Calendar.current.date(byAdding: .month, value: -12, to: .now) ?? .distantPast
+        let pending = importedRuns
+            .filter { $0.date >= cutoff && $0.zoneDistanceKm == nil }
+            .sorted { $0.date > $1.date }
+            .prefix(limit)
+        for run in pending { await hydrateImported(run) }
     }
 
 
@@ -303,6 +325,7 @@ final class RunStore: ObservableObject {
         let merged = HealthImport.merging(fetched, with: runs).map(carryingHydratedZones)
         if merged != importedRuns { importedRuns = merged }
         await refreshHeartRateZones()
+        await backfillImported()
     }
 
     /// A refresh re-reads each workout's *summary*, which carries no zone
@@ -310,11 +333,15 @@ final class RunStore: ObservableObject {
     /// away the zones built from a run's heart-rate trace and the run fell
     /// back to being placed by its average heart rate.
     func carryingHydratedZones(_ run: Run) -> Run {
-        guard run.zoneSeconds.reduce(0, +) < 1,
-              let known = importedRuns.first(where: { $0.id == run.id }),
-              known.zoneSeconds.reduce(0, +) >= 1 else { return run }
+        guard let known = importedRuns.first(where: { $0.id == run.id }) else { return run }
         var carried = run
-        carried.zoneSeconds = known.zoneSeconds
+        if run.zoneSeconds.reduce(0, +) < 1, known.zoneSeconds.reduce(0, +) >= 1 {
+            carried.zoneSeconds = known.zoneSeconds
+        }
+        // Same for everything else rebuilt out of Health: a refresh reads the
+        // workout's summary, which has none of it.
+        carried.zoneDistanceKm = run.zoneDistanceKm ?? known.zoneDistanceKm
+        if run.splits.isEmpty { carried.splits = known.splits }
         return carried
     }
 
