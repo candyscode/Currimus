@@ -40,6 +40,26 @@ struct AcknowledgementsView: View {
 
                 Text("Nothing else. Currimus has no third-party code in it — no analytics, no networking, no SDKs.")
                     .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 24)
+
+                // Not code, but not ours either. Every number in the app is
+                // measured or modelled, and the modelled ones are somebody's
+                // published research applied to your runs — nameable, and
+                // worth being able to go and read.
+                Text("RESEARCH").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 34)
+                Text("Currimus measures what it can and models the rest. Where it models, it says whose work it is using — here and on the screen that shows the number.")
+                    .font(.sg(14)).foregroundStyle(Theme.bright).lineSpacing(3).padding(.top, 10)
+
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(Source.allCases, id: \.self) { source in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Explainer(markdown: "**\(source.link)**")
+                            Text(source.what)
+                                .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .padding(.top, 18)
             }
         }
     }

@@ -37,7 +37,12 @@ struct RaceView: View {
                 }
                 GridRow {
                     if let p = store.prediction {
-                        BigDetailStat(value: Format.clock(p.time), label: "PREDICTED · \(p.basisLabel.replacingOccurrences(of: " PR", with: ""))").gx()
+                        // The slower of the two models; the paragraph below
+                        // breaks them apart.
+                        BigDetailStat(value: Format.clock(p.headline),
+                                      label: p.fromTraining == nil
+                                          ? "PREDICTED · \(p.basisLabel.replacingOccurrences(of: " PR", with: ""))"
+                                          : "PREDICTED · CAUTIOUS").gx()
                     } else {
                         BigDetailStat(value: "—", label: "PREDICTED").gx()
                     }
@@ -63,8 +68,7 @@ struct RaceView: View {
             }
             WeekVolumeBars(items: store.last4Weeks()).padding(.top, 18)
 
-            Text(predictionNote(race)).font(.sg(13)).foregroundStyle(Theme.muted)
-                .lineSpacing(4).padding(.top, 18)
+            Explainer(markdown: predictionNote(race), top: 18)
 
             Button { push(.raceSetup) } label: {
                 GlassCard(cornerRadius: 20, padding: EdgeInsets(top: 18, leading: 22, bottom: 18, trailing: 22)) {
@@ -97,24 +101,40 @@ struct RaceView: View {
 
     /// Where the number comes from, in enough detail to argue with.
     ///
-    /// "Riegel" on its own tells a runner nothing. What they need is which
-    /// effort it read, when that effort was, and what the model is bad at.
+    /// Two models, kept apart. Riegel reads one hard effort and knows nothing
+    /// about whether the work has been done; Tanda reads the work and nothing
+    /// about race sharpness. Where they disagree, that gap is the most useful
+    /// thing on this screen, and averaging it away would throw it out.
     private func predictionNote(_ race: Race) -> String {
         guard let p = store.prediction else {
-            return "Run a 5 K, 10 K or half — or anything longer — and the prediction appears."
+            return String(localized: "Run a 5 K, 10 K or half — or anything longer — and the prediction appears.")
         }
         let when = p.basisDate.formatted(.dateTime.month(.wide).year())
-        var note = String(localized: "Scaled from your best \(p.basisLabel) effort (\(when)) with Riegel's model. Nothing else feeds it: no plan, no coaching, just where you stand.")
+        var note = String(localized: "**\(Format.clock(p.time))** from your best \(p.basisLabel) effort (\(when)), scaled to the distance after \(Source.riegel.link).")
+
+        if let training = p.fromTraining {
+            note += String(localized: " **\(Format.clock(training.time))** from your training — \(Int(training.weeklyKm)) km a week at \(Format.pace(training.meanPaceSecPerKm)) /km over the last eight weeks, after \(Source.tanda.link).")
+            if abs(training.time - p.time) > 8 * 60 {
+                // The gap is the finding. Naming which side is which is what
+                // tells the runner what to do about it.
+                note += training.time > p.time
+                    ? String(localized: " Your speed is ahead of your training: that gap is long runs and weekly volume.")
+                    : String(localized: " Your training is ahead of your racing: the endurance is there, the sharpness is not.")
+            }
+            if training.isExtrapolated {
+                note += String(localized: " The second number is an extrapolation — your volume and pace sit outside the range that study covered, so read it as a direction rather than a time.")
+            }
+        }
+
         if p.isStale {
-            // A prediction resting on last autumn is a statement about last
-            // autumn, and it should not be read as anything else.
-            note += String(localized: " Nothing in the last four months reached that distance, so this describes the shape you were in then.")
+            note += String(localized: " Nothing in the last four months reached that distance, so the first number describes the shape you were in then.")
         }
         if p.underTrained {
-            note += String(localized: " Your longest run is still well short of the race, which the model cannot see — treat it as optimistic.")
+            note += String(localized: " Your longest run is still well short of the race, which neither model can see.")
         }
         return note
     }
+
 }
 
 struct BigDetailStat: View {

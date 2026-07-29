@@ -141,7 +141,7 @@ struct RunDetailView: View {
     /// one) arrives here without this screen changing.
     @ViewBuilder
     private var hintsSection: some View {
-        let hints = RunHints.all(for: run)
+        let hints = RunHints.all(for: run, in: store.allRuns)
         if !hints.isEmpty {
             sectionLabel("NEXT TIME").padding(.top, 30).padding(.bottom, 14)
             VStack(spacing: 12) {
@@ -150,9 +150,7 @@ struct RunDetailView: View {
                               padding: EdgeInsets(top: 18, leading: 20, bottom: 18, trailing: 20)) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(hint.title).font(.sg(16, weight: .semibold))
-                            Text(hint.body)
-                                .font(.sg(13)).foregroundStyle(Theme.bright).lineSpacing(3)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Explainer(markdown: hint.body, color: Theme.bright)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }

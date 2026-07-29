@@ -636,3 +636,68 @@ Aus derselben Route fallen außerdem **echte Kilometer-Splits** ab (`RunAnalytic
 
 https://github.com/candyscode/Currimus/commit/934d291
 
+\n\n### CUR-22: Marathon-Prognose aus dem Training, nicht nur aus einer Bestzeit
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Riegel schaut nur auf eine Bestzeit — also auf Geschwindigkeit, nicht auf Training. Für den Marathon fehlt damit die Hälfte. Zweites Modell ergänzen und beide zeigen.
+
+#### Agent Comments
+
+**Zwei Zeugen, bewusst nicht verrechnet.** Riegel liest eine harte Einheit und weiß nichts darüber, ob die Arbeit gemacht wurde; [Tanda (2011)](https://pubmed.ncbi.nlm.nih.gov/21957197/) liest die Arbeit — mittlere Wochenkilometer und mittlere Trainings-Pace der letzten acht Wochen — und nichts über Renn-Schärfe. Wo sie auseinanderliegen, *ist* das die Information; ein Mittelwert hätte sie weggeworfen.
+
+- **Race-Screen:** beide Zahlen im Fließtext, jede mit ihrer Quelle verlinkt, plus eine Zeile, was die Lücke bedeutet („Deine Geschwindigkeit ist deinem Training voraus: das sind lange Läufe und Wochenumfang" bzw. umgekehrt). Erst ab acht Minuten Unterschied, darunter ist es Rauschen.
+- **Kachel und Home:** die **langsamere** der beiden, Label `PREDICTED · CAUTIOUS`. Eine zu optimistische Prognose kostet am Renntag mehr als eine zu vorsichtige.
+- **Nur Marathon.** Tanda ist auf die Distanz gefittet und wird für 5K/10K/Halb gar nicht erst gefragt.
+- **Straßenläufe only** für beide Eingangsgrößen: der Pace-Term trägt über die Hälfte der Prognose, ein Bergtag bei 7:30/km würde sie um Minuten verschieben.
+- **Grenze sichtbar:** die Studie umfasst 22 Läufer mit Zielzeiten von 2:47 bis 3:36. Liegen Umfang oder Pace außerhalb, sagt der Text das ausdrücklich („read it as a direction rather than a time") statt still eine Zahl auszuwerfen.
+
+### CUR-23: Kadenz-Hinweis gegen die eigene Normalität, nicht nur gegen eine Tabelle
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Der Hinweis aus CUR-8 misst gegen eine pace-abhängige Schwelle. Die kennt die Beinlänge des Läufers nicht — und wiederholt sich bei jedem Lauf.
+
+#### Agent Comments
+
+Ein Hinweis sollte zwei verschiedene Dinge sagen, also sind es jetzt zwei:
+
+- **„Try shorter, quicker steps"** — die Schwelle aus CUR-8, medizinisch begründet ([Heiderscheit et al. 2011](https://pmc.ncbi.nlm.nih.gov/articles/PMC3022995/), jetzt verlinkt). Neu: erscheint **nur auf dem jüngsten Lauf, der ihn auslöst**. Das ist ein Trainingsprojekt, kein Tagesbefund — auf jedem Lauf wiederholt wird daraus Nörgeln. Kostet keinen gespeicherten Zustand: ob es einen neueren qualifizierenden Lauf gibt, beantwortet das Log selbst.
+- **„Shorter steps than usual"** — neu, gegen den **eigenen** Median bei vergleichbarer Pace (±20 s/km, letzte 180 Tage, mindestens acht solche Läufe). Fängt Ermüdung, neue Schuhe, müde Beine. Schweigt bei jemandem, dessen 158 einfach seine 158 sind.
+
+Bewusst **nicht** mit „muss beides zutreffen" verknüpft: wer dauerhaft überschreitet, liegt auch bei seinem eigenen Median niedrig — dann fiele ausgerechnet der Fall mit dem echten gesundheitlichen Nutzen weg. Beide feuern unabhängig und sagen Unterschiedliches.
+
+`RunHints.all(for:in:)` bekommt jetzt das Log mit — das brauchen die AI-Hinweise aus CUR-8 später ohnehin.
+
+### CUR-24: Jede geschätzte Zahl nennt ihre Grundlage
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Überall, wo Modelle oder Schätzungen benutzt werden, dem Nutzer erklären, worauf das beruht — nicht die Formel, sondern „nach Tanda (2011)" mit Link zur Studie.
+
+#### Agent Comments
+
+`Shared/Sources.swift` hält die Quellen an einer Stelle (Titel, Jahr, URL, und wofür sie benutzt werden). `Explainer` rendert Markdown, weil SwiftUI Markdown nur in literalen Texten parst, nicht in interpolierten Strings — und genau so werden diese Absätze zusammengesetzt.
+
+Verlinkt und benannt:
+
+- **Race-Prognose** → Riegel (1981) und Tanda (2011).
+- **Maximalpuls aus dem Alter** → Tanaka et al. (2001). Die Formel selbst steht nicht mehr da.
+- **Kadenz-Hinweis** → Heiderscheit et al. (2011).
+- **Acknowledgements** bekommt einen Abschnitt „RESEARCH" mit allen vieren und je einer Zeile, wofür sie benutzt werden.
+
+Und eine Stelle, die ausdrücklich *keine* Quelle bekommt: die **grade-adjusted pace** ist Currimus' eigene grobe Näherung (0,4 s pro Höhenmeter, knapp die Hälfte zurück beim Abstieg). Die stand bisher unkommentiert neben lauter gemessenen Werten; jetzt steht dort, dass sie eine Schätzung des Hauses ist. Eine erfundene Zitation wäre schlimmer als keine.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-22
+

@@ -92,6 +92,74 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertGreaterThan(prediction?.time ?? 0, 3 * 3600) // > 3h
     }
 
+    // MARK: What the training says
+
+    private func trainingRun(_ km: Double, pace: TimeInterval, daysAgo: Int) -> Run {
+        Run(date: Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now)!,
+            name: "run", distanceKm: km, duration: km * pace, avgHR: 150)
+    }
+
+    /// Eight weeks of running, four times a week.
+    private func eightWeeks(kmPerRun: Double, pace: TimeInterval) -> [Run] {
+        (0..<32).map { trainingRun(kmPerRun, pace: pace, daysAgo: $0 * 7 / 4) }
+    }
+
+    func testTheTrainingPredictionReadsVolumeAndPace() throws {
+        // 4 × 15 km a week at 5:00 /km — 60 km a week.
+        let prediction = try XCTUnwrap(
+            RunAnalytics.trainingPrediction(runs: eightWeeks(kmPerRun: 15, pace: 300)))
+        XCTAssertEqual(prediction.weeklyKm, 60, accuracy: 1)
+        XCTAssertEqual(prediction.meanPaceSecPerKm, 300, accuracy: 1)
+        XCTAssertFalse(prediction.isExtrapolated, "60 km a week at 5:00 is inside the fitted range")
+        // 3:19:43 by hand, which is what a runner holding 5:00 /km across
+        // 60 km a week is worth in this model. Assert the band, not the second.
+        XCTAssertEqual(prediction.time, 11_983, accuracy: 60)
+    }
+
+    func testMoreVolumeAtTheSamePacePredictsAFasterMarathon() throws {
+        let modest = try XCTUnwrap(
+            RunAnalytics.trainingPrediction(runs: eightWeeks(kmPerRun: 10, pace: 300)))
+        let serious = try XCTUnwrap(
+            RunAnalytics.trainingPrediction(runs: eightWeeks(kmPerRun: 25, pace: 300)))
+        XCTAssertLessThan(serious.time, modest.time)
+    }
+
+    func testTrainingOutsideTheStudysRangeSaysSo() throws {
+        // 20 km a week is a long way under what the study covered.
+        let thin = try XCTUnwrap(
+            RunAnalytics.trainingPrediction(runs: eightWeeks(kmPerRun: 5, pace: 330)))
+        XCTAssertTrue(thin.isExtrapolated)
+    }
+
+    func testTooFewRunsIsNotATrainingBlock() {
+        let sparse = (0..<4).map { trainingRun(10, pace: 300, daysAgo: $0 * 7) }
+        XCTAssertNil(RunAnalytics.trainingPrediction(runs: sparse))
+    }
+
+    func testTheMarathonLeadsWithTheMoreCautiousOfTheTwo() throws {
+        // A sharp 10 K and thin training: Riegel is optimistic, Tanda is not,
+        // and the screen must not lead with the flattering one.
+        var runs = eightWeeks(kmPerRun: 6, pace: 330)
+        runs.append(Run(date: .now, name: "10K", distanceKm: 10, duration: 2400, avgHR: 175,
+                        splits: Array(repeating: 240, count: 10)))
+        let race = Race(name: "M", distance: .marathon,
+                        date: Calendar.current.date(byAdding: .day, value: 42, to: .now)!,
+                        goalTime: 14340)
+        let prediction = try XCTUnwrap(RunAnalytics.predict(race: race, runs: runs))
+        let training = try XCTUnwrap(prediction.fromTraining)
+        XCTAssertGreaterThan(training.time, prediction.time)
+        XCTAssertEqual(prediction.headline, training.time)
+    }
+
+    func testAHalfMarathonIsNotAskedOfTheMarathonModel() throws {
+        let runs = eightWeeks(kmPerRun: 15, pace: 300)
+        let race = Race(name: "H", distance: .half,
+                        date: Calendar.current.date(byAdding: .day, value: 42, to: .now)!,
+                        goalTime: 7200)
+        let prediction = try XCTUnwrap(RunAnalytics.predict(race: race, runs: runs))
+        XCTAssertNil(prediction.fromTraining, "Tanda's model is fitted on the marathon")
+    }
+
     // MARK: Records
 
     func testFastestWindowFindsBestConsecutiveKm() {

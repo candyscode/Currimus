@@ -25,6 +25,55 @@ enum RunAnalytics {
         return knownTime * pow(targetKm / knownKm, exponent)
     }
 
+    // MARK: - What the training says
+
+    /// A marathon time predicted from training rather than from a race, after
+    /// Tanda (2011): the mean weekly distance and the mean training pace of
+    /// the eight weeks before it.
+    ///
+    /// This is the other half of the truth. Riegel reads one hard effort and
+    /// knows nothing about whether the runner has done the work; two runners
+    /// with the same 10 K and 40 km a week between them do not finish a
+    /// marathon together.
+    struct TrainingPrediction: Equatable {
+        var time: TimeInterval
+        var weeklyKm: Double
+        var meanPaceSecPerKm: TimeInterval
+        /// True when the inputs sit outside the range the model was fitted on,
+        /// and the number is an extrapolation rather than a reading.
+        var isExtrapolated: Bool
+    }
+
+    static let trainingWindowWeeks = 8
+    /// The study covered 22 runners finishing between 2:47 and 3:36, training
+    /// at the volumes that go with that. Outside it the curve still returns a
+    /// number; it just stops being evidence.
+    static let fittedWeeklyKm = 55.0...160.0
+    static let fittedTrainingPace = 195.0...300.0
+
+    static func trainingPrediction(runs: [Run], now: Date = .now) -> TrainingPrediction? {
+        guard let cutoff = Calendar.current.date(byAdding: .weekOfYear,
+                                                 value: -trainingWindowWeeks, to: now) else { return nil }
+        // Road only. The pace term carries more than half the prediction, and
+        // one mountain day at 7:30 /km would move a marathon estimate by
+        // minutes — the model was fitted on road training.
+        let window = runs.filter { $0.date >= cutoff && !$0.isTrail && $0.hasUsableDistance }
+        let km = window.reduce(0) { $0 + $1.distanceKm }
+        let seconds = window.reduce(0) { $0 + $1.duration }
+        // Enough of a block to describe one.
+        guard window.count >= 8, km > 0, seconds > 0 else { return nil }
+
+        let weekly = km / Double(trainingWindowWeeks)
+        let meanPace = seconds / km
+        let pace = 17.1 + 140.0 * exp(-0.0053 * weekly) + 0.55 * meanPace
+        return TrainingPrediction(
+            time: pace * RaceDistance.marathon.km,
+            weeklyKm: weekly,
+            meanPaceSecPerKm: meanPace,
+            isExtrapolated: !(fittedWeeklyKm.contains(weekly) && fittedTrainingPace.contains(meanPace))
+        )
+    }
+
     /// The PR the prediction is based on, and the predicted finish for a race.
     struct Prediction {
         var time: TimeInterval
@@ -37,6 +86,15 @@ enum RunAnalytics {
         var underTrained: Bool
         /// True when nothing recent qualified and the basis is an old effort.
         var isStale: Bool
+        /// What the last eight weeks of training say, for a marathon. The two
+        /// are kept apart rather than blended: they measure different things,
+        /// and where they disagree that disagreement is the information.
+        var fromTraining: TrainingPrediction?
+
+        /// What to lead with. The slower of the two — a prediction that is too
+        /// optimistic costs a runner far more on the day than one that is too
+        /// careful.
+        var headline: TimeInterval { max(time, fromTraining?.time ?? 0) }
     }
 
     /// How long an effort still counts as describing current form.
@@ -73,7 +131,11 @@ enum RunAnalytics {
             basisLabel: isStale ? "\(basis.label) PR" : basis.label,
             basisDate: basis.holder.run.date,
             underTrained: underTrained,
-            isStale: isStale
+            isStale: isStale,
+            // Tanda's model is fitted on the marathon; it says nothing about a
+            // 10 K and is not asked.
+            fromTraining: race.distance == .marathon
+                ? trainingPrediction(runs: runs, now: now) : nil
         )
     }
 

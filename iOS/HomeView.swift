@@ -82,7 +82,7 @@ struct HomeView: View {
             StatBlock(value: Format.clock(race.goalTime), label: "GOAL")
             StatBlock(value: Format.pace(race.requiredPace), label: planLabel ? "PLAN /KM" : "NEEDS /KM", accent: true)
             if let prediction = store.prediction {
-                StatBlock(value: Format.clock(prediction.time), label: "PREDICTED")
+                StatBlock(value: Format.clock(prediction.headline), label: "PREDICTED")
             }
         }
     }

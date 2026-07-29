@@ -450,9 +450,7 @@ struct HRZonesView: View {
                 .padding(.top, 14)
 
                 if let derivation = store.zones.derivation {
-                    Text(derivation.maxExplanation)
-                        .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
-                        .padding(.top, 10)
+                    Explainer(markdown: derivation.maxExplanation, top: 10)
                 }
 
                 if let resting = store.zones.restingHR {
@@ -489,13 +487,11 @@ struct HRZonesView: View {
                 }
                 .padding(.top, 6)
 
-                Text(zoneExplanation)
-                    .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 18)
+                Explainer(markdown: zoneExplanation, top: 18)
 
                 Text("HOW THESE ARE KEPT CURRENT").kicker(13, color: Theme.bright, tracking: 0.12)
                     .padding(.top, 30)
-                Text(maintenanceExplanation)
-                    .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 10)
+                Explainer(markdown: maintenanceExplanation, top: 10)
             }
         }
     }

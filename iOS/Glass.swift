@@ -120,6 +120,34 @@ struct NoticeCard: View {
     }
 }
 
+// MARK: - Explanatory text with sources
+
+/// The quiet paragraph under a number that says where it came from.
+///
+/// Takes markdown, so a source can be named and linked inline
+/// (`Source.tanda.link`) without the call site building an `AttributedString`
+/// by hand. SwiftUI parses markdown in a literal `Text`, but not in an
+/// interpolated `String` — which is exactly how these lines are assembled.
+struct Explainer: View {
+    var markdown: String
+    var top: CGFloat = 0
+    var color: Color = Theme.muted
+
+    private var text: AttributedString {
+        (try? AttributedString(markdown: markdown,
+                               options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+            ?? AttributedString(markdown)
+    }
+
+    var body: some View {
+        Text(text)
+            .font(.sg(13)).foregroundStyle(color).lineSpacing(3)
+            .tint(Theme.signal)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, top)
+    }
+}
+
 // MARK: - Segmented chips (Log filter, Progress road/trail, Race Setup)
 
 struct SegmentChips<T: Hashable>: View {

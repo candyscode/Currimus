@@ -314,6 +314,9 @@ struct ProgressScreen: View {
             divider
             gapRow
 
+            Explainer(markdown: String(localized: "Grade-adjusted pace is Currimus' own estimate — about 0.4 s per metre climbed given back, less than half of that for the descent. Coarse without per-segment grade, and shown as an estimate rather than a measurement."),
+                      top: 14)
+
             divider
             Text("MONTHLY CLIMB · M").kicker(13, color: Theme.bright, tracking: 0.12).padding(.bottom, 14)
             MonthBars(items: store.monthlyClimb(count: 6).map { (shortMonth($0.month), $0.climb) },

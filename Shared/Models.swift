@@ -417,9 +417,8 @@ struct HRDerivation: Codable, Equatable {
             let day = maxDate?.formatted(.dateTime.day().month(.abbreviated)) ?? "a recent run"
             return "Highest heart rate Apple Health has seen you reach, on \(day). Measured beats a formula every time."
         case .age:
-            guard let age else { return "Estimated from your age." }
-            return "Estimated from your age (\(age)) with the Tanaka formula, 208 − 0.7 × age. "
-                 + "No hard effort in Health yet to measure it from."
+            guard let age else { return String(localized: "Estimated from your age.") }
+            return String(localized: "Estimated from your age (\(age)), after \(Source.tanaka.link) — Apple Health has not seen a hard enough effort to measure it from yet.")
         case .manual:
             return "Set by you."
         }
