@@ -22,7 +22,9 @@ WATCH_SIM="${WATCH_SIM:-Apple Watch Ultra 3 (49mm)}"
 
 run_suite() {
   local label="$1" scheme="$2" destination="$3" log="/tmp/currimus-prepush-$2.log"
-  echo "▶ pre-push · $label…"
+  # Braces are load-bearing: bash 3.2 reads the UTF-8 bytes of the ellipsis as
+  # part of the variable name, so `$label…` expanded to nothing at all.
+  echo "▶ pre-push · ${label}…"
   if ! xcodebuild test -project Currimus.xcodeproj -scheme "$scheme" -configuration Debug \
          -destination "$destination" -derivedDataPath build -quiet >"$log" 2>&1; then
     tail -30 "$log" >&2
