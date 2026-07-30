@@ -609,7 +609,7 @@ Nicht geändert, aber geprüft und für richtig befunden: `–:––` bei fehle
 
 https://github.com/candyscode/Currimus/commit/154cfc6
 
-\n\n### CUR-21: Zone-2-Pace nur noch gemessen, nie geschätzt
+### CUR-21: Zone-2-Pace nur noch gemessen, nie geschätzt
 
 [ ] In Specification
 [ ] Open
@@ -636,7 +636,7 @@ Aus derselben Route fallen außerdem **echte Kilometer-Splits** ab (`RunAnalytic
 
 https://github.com/candyscode/Currimus/commit/934d291
 
-\n\n### CUR-22: Marathon-Prognose aus dem Training, nicht nur aus einer Bestzeit
+### CUR-22: Marathon-Prognose aus dem Training, nicht nur aus einer Bestzeit
 
 [ ] In Specification
 [ ] Open
@@ -708,7 +708,7 @@ Es gibt eine, und zwar die kanonische: [Minetti et al. (2002)](https://journals.
 
 https://github.com/candyscode/Currimus/commit/ba5debb
 
-\n\n### CUR-25: Ein Rennen, das vorbei ist
+### CUR-25: Ein Rennen, das vorbei ist
 
 [ ] In Specification
 [ ] Open
@@ -753,7 +753,7 @@ Was Indoor-Läufe weiterhin nicht bekommen: eine Steigungskorrektur. Ohne Höhen
 
 https://github.com/candyscode/Currimus/commit/66b1d82
 
-\n\n### CUR-27: Review der Commits seit dem letzten Review
+### CUR-27: Review der Commits seit dem letzten Review
 
 [ ] In Specification
 [ ] Open
@@ -798,7 +798,7 @@ Geprüft und in Ordnung: die `distanceTrace`-Umstellung verhält sich identisch 
 
 https://github.com/candyscode/Currimus/commit/7910676
 
-\n\n### CUR-28: Den Rekonstruktions-Zustand auf einen Typ zusammenziehen
+### CUR-28: Den Rekonstruktions-Zustand auf einen Typ zusammenziehen
 
 [ ] In Specification
 [ ] Open
