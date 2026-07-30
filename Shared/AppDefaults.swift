@@ -9,6 +9,9 @@ enum AppDefaults {
     static let importedKey = "imported.v1"
     static let raceKey = "race.v1"
     static let settingsKey = "settings.v1"
+    /// Runs Health has already answered in full and still could not complete.
+    /// Persisted so the Settings row does not offer them again on every launch.
+    static let settledRebuildsKey = "settledRebuilds.v1"
     static let goalKey = "weeklyGoal"
     static let gpsAccuracyKey = "gpsAccuracy"
 

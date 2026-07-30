@@ -139,4 +139,18 @@ struct HealthRebuild: Equatable {
 
     /// Health answered as fully as it can, and this is all there is.
     mutating func settle(_ id: UUID) { settled.insert(id) }
+
+    // MARK: - Surviving a launch
+
+    /// `asked` is deliberately not persisted — a new session should try again,
+    /// because the reason a fetch came back short is often the device being
+    /// locked. `settled` is the opposite: it records that Health answered in
+    /// full and had nothing more, which does not stop being true overnight.
+    /// Without this, the Settings row counted the same unrebuildable runs on
+    /// every launch and offered work that could not change anything.
+    var settledIDs: [String] { settled.map(\.uuidString) }
+
+    mutating func restoreSettled(_ ids: [String]) {
+        settled.formUnion(ids.compactMap(UUID.init(uuidString:)))
+    }
 }

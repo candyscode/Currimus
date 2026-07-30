@@ -972,8 +972,8 @@ Das Fenster ist mit 100 m absichtlich fünfmal so lang wie `gradeSegmentKm`, und
 
 [ ] In Specification
 [ ] Open
-[X] WIP
-[ ] Done
+[ ] WIP
+[X] Done
 
 Aus dem Audit vom 30.07.2026. Einzeln klein, zusammen der Unterschied zwischen „sorgfältig" und „ungefähr".
 
@@ -987,3 +987,31 @@ Aus dem Audit vom 30.07.2026. Einzeln klein, zusammen der Unterschied zwischen �
 8. **Die Trail-Steigrate ist ungewichtet** — eine Woche mit einem kurzen Lauf wiegt wie eine mit vier. Die Doku von `gradeAdjustedSummary` argumentiert im selben File gegen genau diese Mittelung.
 9. **VoiceOver sagt „weeks" bei einem Monats-Chart** (`TrendChart.spokenSummary`).
 10. **`HealthRebuild.settled` wird nicht persistiert**, also zählt die Settings-Zeile nach jedem Start wieder Läufe, für die Health nachweislich nichts mehr hat.
+
+#### Agent Comments
+
+**1 · `RecentRow` ist weg; Home zeichnet jetzt `LogRow`.** Das war der ehrlichste Fix: die beiden Zeilen widersprachen sich, weil es zwei Zeilen waren. Home bekommt damit auch die TRAIL- und INDOOR-Marker und die PR-Tags, die es vorher nicht hatte, und `LogRowText` beantwortet die Frage „wie liest sich dieser Lauf" an einer Stelle — gecacht, wie vorher schon fürs Log.
+
+**2 · `0.605` ist `0.60`.** Ein Mock, der einen Schlag neben seiner eigenen behaupteten Arithmetik liegt, verliert gegen die Arithmetik — der Satz „at 60 / 70 / 80 / 90 %" steht direkt darunter. Zwei bestehende Tests hielten die 115 fest und wurden auf 114 gezogen; ihre Logik blieb unberührt. Ein neuer Test prüft die Behauptung jetzt gegen mehrere Maxima, damit die beiden nicht wieder auseinanderlaufen können.
+
+**3 · Zone 1 heißt „≤ 114"** statt „< 114". Am selben Screen fing Zone 2 bei 115 an, der fehlende Schlag war also sichtbar.
+
+**4 · Grenzen können nicht mehr über Kreuz.** Zwei Ebenen: der Stepper klemmt gegen die Nachbargrenze, und `HRZones.bounds` ignoriert `overrides`, die keine Leiter sind — Werte, die keine fünf Zonen beschreiben können, erreichen den Screen nicht, egal woher sie kommen (alter persistierter Wert, Payload von der Uhr).
+
+**5 · „TARGET RACE · <Name>"** für den Countdown; „RACE DAY" bleibt dem Tag selbst.
+
+**6 · Eine Zahlenformatierung.** `Format.elevation` gruppiert nach Locale statt mit fest verdrahtetem Punkt, `Format.km` und `Format.pacerDistance` ebenso, und der dritte Formatierer im Trail-Detail (Leerzeichen als Gruppierung) ist gelöscht.
+
+> **Andi, das braucht dein Nein oder dein Ja:** dieser Punkt ändert *jede* Distanz auf dem Bildschirm für alle nicht-englischen Regionen. Auf diesem Mac (deutsche Region) liest Home jetzt „22,2 km" und „12,00 KM". Das ist das Verhalten, das iOS vorsieht — Zahlenformat folgt der Region, nicht der App-Sprache, und die App macht es bei Datumsangaben längst so („SAT 25. JUL"). Wenn dir die Mischung aus englischem Text und deutschem Komma nicht gefällt, ist es eine Zeile in `Format.km`, um auf ein festes Format zurückzugehen. Die Höhenmeter-Gruppierung sollte in jedem Fall locale-abhängig bleiben — dort war der alte Wert schlicht falsch.
+
+**7 · Die 12-Wochen-Pace-Schlagzeile nutzt `trendChange`** wie der Zone-2-Block, und „since <Monat>" zeigt bei beiden Wochen-Charts auf die erste Woche, die wirklich einen Wert trägt (`firstWeekMonth`), nicht auf den Fensteranfang.
+
+**8 · Die Steigrate ist Klettermeter über Stunden** statt Mittel der Wochenraten.
+
+**9 · `TrendChart` hat ein `period`** und der Zone-2-Chart übergibt „months".
+
+**10 · `settled` überlebt einen Start** (`AppDefaults.settledRebuildsKey`). `asked` bewusst nicht: ein gescheiterter Abruf lag oft am gesperrten Gerät, und eine neue Sitzung soll es erneut versuchen. „Health hat nichts mehr" hört dagegen nicht über Nacht auf, wahr zu sein.
+
+Fünf neue Tests, 208 grün (vorher 203). UI-Tests grün. Snapshot-Referenzen für iOS und watchOS neu aufgenommen, weil hier absichtlich Screens verändert wurden.
+
+#### Link to completed work

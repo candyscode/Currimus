@@ -570,10 +570,19 @@ struct HRZonesView: View {
         store.zones = z
     }
 
+    /// Moves one boundary, and never past its neighbours.
+    ///
+    /// It used to clamp only against 60 and the max, so nineteen taps on Zone 1
+    /// pushed it above Zone 2 — after which the screen read "151 – 133", the
+    /// zone ranges had upper bounds below their lower ones, and `zone(for:)`
+    /// answered by whichever boundary it happened to reach first.
     private func adjustBound(_ zone: Int, by delta: Int) {
         var z = store.zones
         var bounds = z.overrides ?? z.bounds
-        bounds[zone - 1] = min(max(bounds[zone - 1] + delta, 60), z.maxHR - 1)
+        let floor = zone > 1 ? bounds[zone - 2] + 1 : 60
+        let ceiling = zone < 4 ? bounds[zone] - 1 : z.maxHR - 1
+        guard floor <= ceiling else { return }
+        bounds[zone - 1] = min(max(bounds[zone - 1] + delta, floor), ceiling)
         z.overrides = bounds
         store.zones = z
     }

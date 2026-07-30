@@ -689,8 +689,12 @@ final class RunAnalyticsTests: XCTestCase {
 
     func testZonesFallBackToPercentOfMaxWithoutRestingHR() {
         let zones = HRZones(maxHR: 190)
-        // The design's ladder at max 190.
-        XCTAssertEqual(zones.bounds, [115, 133, 152, 171])
+        // 60 / 70 / 80 / 90 % of 190, which is what Settings says out loud.
+        // This read 115 until CUR-33: the first fraction was 0.605, chosen to
+        // land on the design mock, and 60 % of 190 is 114. The mock was a beat
+        // off its own stated arithmetic, and the arithmetic is what is written
+        // on the screen.
+        XCTAssertEqual(zones.bounds, [114, 133, 152, 171])
         XCTAssertFalse(zones.usesReserve)
     }
 
@@ -741,13 +745,13 @@ final class RunAnalyticsTests: XCTestCase {
     }
 
     func testAZoneChangeIsReportedByTheBoundaryThatMovedFurthest() throws {
-        let before = HRZones(maxHR: 190)                    // 115 / 133 / 152 / 171
+        let before = HRZones(maxHR: 190)                    // 114 / 133 / 152 / 171
         let after = HRZones(maxHR: 190, restingHR: 50)      // 134 / 148 / 162 / 176
         let summary = try XCTUnwrap(HRZones.changeSummary(from: before, to: after))
-        // Z1 moved 19 bpm, more than any other boundary — that is the news.
+        // Z1 moved 20 bpm, more than any other boundary — that is the news.
         XCTAssertTrue(summary.contains("Zone 1"), summary)
         XCTAssertTrue(summary.contains("134"), summary)
-        XCTAssertTrue(summary.contains("115"), summary)
+        XCTAssertTrue(summary.contains("114"), summary)
     }
 
     func testUnchangedZonesAreNotWorthANotice() {
@@ -987,5 +991,67 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNil(RunAnalytics.hrAtPace(runs: two, referencePaceSec: 420))
         let four = (0..<4).map { easyRun(420, hr: 160 - $0, daysAgo: $0 * 7) }
         XCTAssertNotNil(RunAnalytics.hrAtPace(runs: four, referencePaceSec: 420))
+    }
+
+    // MARK: - CUR-33 · what the screens say about the same numbers
+
+    /// The text under the zones says "60 / 70 / 80 / 90 % of your max". It has
+    /// to be true: the first fraction was 0.605, to land on a design mock's 115
+    /// at a max of 190, so the screen claimed one model and drew another.
+    func testTheZoneBoundariesAreTheSharesSettingsClaims() {
+        for max in [180, 187, 190, 200] {
+            let bounds = HRZones(maxHR: max).bounds
+            let claimed = [0.60, 0.70, 0.80, 0.90].map { Int((Double(max) * $0).rounded()) }
+            XCTAssertEqual(bounds, claimed, "max \(max)")
+        }
+    }
+
+    /// Zone 1's label must not exclude a heart rate that is in zone 1.
+    func testZoneOneIsLabelledWithItsOwnUpperBound() {
+        let zones = HRZones(maxHR: 187)
+        let top = zones.bounds[0]
+        XCTAssertEqual(zones.zone(for: top), 1)
+        XCTAssertEqual(zones.label(forZone: 1), "≤ \(top)")
+        // And zone 2 starts where zone 1 stops, with no beat unaccounted for.
+        XCTAssertEqual(zones.zone(for: top + 1), 2)
+        XCTAssertTrue(zones.label(forZone: 2).hasPrefix("\(top + 1) "))
+    }
+
+    /// Overrides that are not a ladder cannot describe five zones, so they are
+    /// ignored rather than drawn. The Settings stepper used to allow zone 1 to
+    /// be pushed above zone 2, which rendered as "151 – 133".
+    func testCrossedOverridesAreIgnoredRatherThanDrawn() {
+        var zones = HRZones(maxHR: 190)
+        let automatic = zones.bounds
+        zones.overrides = [151, 133, 152, 171]
+        XCTAssertEqual(zones.bounds, automatic, "a crossed ladder must not reach the screen")
+        // A real ladder still wins.
+        zones.overrides = [120, 140, 160, 175]
+        XCTAssertEqual(zones.bounds, [120, 140, 160, 175])
+    }
+
+    /// Every zone range runs upwards. `position(forHR:)` divides by the span,
+    /// and a reversed one used to make it meaningless.
+    func testEveryZoneRangeRunsUpwards() {
+        for max in [150, 190, 220] {
+            let zones = HRZones(maxHR: max)
+            for zone in 1...5 {
+                let range = zones.range(forZone: zone)
+                XCTAssertLessThan(range.lower, range.upper, "zone \(zone) at max \(max)")
+            }
+        }
+    }
+
+    /// Elevation is written one way. There used to be three: a hard-coded
+    /// German full stop here, a POSIX point in `Format.km`, and a space-grouped
+    /// formatter of its own in the trail detail.
+    func testElevationIsGroupedByTheLocaleAndNotByHand() {
+        let grouped = Format.elevation(1622)
+        XCTAssertTrue(grouped.hasSuffix("\u{00A0}m"), "non-breaking unit")
+        XCTAssertEqual(grouped.filter(\.isNumber), "1622")
+        XCTAssertEqual(Format.elevation(1622, unit: false).filter(\.isNumber), "1622")
+        // Not the string "1.622" in an English UI, where that reads as one and
+        // a half metres. Whatever the locale's separator is, it is the locale's.
+        XCTAssertEqual(Format.elevation(234, unit: false), "234", "no grouping under a thousand")
     }
 }

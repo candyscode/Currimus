@@ -54,7 +54,10 @@ struct HomeView: View {
     private func raceHeadline(_ race: Race) -> some View {
         Button { push(.race) } label: {
             VStack(alignment: .leading, spacing: 0) {
-                Text("RACE DAY · \(race.name.uppercased())").kicker(13, color: Theme.bright, tracking: 0.12)
+                // "RACE DAY" is what the day itself is called, and this is the
+                // headline for every day that is not it — six weeks out it read
+                // "RACE DAY · FREIBURG MARATHON" over "42 DAYS".
+                Text("TARGET RACE · \(race.name.uppercased())").kicker(13, color: Theme.bright, tracking: 0.12)
                 HStack(alignment: .firstTextBaseline, spacing: 14) {
                     Text("\(race.daysUntil())")
                         .font(.stat(118)).kerning(-5.9)
@@ -151,6 +154,17 @@ struct HomeView: View {
 
     // MARK: - Recent
 
+    /// The same row the Log draws, for the same reason a run has one name.
+    ///
+    /// This used to be a `RecentRow` of its own, and it disagreed with the Log
+    /// about the same run in two ways. It coloured the pace below a fixed
+    /// 5:10 /km — exactly the threshold the Log had already thrown out, because
+    /// it means nothing without knowing the runner's level, so a slow runner
+    /// never saw an accent and a fast one saw it on everything. And it printed
+    /// `classification.label` for imported runs, which have no splits and no
+    /// zones to classify from, so every one of them read "Easy" here and named
+    /// its source over in the Log. `LogRowText` answers both questions once,
+    /// and the store has already cached it.
     private var recent: some View {
         // `allRuns`, matching the card above: `dropFirst` is meant to skip the
         // run that card is already showing, and that run is `allRuns.first`.
@@ -162,8 +176,12 @@ struct HomeView: View {
             if !rows.isEmpty {
                 Text("RECENT").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 26)
                 ForEach(rows) { run in
-                    Button { push(.runDetail(run)) } label: { RecentRow(run: run) }
-                        .buttonStyle(.plain)
+                    Button { push(.runDetail(run)) } label: {
+                        LogRow(text: store.logText(for: run,
+                                                   prTag: store.benchmarkHolders[run.id]),
+                               isFastestPaceOfMonth: store.fastestPaceOfMonthHolders.contains(run.id))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -230,26 +248,3 @@ struct CardStat: View {
     }
 }
 
-/// A compact recent/log row: date · name/detail · pace, full-width tap target.
-struct RecentRow: View {
-    var run: Run
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Text(run.date.formatted(.dateTime.weekday(.abbreviated)).uppercased()
-                 + "\n" + run.date.formatted(.dateTime.day(.twoDigits).month(.twoDigits)))
-                .font(.sg(12)).foregroundStyle(Theme.muted).lineSpacing(3)
-                .frame(width: 56, alignment: .leading)
-            VStack(alignment: .leading, spacing: 3) {
-                Text("\(Format.km(run.distanceKm)) km").font(.stat(17))
-                Text(run.classification.label).font(.sg(13)).foregroundStyle(Theme.bright)
-            }
-            Spacer()
-            Text(Format.pace(run.paceSecPerKm)).font(.stat(17))
-                .foregroundStyle(run.paceSecPerKm < 310 ? Theme.signal : Theme.ink)
-        }
-        .padding(.vertical, 16)
-        .overlay(alignment: .bottom) { Theme.hairline.frame(height: 1) }
-        .contentShape(Rectangle())
-    }
-}

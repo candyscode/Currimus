@@ -113,7 +113,7 @@ struct RunDetailView: View {
             HStack(alignment: .top, spacing: run.cadenceSpm == nil ? 28 : 20) {
                 DetailStat(value: Format.clock(run.duration), label: "TIME")
                 DetailStat(value: Format.pace(run.paceSecPerKm), label: "AVG /KM", accent: true)
-                DetailStat(value: run.climbMeters.map { "\(Int($0)) m" } ?? "–", label: "CLIMB")
+                DetailStat(value: run.climbMeters.map { Format.elevation($0) } ?? "–", label: "CLIMB")
                 if let cadence = run.cadenceSpm {
                     DetailStat(value: "\(cadence)", label: "SPM")
                 }
@@ -179,7 +179,7 @@ struct RunDetailView: View {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 // A run another app recorded may carry no elevation at all.
                 // Drawing that as a measured "0" claims a flat mountain.
-                Text(run.climbMeters.map { grouped(Int($0)) } ?? "–")
+                Text(run.climbMeters.map { Format.elevation($0, unit: false) } ?? "–")
                     .font(.stat(76)).kerning(-3.4).foregroundStyle(Theme.signal)
                 Text("m climb").font(.sg(20)).foregroundStyle(Theme.bright)
             }
@@ -200,7 +200,7 @@ struct RunDetailView: View {
             HStack {
                 Text("0 km")
                 Spacer()
-                Text("high point · \(grouped(Int(run.highPointMeters ?? 0))) m")
+                Text("high point · \(Format.elevation(run.highPointMeters ?? 0))")
                 Spacer()
                 Text("\(Format.km(run.distanceKm, decimals: 1)) km")
             }
@@ -212,7 +212,7 @@ struct RunDetailView: View {
                     DetailStat(value: Format.pace(RunAnalytics.gradeAdjustedPace(run)), label: "GRADE-ADJUSTED /KM", accent: true).gridExpand()
                 }
                 GridRow {
-                    DetailStat(value: "\(grouped(Int(run.descentMeters ?? 0))) m", label: "DESCENT").gridExpand()
+                    DetailStat(value: Format.elevation(run.descentMeters ?? 0), label: "DESCENT").gridExpand()
                     DetailStat(value: steepest.map { "\($0)%" } ?? "–",
                                label: "STEEPEST 100 M").gridExpand()
                 }
@@ -283,10 +283,6 @@ struct RunDetailView: View {
             .map { Int(($0 * 100).rounded()) }
     }
 
-    private func grouped(_ n: Int) -> String {
-        let f = NumberFormatter(); f.numberStyle = .decimal; f.groupingSeparator = " "
-        return f.string(from: NSNumber(value: n)) ?? "\(n)"
-    }
 }
 
 struct DetailStat: View {

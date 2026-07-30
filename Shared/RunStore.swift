@@ -69,6 +69,12 @@ final class RunStore: ObservableObject {
         // previous debug session had left in the real app group, so the watch's
         // whole simulated run sat in zone 5 against a stray max HR of 136.
         if !self.isDemo { loadSettings() }
+        #if canImport(HealthKit)
+        if !self.isDemo {
+            rebuildQueue.restoreSettled(
+                defaults.stringArray(forKey: AppDefaults.settledRebuildsKey) ?? [])
+        }
+        #endif
         isLoading = false
         // Seed the shared store on first launch: without this the widget shows
         // the default goal until the user happens to change a setting.
@@ -413,9 +419,18 @@ final class RunStore: ObservableObject {
 
     /// Health answered as fully as it can for this run, and it is still short
     /// — so stop offering it, and tell the Settings row its count moved.
+    ///
+    /// Written to disk as well: "Health has nothing more for this run" does not
+    /// stop being true overnight, and without persisting it the Settings row
+    /// counted the same unrebuildable runs after every launch and offered work
+    /// that could not change anything.
     private func settle(_ id: UUID) {
         objectWillChange.send()
         rebuildQueue.settle(id)
+        guard !isDemo else { return }
+        nonisolated(unsafe) let defaults = self.defaults
+        let ids = rebuildQueue.settledIDs
+        Self.ioQueue.async { defaults.set(ids, forKey: AppDefaults.settledRebuildsKey) }
     }
     /// Health is asked for permission once per session, at the first hydration.
     private var askedHealth = false

@@ -319,14 +319,32 @@ struct HRZones: Codable, Equatable {
 
     /// Upper bound of each zone 1…4 (zone 5 is open-ended).
     var bounds: [Int] {
-        if let overrides, overrides.count == 4 { return overrides }
+        // Overrides only if they are actually a ladder. A boundary stepped past
+        // its neighbour — which the Settings stepper used to allow — produced
+        // "151 – 133" on screen and a `range` whose upper bound sat below its
+        // lower one, and `zone(for:)` then answered by whichever bound it
+        // reached first. Values that cannot describe five zones are ignored
+        // rather than drawn.
+        if let overrides, overrides.count == 4, Self.isLadder(overrides) { return overrides }
         if let restingHR, restingHR > 30, restingHR < maxHR {
             // Karvonen: resting + fraction × (max − resting).
             let reserve = Double(maxHR - restingHR)
             return Self.reserveFractions.map { Int((Double(restingHR) + reserve * $0).rounded()) }
         }
-        // 60 / 70 / 80 / 90 % of max, matching the design's 115 / 133 / 152 / 171 at max 190.
-        return [0.605, 0.70, 0.80, 0.90].map { Int((Double(maxHR) * $0).rounded()) }
+        // 60 / 70 / 80 / 90 % of max, which is what Settings says out loud.
+        //
+        // The first of these was 0.605 for a long time, to land on the design
+        // mock's 115 at a max of 190 — but 60 % of 190 is 114, so the screen
+        // claimed one model and drew another. A mock that is a beat off its own
+        // stated arithmetic loses to the arithmetic.
+        return Self.maxFractions.map { Int((Double(maxHR) * $0).rounded()) }
+    }
+
+    private static let maxFractions = [0.60, 0.70, 0.80, 0.90]
+
+    /// Strictly increasing, so the four values really are four upper bounds.
+    static func isLadder(_ bounds: [Int]) -> Bool {
+        zip(bounds, bounds.dropFirst()).allSatisfy { $0 < $1 }
     }
 
     var usesReserve: Bool { overrides == nil && restingHR != nil }
@@ -370,7 +388,10 @@ struct HRZones: Codable, Equatable {
     func label(forZone zone: Int) -> String {
         let b = bounds
         switch zone {
-        case 1: return "< \(b[0])"
+        // `zone(for:)` puts `b[0]` itself in zone 1, so "< 114" named a range
+        // one beat short of the zone it was labelling — and zone 2's own label
+        // started at 115, so the missing beat was visible on the same screen.
+        case 1: return "≤ \(b[0])"
         case 2: return "\(b[0] + 1) – \(b[1])"
         case 3: return "\(b[1] + 1) – \(b[2])"
         case 4: return "\(b[2] + 1) – \(b[3])"
@@ -516,21 +537,23 @@ enum Format {
             : "\(m):\(String(format: "%02d", s))"
     }
 
+    /// A distance in km. Locale-aware, so a German reader gets "12,00" —
+    /// `String(format:)` is POSIX and always wrote a full stop.
     static func km(_ km: Double, decimals: Int = 2) -> String {
-        String(format: "%.\(decimals)f", km)
+        km.formatted(.number.precision(.fractionLength(decimals)).grouping(.never))
     }
 
-    /// Elevation with the design's grouping and a non-breaking unit:
-    /// 1622 → "1.622 m". `unit: false` drops the suffix for stat rows, where
-    /// the label carries the unit.
+    /// Elevation with grouping and a non-breaking unit: 1622 → "1,622 m" in
+    /// English, "1.622 m" in German. `unit: false` drops the suffix for stat
+    /// rows, where the label carries the unit.
+    ///
+    /// The separator used to be a hard-coded full stop — the German convention,
+    /// printed into an English UI, where "1.622 m" reads as one and a half
+    /// metres. There were three of these: this one, `Format.km`'s POSIX point,
+    /// and a third formatter in the trail detail that grouped with a space, so
+    /// the same climb was written two ways on two screens.
     static func elevation(_ meters: Double, unit: Bool = true) -> String {
-        let value = Int(meters.rounded())
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.usesGroupingSeparator = true
-        formatter.groupingSeparator = "."
-        formatter.groupingSize = 3
-        let digits = formatter.string(from: NSNumber(value: value)) ?? "\(value)"
+        let digits = Int(meters.rounded()).formatted(.number)
         return unit ? digits + "\u{00A0}m" : digits
     }
 
@@ -540,9 +563,10 @@ enum Format {
     /// reads.
     static func pacerDistance(_ km: Double?) -> String {
         guard let km else { return String(localized: "Off") }
-        if km == RaceDistance.half.km { return "21.1 km" }
-        if km == RaceDistance.marathon.km { return "42.2 km" }
-        return "\(Int(km)) km"
+        if km == RaceDistance.half.km || km == RaceDistance.marathon.km {
+            return "\(Self.km(km, decimals: 1)) km"
+        }
+        return "\(Int(km).formatted(.number)) km"
     }
 
     /// "1 run", "2 runs". Every naive "\(n) runs" in the app read "1 runs"

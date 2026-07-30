@@ -126,6 +126,10 @@ struct TrendChart: View {
     /// (climb rate). Only affects what VoiceOver calls the direction.
     var lowerIsBetter = true
     var accessibilityTitle: String = "Trend"
+    /// What one point along the x axis is. It was the word "weeks", written
+    /// into the spoken summary — so the zone-2 chart, which is twelve *months*,
+    /// read out "7 weeks, from … to …".
+    var period: String = "weeks"
     /// An axis bound, written for the edge label.
     var format: (Double) -> String = { Format.pace($0) }
     /// One value, spoken as a phrase.
@@ -147,7 +151,7 @@ struct TrendChart: View {
         }
         let improved = lowerIsBetter ? last < first : last > first
         let direction = last == first ? "unchanged" : (improved ? "improving" : "slipping")
-        return "\(present.count) weeks, from \(describe(first)) to \(describe(last)), \(direction)"
+        return "\(present.count) \(period), from \(describe(first)) to \(describe(last)), \(direction)"
     }
 
     var body: some View {

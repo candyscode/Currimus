@@ -99,25 +99,28 @@ struct ProgressScreen: View {
 
     private var roadContent: some View {
         let series = RunAnalytics.weeklyAvgPace(runs: store.allRuns, weeks: 12, roadOnly: true)
-        let present = series.compactMap { $0 }
         let road12 = last12WeekRoad
         let avg = road12.km > 0 ? road12.time / road12.km : 0
-        // Newest minus oldest, so a negative number means faster. It used to
-        // be `-abs(delta)`: the sign was forced, and the screen claimed an
-        // improvement no matter which way the runner had actually gone.
-        let change = (present.last ?? 0) - (present.first ?? 0)
+        // Smoothed at both ends, like the zone-2 block below already was.
+        //
+        // This used to be newest week minus oldest week — two single data
+        // points on a line that wanders ten seconds a week on its own, so the
+        // headline swung on whichever two weeks happened to sit at the edges.
+        // Two charts on one screen were answering the same question two
+        // different ways, and this was the one that answered it with noise.
+        let change = RunAnalytics.trendChange(series)
         return VStack(alignment: .leading, spacing: 0) {
             Text("AVG PACE · LAST 12 WEEKS").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 24)
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(Format.pace(avg)).font(.stat(64)).kerning(-2.6)
                 Text("/km").font(.sg(16)).foregroundStyle(Theme.bright)
                 Spacer()
-                if present.count >= 2 {
+                if let change {
                     // Exactly no change is not an improvement, and "+0:00"
                     // is not a sentence anyone reads as "the same".
-                    trendDelta(change == 0 ? String(localized: "unchanged")
-                                           : Format.paceDelta(change),
-                               improved: change < 0)
+                    trendDelta(Int(change.rounded()) == 0 ? String(localized: "unchanged")
+                                                          : Format.paceDelta(change),
+                               improved: change < 0, since: firstWeekMonth(of: series))
                 }
             }
             .padding(.top, 8)
@@ -186,6 +189,7 @@ struct ProgressScreen: View {
             .padding(.top, 6)
             TrendChart(values: series, headroom: 8, lowerIsBetter: true,
                        accessibilityTitle: "Average pace in zone 2 per month, last 12 months",
+                       period: "months",
                        format: { Format.pace($0) },
                        describe: { "\(Format.pace($0)) per kilometre" })
                 .padding(.top, 14)
@@ -285,22 +289,27 @@ struct ProgressScreen: View {
 
     private var trailContent: some View {
         let climbSeries = RunAnalytics.weeklyClimbRate(runs: store.allRuns, weeks: 12)
-        let present = climbSeries.compactMap { $0 }
-        let avgRate = present.isEmpty ? 0 : present.reduce(0, +) / Double(present.count)
-        let rateDelta = (present.last ?? 0) - (present.first ?? 0)
+        // Total climb over total hours, not the mean of the weekly rates.
+        //
+        // Averaging the rates let a week with one short outing weigh as much as
+        // a week with four — the same mistake `gradeAdjustedSummary` argues
+        // against a few functions away, and the same fix: the aggregate is the
+        // sum over the sum.
+        let avgRate = trail12WeekClimbRate
+        let rateDelta = RunAnalytics.trendChange(climbSeries)
         return VStack(alignment: .leading, spacing: 0) {
             Text("CLIMB RATE · LAST 12 WEEKS").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 24)
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text("\(Int(avgRate))").font(.stat(64)).kerning(-2.6)
                 Text("m/h").font(.sg(16)).foregroundStyle(Theme.bright)
                 Spacer()
-                if present.count >= 2 {
+                if let rateDelta {
                     // More metres per hour is the improvement here, so the
                     // sense of "better" is the opposite way round to pace.
                     trendDelta(Int(rateDelta) == 0
                                ? String(localized: "unchanged")
                                : "\(rateDelta >= 0 ? "+" : "−")\(Int(abs(rateDelta)))",
-                               improved: rateDelta > 0)
+                               improved: rateDelta > 0, since: firstWeekMonth(of: climbSeries))
                 }
             }
             .padding(.top, 8)
@@ -414,6 +423,29 @@ struct ProgressScreen: View {
         let calendar = Calendar.runWeek
         let start = calendar.date(byAdding: .weekOfYear, value: -11, to: .now) ?? .now
         return start.formatted(.dateTime.month(.abbreviated))
+    }
+
+    /// The month of the first week in a weekly series that actually carries a
+    /// value — which is where "since <month>" has to point.
+    ///
+    /// The window opens twelve weeks ago whether or not the running does. Both
+    /// weekly headlines fell back to the window's own start, so a runner whose
+    /// log begins in June was told their pace had improved "since April". The
+    /// zone-2 block already got this right by naming its first month; this is
+    /// the same answer for a series indexed by week.
+    private func firstWeekMonth<T>(of series: [T?]) -> Date? {
+        guard let index = series.firstIndex(where: { $0 != nil }) else { return nil }
+        return Calendar.runWeek.date(byAdding: .weekOfYear,
+                                     value: index - (series.count - 1), to: .now)
+    }
+
+    /// Metres climbed per hour across the trail runs of the last twelve weeks.
+    private var trail12WeekClimbRate: Double {
+        let cutoff = Calendar.current.date(byAdding: .weekOfYear, value: -12, to: .now) ?? .now
+        let runs = store.allRuns.filter { $0.isTrail && $0.date >= cutoff }
+        let hours = runs.reduce(0.0) { $0 + $1.duration } / 3600
+        guard hours > 0.01 else { return 0 }
+        return runs.reduce(0.0) { $0 + ($1.climbMeters ?? 0) } / hours
     }
 
     private func shortMonth(_ date: Date) -> String { date.formatted(.dateTime.month(.abbreviated)) }
