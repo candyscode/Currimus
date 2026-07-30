@@ -556,10 +556,17 @@ struct HRZonesView: View {
         z.maxHR = min(max(value, 140), 220)
         z.overrides = nil   // recompute from the new max
         // The number is the user's now — stop attributing it to Health.
-        z.derivation = z.derivation.map {
-            HRDerivation(maxSource: .manual, maxDate: nil, age: $0.age,
-                         restingHR: $0.restingHR, restingSampleDays: $0.restingSampleDays)
-        }
+        //
+        // Written unconditionally, not through `map` on the existing one: a
+        // launch where Health has not answered yet leaves the derivation nil,
+        // and `map` then produced nil — so `isAutomatic` stayed true and the
+        // next foreground overwrote the number the runner had just dialled in.
+        // The manual mark *is* the thing that has to survive; it cannot depend
+        // on something else already being there.
+        let known = z.derivation
+        z.derivation = HRDerivation(maxSource: .manual, maxDate: nil, age: known?.age,
+                                    restingHR: known?.restingHR,
+                                    restingSampleDays: known?.restingSampleDays)
         store.zones = z
     }
 

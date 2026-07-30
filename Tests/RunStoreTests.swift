@@ -88,6 +88,99 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(back.pacerDefaultDistanceKm, 21.0975)
     }
 
+    // MARK: - What a relaunch keeps
+    //
+    // The suite had no test of this shape at all: every settings test checked
+    // that `WatchSettings` round-trips through `JSONCoder`, which is the
+    // struct's own Codable and not the question. What the store *writes* and
+    // what it *reads back* were never compared, and three fields were being
+    // dropped on the way in — see CUR-29. This is the test that shape of bug
+    // needs, so it goes through the disk and a second store.
+
+    /// Every setting the store owns, set, persisted, and read by a fresh store.
+    func testEverySettingSurvivesARelaunch() throws {
+        let first = makeStore()
+        first.pacerTargetSecPerKm = 291
+        first.pacerDefaultDistanceKm = RaceDistance.half.km
+        first.kilometerAlert = false
+        first.countdownEnabled = false
+        first.weeklyGoalKm = 72
+        first.gpsAccuracy = .saving
+        first.alwaysOnReduced = false
+        first.zoneCoachTarget = 3
+        RunStore.flushPendingWrites()
+
+        let second = makeStore()
+        XCTAssertEqual(second.pacerTargetSecPerKm, 291)
+        XCTAssertEqual(second.pacerDefaultDistanceKm, RaceDistance.half.km)
+        XCTAssertEqual(second.kilometerAlert, false)
+        XCTAssertEqual(second.countdownEnabled, false)
+        XCTAssertEqual(second.weeklyGoalKm, 72)
+        XCTAssertEqual(second.gpsAccuracy, .saving)
+        XCTAssertEqual(second.alwaysOnReduced, false, "the always-on setting was not read back")
+        XCTAssertEqual(second.zoneCoachTarget, 3)
+    }
+
+    /// A max heart rate the runner set by hand outranks the automatic refresh —
+    /// and has to keep outranking it after the app has been closed.
+    func testAHandSetMaxHeartRateStaysProtectedAcrossARelaunch() {
+        let first = makeStore()
+        first.zones = Self.derivedZones
+        // What HRZonesView.setMax does.
+        var manual = first.zones
+        manual.maxHR = 178
+        manual.overrides = nil
+        manual.derivation = HRDerivation(maxSource: .manual, maxDate: nil, age: 38,
+                                         restingHR: 48, restingSampleDays: 60)
+        first.zones = manual
+        XCTAssertFalse(first.zones.isAutomatic)
+        RunStore.flushPendingWrites()
+
+        let second = makeStore()
+        XCTAssertEqual(second.zones.maxHR, 178)
+        XCTAssertFalse(second.zones.isAutomatic,
+                       "a hand-set max must still stop the automatic refresh after a relaunch")
+        XCTAssertEqual(second.zones.derivation?.maxSource, .manual)
+    }
+
+    /// The resting pulse is what makes the zones Karvonen rather than a share
+    /// of max. Losing it moved every boundary on the next launch.
+    func testTheRestingPulseAndItsZonesSurviveARelaunch() {
+        let first = makeStore()
+        first.zones = Self.derivedZones
+        let bounds = first.zones.bounds
+        XCTAssertTrue(first.zones.usesReserve)
+        RunStore.flushPendingWrites()
+
+        let second = makeStore()
+        XCTAssertEqual(second.zones.restingHR, 48)
+        XCTAssertTrue(second.zones.usesReserve, "zones fell back to a share of max")
+        XCTAssertEqual(second.zones.bounds, bounds, "the boundaries moved across a relaunch")
+        XCTAssertNotNil(second.zones.derivation, "Settings can no longer say where these came from")
+    }
+
+    /// The zones-moved notice fires on the second derivation, not the first.
+    /// It could never fire at all while the derivation was not persisted: the
+    /// guard is `derivation != nil`, and every launch started at nil.
+    func testAReloadedStoreKnowsItsZonesWereAlreadyDerived() {
+        let first = makeStore()
+        first.zones = Self.derivedZones
+        RunStore.flushPendingWrites()
+
+        let second = makeStore()
+        XCTAssertNotNil(second.zones.derivation,
+                        "without this the zone-change notice is unreachable in production")
+        var moved = second.zones
+        moved.maxHR = 191
+        XCTAssertNotNil(HRZones.changeSummary(from: second.zones, to: moved))
+    }
+
+    private static var derivedZones: HRZones {
+        HRZones(maxHR: 187, overrides: nil, restingHR: 48,
+                derivation: HRDerivation(maxSource: .measured, maxDate: .now, age: 38,
+                                         restingHR: 48, restingSampleDays: 60))
+    }
+
     // MARK: - Aggregate caching
 
     func testAggregatesRefreshWhenTheLogChanges() {

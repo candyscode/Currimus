@@ -839,3 +839,102 @@ Verhalten unverändert: alle bestehenden Tests laufen ohne Anpassung durch, inkl
 
 https://github.com/candyscode/Currimus/commit/a03dfb0
 
+
+### CUR-29: Was der Store beim Neustart verliert
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Aus dem Audit vom 30.07.2026 (Andi: „Erstelle eine Einschätzung der App"). Die zwei Befunde, die einen Release verhindern — beide durch temporäre Probe-Tests bewiesen, beide an derselben Naht: `RunStore.loadSettings()` liest weniger zurück, als `persistSettings()` geschrieben hat.
+
+1. **`HRZones.derivation` wird nirgends persistiert.** `WatchSettings` trägt nur `maxHR`, `zoneBounds`, `restingHR`. Folgen, alle drei bestätigt:
+   - `isAutomatic` ist nach jedem Start wieder `true`, der Auto-Refresh überschreibt also eine handgesetzte maximale Herzfrequenz. Genau die Regression, die CUR-2 zu beheben beanspruchte — und der Settings-Text behauptet wörtlich das Gegenteil.
+   - `HRZonesView.setMax` benutzt `z.derivation.map { … }`: ist `derivation` nil, bleibt die Manuell-Markierung ganz aus. Der Fehler greift damit auch innerhalb einer Session.
+   - Der Zonen-Änderungs-Hinweis aus CUR-2 kann nie erscheinen, weil sein Guard `zones.derivation != nil` lautet. Totes Feature.
+2. **`restingHR` wird nicht zurückgelesen**, obwohl es gesendet und geschrieben wird. Die Zonen fallen nach jedem Start von Karvonen auf %-von-Max zurück, bis Health wieder antwortet — und wenn Health nichts hat, dauerhaft.
+3. **`alwaysOnReduced` wird nicht zurückgelesen.** Wer das Dimmen ausschaltet, hat es beim nächsten Start wieder an.
+
+Akzeptanz: ein Test, der in einen Store schreibt, einen zweiten auf dieselben Defaults legt und prüft, was ankommt. Diese eine Sorte Test fehlt vollständig und hätte alle drei gefunden.
+
+#### Agent Comments
+
+Eine Ursache, drei Symptome: `WatchSettings` **ist** der persistierte Einstellungsblob, und es fehlte ein Feld. `derivation` ist jetzt darin — optional wie jedes später hinzugefügte Feld, damit eine ältere Watch-Version den Payload weiter lesen kann.
+
+- `loadSettings()` liest jetzt jedes Feld zurück, das `watchSettings` schreibt: `restingHR`, `derivation` und `alwaysOnReduced` fehlten. Die Zonen kommen damit als vollständige `HRZones` zurück statt als `HRZones(maxHR:overrides:)`.
+- `apply(_:)` auf der Uhr übernimmt die Herleitung mit. Das ist nicht nur Symmetrie: die Uhr ruft dasselbe `refreshImportedRuns → refreshHeartRateZones` auf und hätte sonst ihrerseits ein handgesetztes Maximum überschrieben.
+- `HRZonesView.setMax` schreibt die Manuell-Markierung jetzt unbedingt statt per `map` auf eine bestehende Herleitung. War die nil — was nach jedem Start der Fall war und auf einem Gerät ohne Health-Daten dauerhaft bleibt —, entstand keine Markierung, und `isAutomatic` blieb `true`. Die Markierung ist genau das, was überleben muss; sie kann nicht davon abhängen, dass schon etwas anderes da ist.
+
+**Vier neue Tests, und sie sind der eigentliche Ertrag.** Die Suite hatte diese Form nicht: `testSettingsSurviveAWatchSettingsRoundTrip` prüft `JSONEncoder → WatchSettings → JSONDecoder`, also die Codable-Konformität der Struct — nicht, was der Store schreibt und zurückliest. Die neuen Fälle gehen durch die Platte und einen zweiten Store:
+
+| Test | hätte gefunden |
+|---|---|
+| `testEverySettingSurvivesARelaunch` | `alwaysOnReduced` |
+| `testAHandSetMaxHeartRateStaysProtectedAcrossARelaunch` | die überschriebene Handeinstellung |
+| `testTheRestingPulseAndItsZonesSurviveARelaunch` | Karvonen → %-von-Max, inklusive der verschobenen Grenzen |
+| `testAReloadedStoreKnowsItsZonesWereAlreadyDerived` | den unerreichbaren Zonen-Hinweis |
+
+187 Tests grün (vorher 183), beide Ziele bauen.
+
+#### Link to completed work
+
+### CUR-30: Der Zonen-Coach feuert bei flatternder Herzfrequenz neu
+
+[ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Aus dem Audit vom 30.07.2026. `ZoneCoach.update` setzt `lastFired = nil`, sobald der Cue kurz `nil` wird. Pendelt der Puls um eine Zonengrenze — was er ständig tut —, gilt der Cue bei der Rückkehr als „neu" und feuert sofort: der `leftZone`-Alarm bringt 3 Sekunden Dauervibration plus Vollbildwarnung alle zwei Sekunden statt der beabsichtigten 60-Sekunden-Kadenz. Per Test bewiesen.
+
+Das ist der Fehler, an dem Nutzer ein Vibrationsfeature dauerhaft abschalten.
+
+### CUR-31: Der Demo-Pfad liest die echten Einstellungen
+
+[ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Aus dem Audit vom 30.07.2026. `RunStore.init` ruft `loadSettings()` unbedingt auf, und `persistSettings()` schreibt bewusst auch im Demo-Modus. Ein `-demo 1`-Lauf übernimmt damit, was eine frühere Debug-Sitzung in der App-Group hinterlassen hat.
+
+Beobachtet: im App-Group des Watch-Simulators lag `maxHR: 136`. Deshalb stand die Zonenleiste im ganzen Demo-Lauf auf Zone 5, die Caption sagte dauerhaft „MAX" statt „RUN", und die Summary „mostly 5". Auf iOS dasselbe mit `maxHR: 187` aus einem `-zones derived`-Lauf.
+
+Das ist mehr als ein Schönheitsfehler: die committeten Watch-Snapshot-Referenzen können gegen einen Fremdwert aufgenommen sein, und jede Beobachtung am Simulator ist unzuverlässig, solange das so ist. Der Demo-Pfad muss feste Zonen setzen statt die App-Group zu lesen.
+
+### CUR-32: Vier Zahlen, die etwas anderes behaupten, als sie messen
+
+[ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Aus dem Audit vom 30.07.2026.
+
+1. **„MAX GRADE" im Trail-Detail ist im Wesentlichen GPS-Rauschen.** `maxGradePercent` unterstellt gleiche Distanzabstände zwischen den Höhensamples; die sind aber zeitgleich abgetastet (10 s, nach Dezimierung 20/40 s). Bergauf gegangen und bergab gelaufen liegen 10 m oder 80 m zwischen zwei Samples. Dazu enthält die Reihe Rohhöhen ohne die 1,5-m-Rauschgrenze — 2 m Jitter über 15 m Weg sind 13 % „Steigung". Ohne Distanz zu den Samples nicht reparierbar.
+2. **Die Tanda-Marathonprognose teilt immer durch acht Wochen**, der Guard prüft aber acht *Läufe*. Acht Läufe in drei Wochen ergeben ~20 statt ~55 km/Woche, über den `exp`-Term ~21 s/km, also rund 15 Minuten zu langsam — und weil `headline = max(riegel, tanda)` gilt, wird genau diese Zahl die Schlagzeile.
+3. **Ein 5-km-Rennen bekommt nie eine Prognose**, weil `predict` die Kandidaten auf `km < race.km * 0.95` filtert. Der Erklärtext verspricht sie trotzdem: „Run a 5 K, 10 K or half — and the prediction appears."
+4. **„LAST 4 WEEKS ±x %" vergleicht ungleiche Fenster.** Aktuell sind es vier Kalenderwochen (am 30.07. = 25 Tage), das Vergleichsfenster ist ein glattes 28-Tage-Intervall, und zwischen beiden liegt eine Lücke von vier Tagen, die in keinem zählt. Am Montag: −21 % systematischer Fehler und sieben Tage Lücke.
+5. **Herzfrequenz-Drift ohne Zeitfenster.** `hrAtPace` teilt das *gesamte* Log in „älter" und „neuer"; bei drei Jahren Historie vergleicht „than it used to be" Jahr 1 mit Jahr 3 und bewegt sich nie mehr. Zwei passende Läufe genügen für die Aussage.
+6. **`HealthImport.distanceTrace` fragt ohne Quellenfilter ab.** `HKSampleQuery` dedupliziert nicht; schreiben Uhr und iPhone parallel `distanceWalkingRunning`, wird die Distanz addiert — rekonstruierte Splits wären doppelt so schnell und würden falsche Rekorde erzeugen. Plausibel, nicht bewiesen (der Pfad greift nur ohne Route). Ein Prädikat auf das Workout kostet nichts.
+
+### CUR-33: Konsistenz — was die App über denselben Lauf zweimal verschieden sagt
+
+[ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Aus dem Audit vom 30.07.2026. Einzeln klein, zusammen der Unterschied zwischen „sorgfältig" und „ungefähr".
+
+1. **Home und Log beschreiben denselben Lauf verschieden.** `RecentRow` färbt die Pace bei `< 310` orange — genau die feste Schwelle, die im Log verworfen wurde („meant nothing without knowing the runner's level"). Ein 6:00-Läufer sieht nie einen Akzent, ein 4:30-Läufer bei jedem Lauf. Dazu zeigt `RecentRow` `classification.label` auch für importierte Läufe (die keine Splits und Zonen haben, also immer „Easy" oder „Long"), während dieselbe Zeile im Log korrekt die Quelle nennt. Trail- und Indoor-Marker fehlen auf Home ganz.
+2. **„60 / 70 / 80 / 90 % of your max" stimmt bei Zone 1 nicht** — `bounds` benutzt `0.605`, um ein Design-Mock zu treffen. Bei 187 ergibt das 113 statt 112.
+3. **Das Zone-1-Label schließt einen Puls aus, der in Zone 1 liegt.** `zone(for: 113) == 1`, das Label sagt „< 113".
+4. **Zonengrenzen lassen sich über Kreuz stellen.** `adjustBound` klemmt nur gegen 60 und `maxHR-1`, nicht gegen die Nachbargrenze — Ergebnis sind Labels wie „151 – 133" und `range()` mit `hi < lo`.
+5. **„RACE DAY · <Name>" steht auch über „42 DAYS".** Derselbe Kicker für heute und für sechs Wochen vorher.
+6. **Höhenmeter werden dreifach formatiert.** `Format.elevation` gruppiert mit „." (im englischen UI liest „1.024 m" als 1,024 Meter), `RunDetailView.grouped` mit Leerzeichen, `Format.km` immer mit POSIX-Punkt. Alle drei ignorieren das Locale.
+7. **Zwei Trendlinien auf einem Screen, zwei Rechenmethoden.** Die 12-Wochen-Pace-Schlagzeile nimmt rohe erste-gegen-letzte Woche — bei ±10 s Wochenrauschen ist „−0:13" keine Aussage. Der Zone-2-Block darunter glättet korrekt mit `trendChange`. Ebenso fällt „since <Monat>" oben auf den Fensteranfang zurück statt auf den ersten vorhandenen Punkt.
+8. **Die Trail-Steigrate ist ungewichtet** — eine Woche mit einem kurzen Lauf wiegt wie eine mit vier. Die Doku von `gradeAdjustedSummary` argumentiert im selben File gegen genau diese Mittelung.
+9. **VoiceOver sagt „weeks" bei einem Monats-Chart** (`TrendChart.spokenSummary`).
+10. **`HealthRebuild.settled` wird nicht persistiert**, also zählt die Settings-Zeile nach jedem Start wieder Läufe, für die Health nachweislich nichts mehr hat.

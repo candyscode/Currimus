@@ -642,8 +642,16 @@ final class RunStore: ObservableObject {
                 pacerDefaultDistanceKm = s.pacerDefaultDistanceKm
                 kilometerAlert = s.kilometerAlert
                 countdownEnabled = s.countdownEnabled
-                zones = HRZones(maxHR: s.maxHR, overrides: s.zoneBounds)
+                // Every field `watchSettings` writes, read back. Three used to
+                // be dropped here, and each one was a promise the app broke on
+                // the next launch: the resting pulse (so the zones silently
+                // fell from Karvonen back to a share of max), the derivation
+                // (so a hand-set max was overwritten and the zones-moved
+                // notice could never fire) and the always-on setting.
+                zones = HRZones(maxHR: s.maxHR, overrides: s.zoneBounds,
+                                restingHR: s.restingHR, derivation: s.derivation)
                 zoneCoachTarget = s.zoneCoachTarget
+                if let reduced = s.alwaysOnReduced { alwaysOnReduced = reduced }
             } catch {
                 Log.store.error("settings unreadable: \(error.localizedDescription, privacy: .public)")
             }
@@ -668,6 +676,7 @@ final class RunStore: ObservableObject {
             maxHR: zones.maxHR,
             zoneBounds: zones.overrides,
             restingHR: zones.restingHR,
+            derivation: zones.derivation,
             gpsAccuracy: gpsAccuracy,
             alwaysOnReduced: alwaysOnReduced,
             zoneCoachTarget: zoneCoachTarget
@@ -692,8 +701,11 @@ final class RunStore: ObservableObject {
         pacerDefaultDistanceKm = settings.pacerDefaultDistanceKm
         kilometerAlert = settings.kilometerAlert
         countdownEnabled = settings.countdownEnabled
+        // Including the derivation: the watch runs the same automatic refresh,
+        // so without it the watch would overwrite a max the runner set on the
+        // phone by hand.
         zones = HRZones(maxHR: settings.maxHR, overrides: settings.zoneBounds,
-                        restingHR: settings.restingHR)
+                        restingHR: settings.restingHR, derivation: settings.derivation)
         if let accuracy = settings.gpsAccuracy { gpsAccuracy = accuracy }
         if let reduced = settings.alwaysOnReduced { alwaysOnReduced = reduced }
         zoneCoachTarget = settings.zoneCoachTarget

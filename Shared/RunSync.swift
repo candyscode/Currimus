@@ -13,6 +13,17 @@ struct WatchSettings: Codable, Equatable {
     /// Optional, like every field added later — an older watch build must still
     /// decode a payload from a newer phone.
     var restingHR: Int?
+    /// Where the numbers above came from. Carried for two reasons, and the
+    /// second is why it is here at all:
+    ///
+    /// - The watch runs the same `refreshHeartRateZones` the phone does, so it
+    ///   needs to know whether these zones are still Currimus' to maintain.
+    /// - This payload *is* the persisted settings blob (`AppDefaults.settingsKey`).
+    ///   Without the derivation in it, `isAutomatic` came back `true` on every
+    ///   launch and the automatic refresh overwrote a max heart rate the runner
+    ///   had set by hand — the exact behaviour CUR-2 removed, reintroduced
+    ///   through the store rather than through the model.
+    var derivation: HRDerivation?
     var gpsAccuracy: GPSAccuracy?
     var alwaysOnReduced: Bool?
     /// Zone the watch should hold the runner in by vibration alone (1…5);
