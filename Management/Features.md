@@ -879,6 +879,8 @@ Eine Ursache, drei Symptome: `WatchSettings` **ist** der persistierte Einstellun
 
 #### Link to completed work
 
+https://github.com/candyscode/Currimus/commit/dce8506
+
 ### CUR-30: Der Zonen-Coach feuert bei flatternder Herzfrequenz neu
 
 [ ] In Specification
@@ -904,6 +906,8 @@ Zwei Fälle brauchten eine Unterscheidung, sonst wäre es entweder weiterhin zu 
 Drei neue Fälle für die beiden Flatter-Pfade. 190 Tests grün (vorher 187).
 
 #### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/57906b3
 
 ### CUR-31: Der Demo-Pfad liest die echten Einstellungen
 
@@ -931,6 +935,8 @@ Beide Richtungen zugemacht: `loadSettings()` läuft im Demo-Modus nicht mehr, un
 Ein Test hält beide Richtungen fest. 191 Tests grün (vorher 190).
 
 #### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/edf98e8
 
 ### CUR-32: Vier Zahlen, die etwas anderes behaupten, als sie messen
 
@@ -967,6 +973,8 @@ Das Fenster ist mit 100 m absichtlich fünfmal so lang wie `gradeSegmentKm`, und
 12 neue Tests, 203 grün (vorher 191). Ein Test musste angepasst werden: keiner.
 
 #### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/daeffa8
 
 ### CUR-33: Konsistenz — was die App über denselben Lauf zweimal verschieden sagt
 
@@ -1015,3 +1023,5 @@ Aus dem Audit vom 30.07.2026. Einzeln klein, zusammen der Unterschied zwischen �
 Fünf neue Tests, 208 grün (vorher 203). UI-Tests grün. Snapshot-Referenzen für iOS und watchOS neu aufgenommen, weil hier absichtlich Screens verändert wurden.
 
 #### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/f79bd9b
