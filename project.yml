@@ -28,7 +28,10 @@ settings:
     # and HealthKit cannot be built onto a device without it.
     DEVELOPMENT_TEAM: 88U4UH4ASG
     CURRENT_PROJECT_VERSION: 1
-    MARKETING_VERSION: "1.0"
+    # 1.0 shipped. Set here, never in the .xcodeproj: that file is
+    # generated, and a bump written into it is lost at the next
+    # `xcodegen generate` — which is how 1.1 disappeared once.
+    MARKETING_VERSION: "1.1"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
 # XcodeGen writes no schemes unless asked, and Xcode's autocreation is flaky

@@ -454,6 +454,24 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(RunSamples.self, from: data), samples)
     }
 
+    func testARebuildOnlyEverAddsToWhatTheSidecarAlreadyHolds() {
+        // What a run recorded live: an altitude series and a route, no zones.
+        let stored = Reconstruction(route: [Coordinate(lat: 47, lon: 11, elevation: 500, t: 0)])
+        // What a later fetch from Health came back with — zones, and nothing
+        // else, because the route query could not run.
+        let fetched = Reconstruction(zoneSeconds: [0, 2400, 600, 0, 0])
+
+        let merged = fetched.filling(from: stored)
+        XCTAssertEqual(merged.zoneSeconds, [0, 2400, 600, 0, 0], "the new answer lands")
+        XCTAssertEqual(merged.route?.count, 1, "and the old one is not written over")
+    }
+
+    func testAFreshAnswerWinsOverTheStoredOne() {
+        let stored = Reconstruction(gradeAdjustedSecPerKm: 400)
+        let fetched = Reconstruction(gradeAdjustedSecPerKm: 290)
+        XCTAssertEqual(fetched.filling(from: stored).gradeAdjustedSecPerKm, 290)
+    }
+
     // MARK: - Zones from another app's heart-rate trace
 
     /// Zones at max 190: 115 / 133 / 152 / 171.

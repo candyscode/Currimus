@@ -828,6 +828,13 @@ Das Dateiformat der Sidecar-Dateien bleibt unverändert (eigene `Codable`-Zuordn
 
 Verhalten unverändert: alle bestehenden Tests laufen ohne Anpassung durch, inklusive der Fälle aus den vier Reviews.
 
+**Nachtrag — Review des Umbaus selbst.** Vier Funde, alle behoben:
+
+1. **Der Rebuild hat die Höhenkurve gelöscht.** Die Sidecar-Datei trägt auch die Höhenmessreihe; ich habe sie nach einem Abruf komplett neu geschrieben statt zusammengeführt — bei einem selbst aufgezeichneten Lauf wäre das Höhenprofil im Detail dauerhaft verschwunden. Es gibt jetzt `filling(from:)`: ein Rebuild fügt nur hinzu, er überschreibt nie. Damit ist auch der Fall abgedeckt, dass ein Abruf unvollständig zurückkommt (gesperrtes Gerät) und ein früher schon geholtes Feld wegnehmen würde.
+2. **`@Published` auf der Warteschlange hat den Re-Render-Sturm zurückgebracht.** Beim Zusammenlegen der beiden Mengen ist eine bewusste Trennung verlorengegangen: „schon gefragt" läuft einmal pro Lauf, ein Nachladen von zwölf hätte jede beobachtende View zwölfmal neu gezeichnet. Nur das endgültige Erledigen bewegt die Zahl in den Settings, und nur das meldet sich jetzt.
+3. **Die App-Version ist von 1.1 auf 1.0 zurückgefallen.** Der Bump stand nur in der generierten `.xcodeproj`, und mein `xcodegen generate` hat ihn weggeräumt — das nächste Archiv wäre als 1.0 hochgeladen und von App Store Connect abgelehnt worden. Steht jetzt in `project.yml` mit einem Kommentar, warum dort und nicht dort.
+4. **`canGain` hieß an zwei von drei Aufrufstellen das Gegenteil.** Vor einem Abruf heißt das Prädikat „lohnt zu fragen", nach einem „Health hatte nichts, nicht mehr anbieten". Jetzt `isStillShort` — benannt nach dem, was es misst, nicht nach dem, was ein Aufrufer daraus schließt.
+
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/a03dfb0

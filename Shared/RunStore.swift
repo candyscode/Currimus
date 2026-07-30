@@ -260,7 +260,7 @@ final class RunStore: ObservableObject {
         case .noWorkout:
             // Health answered and has nothing. That is final, so the rebuild
             // stops offering this one.
-            rebuildQueue.settle(run.id)
+            settle(run.id)
             return
         case .unavailable:
             // Health could not answer — the device may still be locked, or
@@ -285,7 +285,11 @@ final class RunStore: ObservableObject {
             route: detail.route.isEmpty ? nil : detail.route
         )
         if !rebuilt.isEmpty {
-            let samples = RunSamples(rebuilt: rebuilt)
+            // Merged into what is on disk, never written over it. The sidecar
+            // also carries the altitude series, and replacing the file
+            // wholesale took the run's elevation profile with it.
+            var samples = self.samples(for: run)
+            samples.rebuilt = rebuilt.filling(from: samples.rebuilt)
             sampleCache[run.id] = samples
             RunSampleStore.save(samples, for: run.id)
         }
@@ -298,10 +302,10 @@ final class RunStore: ObservableObject {
             // the run short — a route with no heart-rate trace beside it, or
             // no route at all to take a gradient from — no future rebuild can
             // do better, and it should stop being offered.
-            if HealthRebuild.canGain(importedRuns[index]) { rebuildQueue.settle(run.id) }
+            if HealthRebuild.isStillShort(importedRuns[index]) { settle(run.id) }
         } else if let index = runs.firstIndex(where: { $0.id == run.id }) {
             runs[index] = rebuilt.applied(to: runs[index]).strippingSamples
-            if HealthRebuild.canGain(runs[index]) { rebuildQueue.settle(run.id) }
+            if HealthRebuild.isStillShort(runs[index]) { settle(run.id) }
         }
     }
 
@@ -359,7 +363,7 @@ final class RunStore: ObservableObject {
     var runsAwaitingRebuild: Int { rebuildQueue.outstanding(in: allRuns).count }
 
     /// Test seam: what a full-but-empty answer from Health does to the queue.
-    func markUnrebuildableForTesting(_ id: UUID) { rebuildQueue.settle(id) }
+    func markUnrebuildableForTesting(_ id: UUID) { settle(id) }
 
     /// Fills in what Health can still tell us about imported runs, a few at a
     /// time and newest first.
@@ -394,9 +398,20 @@ final class RunStore: ObservableObject {
     private func needsHydration(_ run: Run) -> Bool { rebuildQueue.shouldAsk(run) }
 
     /// Who has been asked, who is finished with, and what is still
-    /// outstanding — see `HealthRebuild`. Published so the Settings row's
-    /// count follows a background fill running while it is on screen.
-    @Published private var rebuildQueue = HealthRebuild()
+    /// outstanding — see `HealthRebuild`.
+    ///
+    /// Deliberately not `@Published`: `asking()` runs once per hydration, and
+    /// a backfill of twelve re-rendered every observing view twelve times.
+    /// Only the settled set moves the Settings count, so only `settle` below
+    /// announces itself.
+    private var rebuildQueue = HealthRebuild()
+
+    /// Health answered as fully as it can for this run, and it is still short
+    /// — so stop offering it, and tell the Settings row its count moved.
+    private func settle(_ id: UUID) {
+        objectWillChange.send()
+        rebuildQueue.settle(id)
+    }
     /// Health is asked for permission once per session, at the first hydration.
     private var askedHealth = false
     #endif

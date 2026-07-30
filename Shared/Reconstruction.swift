@@ -46,6 +46,20 @@ struct Reconstruction: Codable, Equatable {
         self.route = route
     }
 
+    /// This, with every gap it has taken from `other`.
+    ///
+    /// A fetch answers with what Health holds *now*: a locked route query or a
+    /// workout whose samples have since been pruned comes back short. Writing
+    /// that over the sidecar wholesale would throw away a field an earlier
+    /// fetch had already recovered, so a rebuild only ever adds.
+    func filling(from other: Reconstruction) -> Reconstruction {
+        Reconstruction(zoneSeconds: zoneSeconds ?? other.zoneSeconds,
+                       zoneDistanceKm: zoneDistanceKm ?? other.zoneDistanceKm,
+                       splits: splits ?? other.splits,
+                       gradeAdjustedSecPerKm: gradeAdjustedSecPerKm ?? other.gradeAdjustedSecPerKm,
+                       route: route ?? other.route)
+    }
+
     /// The run with this put back.
     ///
     /// The run always wins where it measured something itself: a recording
@@ -85,8 +99,13 @@ struct HealthRebuild: Equatable {
     /// offered rather than sitting in the count for ever.
     private var settled: Set<UUID> = []
 
-    /// Whether Health could still add anything to this run.
-    static func canGain(_ run: Run) -> Bool {
+    /// Whether the run is still missing something Health might hold.
+    ///
+    /// Named for what it measures, not for what a caller concludes: asked
+    /// *before* a fetch it means "worth asking", asked *after* one it means
+    /// "Health had nothing, stop offering it". It was called `canGain`, which
+    /// read as its own negation at the second kind of call site.
+    static func isStillShort(_ run: Run) -> Bool {
         if run.zoneDistanceKm == nil { return true }
         // A gradient needs a track, and a treadmill run has none by
         // definition — no point asking Health to confirm it.
@@ -95,7 +114,7 @@ struct HealthRebuild: Equatable {
 
     /// Everything still worth a rebuild — what the Settings row counts.
     func outstanding(in runs: [Run]) -> [Run] {
-        runs.filter { Self.canGain($0) && !settled.contains($0.id) }
+        runs.filter { Self.isStillShort($0) && !settled.contains($0.id) }
     }
 
     /// The next few to fetch in the background, newest first.
@@ -109,7 +128,7 @@ struct HealthRebuild: Equatable {
 
     /// Whether to put the question at all, for a single run.
     func shouldAsk(_ run: Run) -> Bool {
-        Self.canGain(run) && !settled.contains(run.id) && !asked.contains(run.id)
+        Self.isStillShort(run) && !settled.contains(run.id) && !asked.contains(run.id)
     }
 
     mutating func asking(_ id: UUID) { asked.insert(id) }
