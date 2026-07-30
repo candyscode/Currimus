@@ -1025,3 +1025,47 @@ Fünf neue Tests, 208 grün (vorher 203). UI-Tests grün. Snapshot-Referenzen f�
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/f79bd9b
+
+### CUR-34: Ein Testziel für watchOS
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Aus dem Audit vom 30.07.2026, Punkt 6 der Testkritik. `RunSession` ist mit 925 Zeilen die zweitgrößte Datei der App und läuft in **keinem** Test — es gibt kein watchOS-Testziel. Was dort ungeprüft liegt, ist nicht Arithmetik (die steckt in `RunMetrics` und ist gut getestet), sondern alles, was ein Lauf *ist*:
+
+- **Das Zusammensetzen des fertigen Laufs.** `end()` baut fünfzehn Felder aus vier Quellen zusammen. Ein Fehler darin ist ein falscher Logbucheintrag, und einer davon war schon da: `date` war `now - elapsed`, was bei jedem pausierten Lauf die Startzeit nach vorn wanderte.
+- **Die Phasenmaschine.** `pause`/`resume`/`skipCountdown`/`reset` sind vier Wächter über sieben Zuständen, plus die Hardware-Geste, die die Session von außen pausiert.
+- **Der Lebenszyklus des Coaches.** Der Kommentar in `resetMetrics` beschreibt einen echten Fehler: ein aus dem letzten Lauf übernommener Coach brachte seine Uhr mit, und `lastFired` auf der Elapsed-Zeit des Vorlaufs unterdrückte jeden Hinweis in der ersten halben Stunde des nächsten.
+- **Die Pacer-Arithmetik.** `scheduleDelta` und `finishForecast` sind zwei Zeilen, die niemand nachgerechnet hat — und `finishForecast` unterstellt, dass die Restdistanz im Zieltempo gelaufen wird, was eine Festlegung ist und keine Nebensache.
+
+Der `RunSimulator` deckt die Sekunde-für-Sekunde-Rechnung schon kopflos ab; dieses Ziel deckt die Hülle darum ab.
+
+Umfang: neues Ziel `CurrimusWatchTests`, das `Shared` und **nur** `Watch/RunSession.swift` kompiliert — die übrigen Watch-Dateien sind Views, und `WatchApp.swift` trägt `@main`, was in einem Testbundle nicht vorkommen darf. Kommando in die Agent-Notes.
+
+#### Agent Comments
+
+`CurrimusWatchTests` steht, 27 Fälle, 1,2 Sekunden. Alles wird über `debugJumpScenario` getrieben, nie über `begin()`: `begin` startet einen echten 1-Hz-`Timer` auf dem Main-Run-Loop, und damit wäre jede Zusicherung danach ein Rennen. Ein Szenario läuft ohne Timer und ohne Zufall — dieselben Szenarien, auf die der kopflose Simulator schon zusichert.
+
+Was jetzt abgedeckt ist: das Zusammensetzen des fertigen Laufs (inklusive der Startzeit, der Rundung, Zonen-Sekunden *und* Zonen-Distanz, Laufband ohne Route, Steigungskorrektur aus der eigenen Route, Kadenz als fehlende statt als Null-Messung), die Phasenmaschine samt der Wächter, die Pacer-Arithmetik, und was von einem Lauf in den nächsten übergeht.
+
+**Mutationstests, weil ein Test, der nicht fehlschlagen kann, schlimmer ist als keiner.** Drei Mutationen eingebaut und wieder entfernt:
+
+| Mutation | gefangen |
+|---|---|
+| `date: .now.addingTimeInterval(-elapsed)` (der alte Startzeit-Fehler) | **ja** — 3,5 h Abweichung, zwei Zusicherungen |
+| `coachZone()` aus `scenarioSecond` entfernen | **ja** — drei Tests |
+| `coach = …` aus `resetMetrics` entfernen | **nein**, siehe unten |
+
+**Zwei Funde beim Schreiben der Tests:**
+
+1. **`scenarioSecond` rief `coachZone()` nicht auf.** Die Szenario-Wiedergabe — das Werkzeug, mit dem man einen ganzen Lauf gegen eine *bekannte* Herzfrequenzkurve beobachtet — hat den Coach nie gefragt, während die Demo-Simulation daneben es tat. Der Kommentar aus CUR-6 („Cues also run in the watch simulator's demo runs… that is the only place this can be watched at all") stimmte nur für die andere Simulation. Behoben, ein Aufruf.
+
+2. **Die Zeile in `resetMetrics`, die den Coach neu baut, ist defensiv und nicht tragend** — und das ist ehrlicher aufgeschrieben als eine Deckung zu behaupten, die es nicht gibt. Ein übernommener Coach erholt sich, sobald der Läufer wieder durch die Zielzone steigt, weil ein Cue *anderer Art* die Kadenz sofort unterbricht (`ZoneCoach.interrupts`) — und jeder Lauf steigt auf dem Weg nach oben durch seine Zielzone. Der beschriebene Effekt („unterdrückte jeden Hinweis in der ersten halben Stunde") ist damit auf dieser Strecke nicht beobachtbar. Die Zeile bleibt: sich auf diese Rettung zu verlassen heißt, sich auf ein Detail eines anderen Typs zu verlassen. Der Test sichert stattdessen das Ergebnis, auf das es ankommt — der zweite Lauf wird gecoacht, an derselben Sekunde wie der erste.
+
+Ein Test musste angepasst werden, weil meine Annahme falsch war und nicht der Code: der Straßen-Szenario-Höhenverlauf ist eine Sinuswelle, dort wächst die Steigung nicht monoton mit der Distanz. Der Trail-Lauf ist der eindeutige Zeuge für „hat neu angefangen".
+
+208 iOS-Tests, 27 watchOS-Tests, 3 UI-Tests, beide Ziele bauen.
+
+#### Link to completed work

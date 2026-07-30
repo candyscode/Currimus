@@ -76,6 +76,14 @@ schemes:
       config: Debug
       targets:
         - CurrimusTests
+  CurrimusWatchTests:
+    build:
+      targets:
+        CurrimusWatchTests: all
+    test:
+      config: Debug
+      targets:
+        - CurrimusWatchTests
   CurrimusUITests:
     build:
       targets:
@@ -222,6 +230,26 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.uitests
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: Currimus
+
+  # `RunSession` is the second-largest file in the app and ran in no test at
+  # all, because there was nowhere to put one. What lives there is not
+  # arithmetic — `RunMetrics` owns that and is well covered — it is the shell
+  # around it: assembling the finished run, the phase machine, the coach's
+  # lifecycle across two runs.
+  CurrimusWatchTests:
+    type: bundle.unit-test
+    platform: watchOS
+    sources:
+      - TestsWatch
+      - Shared
+      # One file, not the folder. Everything else under Watch/ is views, and
+      # `WatchApp.swift` carries `@main`, which a test bundle must not contain.
+      # `RunSession` references nothing Watch-local, so this compiles clean.
+      - Watch/RunSession.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.currimus.app.watchtests
+        GENERATE_INFOPLIST_FILE: YES
 
   CurrimusTests:
     type: bundle.unit-test

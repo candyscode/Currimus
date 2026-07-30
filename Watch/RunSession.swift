@@ -739,6 +739,13 @@ final class RunSession: NSObject, ObservableObject {
                                     heartRate: heartRate, zone: currentZone) {
             raiseKilometerAlert(split)
         }
+        // The coaching too, like `simulateOneSecond` next door. This was missing:
+        // scenario playback is the one place a cue can be watched against a
+        // known heart-rate trace instead of a wandering demo one, and it was the
+        // one path that never asked the coach anything. CUR-6 says the cues run
+        // in the simulator because no simulated wrist has a pulse — that was
+        // only true of the other simulation.
+        coachZone()
         // Live playback freezes at the finish line rather than running past it.
         if tickInterval < 1, scenario.stop.reached(elapsed: elapsed, distanceKm: simDistanceKm) {
             timer?.cancel()

@@ -10,7 +10,19 @@ xcodegen generate                       # after ANY new/renamed/removed source f
 xcodebuild build -scheme Currimus      -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 xcodebuild build -scheme CurrimusWatch -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 3 (49mm)'
 xcodebuild test  -scheme CurrimusTests -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+xcodebuild test  -scheme CurrimusWatchTests -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 3 (49mm)'
 ```
+
+`CurrimusWatchTests` compiles `Shared` and **only `Watch/RunSession.swift`** — not the
+`Watch` folder. Everything else there is views, and `WatchApp.swift` carries
+`@main`, which a test bundle must not contain. `RunSession` happens to reference
+nothing Watch-local, which is what makes that possible; if it ever does, exclude
+`WatchApp.swift` rather than adding the whole folder.
+
+Drive a run in those tests with `debugJumpScenario`, never `begin()`:
+`begin` starts a real 1 Hz `Timer` on the main run loop, and every assertion
+after it becomes a race. `debugJumpScenario` plays a `RunScenario` second by
+second with no timer and no randomness.
 
 Filter the output — `xcodebuild` prints thousands of lines and a failure is one
 of them:
