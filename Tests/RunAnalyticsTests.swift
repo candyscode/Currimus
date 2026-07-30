@@ -628,12 +628,13 @@ final class RunAnalyticsTests: XCTestCase {
         // no zone to name, and the line stops rather than inventing one.
         let blind = Run(date: .now, name: "Easy", distanceKm: 10, duration: 3000, avgHR: 0)
         let text = LogRowText(run: blind, prTag: nil)
-        XCTAssertFalse(text.detail.contains("Z0"), text.detail)
-        XCTAssertFalse(text.detail.contains("Z"), text.detail)
+        XCTAssertFalse(text.detail.contains("Zone"), text.detail)
 
         let measured = Run(date: .now, name: "Easy", distanceKm: 10, duration: 3000,
                            avgHR: 140, zoneSeconds: [0, 2400, 600, 0, 0])
-        XCTAssertTrue(LogRowText(run: measured, prTag: nil).detail.contains("Z2"))
+        // Spelt out since CUR-36: the row has the room now that the recording
+        // app's name has gone from it.
+        XCTAssertTrue(LogRowText(run: measured, prTag: nil).detail.contains("Zone 2"))
     }
 
     func testAPaceOfNothingIsNotAPace() {
@@ -1077,14 +1078,21 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertTrue(text.detail.contains(Format.clock(2400)))
     }
 
-    /// Below a record the source goes back to doing its job — explaining why
-    /// the row names no zone.
-    func testAnImportedRunWithoutAPRStillNamesItsSource() {
-        let run = Run(date: .now, name: "Strava", distanceKm: 8,
-                      duration: 2600, avgHR: 150, imported: true)
-        XCTAssertTrue(LogRowText(run: run, prTag: nil).detail.hasPrefix("Strava · "))
-        // "Longest" is not a benchmark time, so it does not displace the source.
-        XCTAssertTrue(LogRowText(run: run, prTag: "Longest").detail.hasPrefix("Strava · "))
+    /// Below a record, an imported row reads like every other row.
+    ///
+    /// This asserted the opposite for one day — that the source was named there
+    /// — which was CUR-35's reading of "no source next to a PR". CUR-36 #5 went
+    /// further: the source name goes from the log entirely, because for
+    /// anything Apple's own Workout app recorded it is a device name, and
+    /// "Apple Watch von Andreas" on every second row says nothing about a run.
+    func testAnImportedRunReadsLikeAnyOther() {
+        let run = Run(date: .now, name: "Apple Watch von Andreas", distanceKm: 8,
+                      duration: 2600, avgHR: 150, zoneSeconds: [0, 900, 0, 0, 0],
+                      imported: true)
+        for tag in [nil, "Longest"] {
+            let detail = LogRowText(run: run, prTag: tag).detail
+            XCTAssertEqual(detail, "43:20 · Zone 2", "prTag \(tag ?? "nil")")
+        }
     }
 
     /// The delete explanation names no source.
@@ -1100,5 +1108,80 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertFalse(text.contains("Apple Watch"), "a device name is not an app to delete in")
         XCTAssertFalse(text.contains(run.name))
         XCTAssertTrue(text.contains("Fitness"), "and it still says where to go")
+    }
+
+    // MARK: - CUR-36 · what a log row says, and what a run is called
+
+    /// The second line is the time and the zone, one shape for every row.
+    func testALogRowsSecondLineIsTheTimeAndTheZone() {
+        let run = Run(date: .now, name: "Morning Run", distanceKm: 10, duration: 3041,
+                      avgHR: 150, zoneSeconds: [10, 600, 200, 30, 0])
+        XCTAssertEqual(LogRowText(run: run, prTag: nil).detail, "50:41 · Zone 2")
+    }
+
+    /// "Zone 2", not "Z2" — the room is there since the source name went.
+    func testTheZoneIsSpeltOut() {
+        let run = Run(date: .now, name: "r", distanceKm: 10, duration: 3000, avgHR: 150,
+                      zoneSeconds: [0, 0, 0, 900, 0])
+        XCTAssertTrue(LogRowText(run: run, prTag: nil).detail.contains("Zone 4"))
+        XCTAssertFalse(LogRowText(run: run, prTag: nil).detail.contains("Z4"))
+    }
+
+    /// A trail row keeps its climb and drops the word "Trail" — the orange tag
+    /// on the line above already says it.
+    func testATrailRowSaysTheClimbAndNotTheWordTrail() {
+        let run = Run(date: .now, type: .trail, name: "Ridge", distanceKm: 18.4,
+                      duration: 7866, avgHR: 150, zoneSeconds: [0, 0, 900, 0, 0],
+                      climbMeters: 695)
+        let detail = LogRowText(run: run, prTag: nil).detail
+        // `Format.elevation` binds the unit with a non-breaking space.
+        XCTAssertEqual(detail, "2:11:06 · Zone 3 · +695\u{00A0}m")
+        XCTAssertFalse(detail.contains("Trail"))
+    }
+
+    /// An imported run reads like any other. It used to lead with the recording
+    /// app's name, which for anything Apple recorded is a device name.
+    func testAnImportedRowDoesNotNameWhereItCameFrom() {
+        let run = Run(date: .now, name: "Apple Watch von Andreas", distanceKm: 8,
+                      duration: 2400, avgHR: 150, zoneSeconds: [0, 800, 0, 0, 0],
+                      imported: true)
+        let detail = LogRowText(run: run, prTag: nil).detail
+        XCTAssertEqual(detail, "40:00 · Zone 2")
+        XCTAssertFalse(detail.contains("Apple Watch"))
+    }
+
+    /// Without a heart rate there is no zone to name, so the line stops.
+    func testARowWithoutAZoneIsJustTheTime() {
+        let run = Run(date: .now, name: "r", distanceKm: 5, duration: 1500, avgHR: 0)
+        XCTAssertEqual(LogRowText(run: run, prTag: nil).detail, "25:00")
+    }
+
+    /// A record still outranks all of it (CUR-35).
+    func testARecordStillTakesTheLine() {
+        let run = Run(date: .now, name: "r", distanceKm: 10, duration: 2400, avgHR: 168,
+                      zoneSeconds: [0, 0, 0, 900, 0], imported: true)
+        let text = LogRowText(run: run, prTag: "10K PR")
+        XCTAssertEqual(text.prTag, "10K PR")
+        XCTAssertFalse(text.detail.contains("Zone"))
+    }
+
+    /// A run is named for when it was run, whoever recorded it — one rule, so a
+    /// run Currimus recorded and one read back out of Health match.
+    func testARunIsNamedForWhenItWasRun() {
+        func name(at hour: Int) -> String {
+            let day = Calendar.current.date(bySettingHour: hour, minute: 30, second: 0, of: .now)!
+            return RunNaming.defaultName(for: day)
+        }
+        XCTAssertEqual(name(at: 7), "Morning Run")
+        XCTAssertEqual(name(at: 13), "Afternoon Run")
+        XCTAssertEqual(name(at: 19), "Evening Run")
+        XCTAssertEqual(name(at: 2), "Night Run")
+        XCTAssertEqual(name(at: 23), "Night Run")
+    }
+
+    func testATreadmillRunSaysSoInItsName() {
+        let noon = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: .now)!
+        XCTAssertEqual(RunNaming.defaultName(for: noon, isIndoor: true), "Indoor Run")
+        XCTAssertEqual(RunNaming.defaultName(for: noon, type: .trail), "Trail run")
     }
 }

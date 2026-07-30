@@ -42,12 +42,25 @@ struct GlassIconButton: View {
                 .foregroundStyle(Theme.ink)
         }
         .buttonStyle(.plain)
+        // A glyph is not a name. These three were unlabelled, so VoiceOver
+        // announced the back, close and settings buttons as "button" and
+        // nothing else — and a screen whose only way out is unnamed is a
+        // screen with no way out.
+        .accessibilityLabel(systemImagePath.name)
     }
 }
 
 /// Hand-drawn glyphs matching the design's stroked SVG icons.
 enum GlassGlyph {
     case back, settings, close
+
+    var name: LocalizedStringKey {
+        switch self {
+        case .back: return "Back"
+        case .settings: return "Settings"
+        case .close: return "Close"
+        }
+    }
 
     @ViewBuilder var shape: some View {
         switch self {
@@ -145,6 +158,31 @@ struct Explainer: View {
             .tint(Theme.signal)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, top)
+    }
+}
+
+// MARK: - Weekly goal
+
+/// The weekly-distance picker, wherever it is offered.
+///
+/// One list of options, because there are two ways in now: the Settings row,
+/// and the "goal 55 km" caption on Home, which used to state the goal and give
+/// no way to change it — the number is right there, and the setting was three
+/// taps away behind a screen that does not mention it.
+struct WeeklyGoalMenu<Label: View>: View {
+    @Binding var goalKm: Double
+    @ViewBuilder var label: () -> Label
+
+    var body: some View {
+        Menu {
+            ForEach(Array(stride(from: 20, through: 90, by: 5)), id: \.self) { goal in
+                Button("\(goal) km") { goalKm = Double(goal) }
+            }
+        } label: {
+            label()
+        }
+        .accessibilityLabel("Weekly goal")
+        .accessibilityValue("\(Int(goalKm)) kilometres")
     }
 }
 

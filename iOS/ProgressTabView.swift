@@ -75,6 +75,7 @@ struct ProgressScreen: View {
     @EnvironmentObject private var store: RunStore
     @Environment(\.pushRoute) private var push
     @State private var view: RunStore.LogFilter = .road   // .road or .trail
+    @State private var explaining: Explanation?
 
     var body: some View {
         TabScreen(topInset: 8) { EmptyView() } content: {
@@ -93,6 +94,7 @@ struct ProgressScreen: View {
                 if view == .road || !hasTrailRuns { roadContent } else { trailContent }
             }
         }
+        .explanationSheet($explaining)
     }
 
     // MARK: - Road
@@ -217,12 +219,22 @@ struct ProgressScreen: View {
         // track, or no heart-rate trace to pair it with — are left out rather
         // than estimated, and saying how many keeps that from looking like
         // runs going missing.
-        return Text(unmeasured > 0
-                    ? base + String(localized: ". \(Format.plural(unmeasured, "run", "runs")) spent in zone 2 could not be measured exactly — no heart-rate trace, or nothing in Health saying how the distance came — and are left out rather than estimated.")
-                    : base)
-            .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 10)
+        return HStack(spacing: 2) {
+            Text(unmeasured > 0
+                 ? base + String(localized: " · \(unmeasured) not measured")
+                 : base)
+                .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+            if unmeasured > 0 {
+                InfoButton(label: "the unmeasured runs") {
+                    explaining = Explanation(
+                        title: String(localized: "Runs left out"),
+                        body: String(localized: "\(Format.plural(unmeasured, "run", "runs")) spent time in zone 2 but could not be measured exactly — no heart-rate trace, or nothing in Health saying how the distance came. They are left out of the line rather than estimated onto it, and counted here instead, so the chart cannot quietly shrink without saying why."))
+                }
+                .padding(.leading, -6)
+            }
+        }
+        .padding(.top, 10)
     }
 
     /// The card teases the 5 K record; without one it must not read "— 5K",
@@ -323,8 +335,6 @@ struct ProgressScreen: View {
             divider
             gapRow
 
-            Explainer(markdown: gradeAdjustedExplanation, top: 14)
-
             divider
             Text("MONTHLY CLIMB · M").kicker(13, color: Theme.bright, tracking: 0.12).padding(.bottom, 14)
             MonthBars(items: store.monthlyClimb(count: 6).map { (shortMonth($0.month), $0.climb) },
@@ -365,7 +375,14 @@ struct ProgressScreen: View {
         let summary = RunAnalytics.gradeAdjustedSummary(runs: store.filteredRuns(.trail))
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Grade-adjusted pace").font(.sg(16))
+                HStack(spacing: 2) {
+                    Text("Grade-adjusted pace").font(.sg(16))
+                    InfoButton(label: "grade-adjusted pace") {
+                        explaining = Explanation(title: String(localized: "Grade-adjusted pace"),
+                                                 body: gradeAdjustedExplanation)
+                    }
+                    .padding(.leading, -6)
+                }
                 Text(summary == nil
                      ? "Appears after a trail run that recorded elevation"
                      : "What your trail pace is worth on the flat")

@@ -7,12 +7,12 @@
     " · TRAIL" : {
 
     },
-    " **%@** from your training — %lld km a week at %@ /km over the last eight weeks, after %@." : {
+    " **%@** from your training — %lld km a week at %@ /km over the last %@, after %@." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : " **%1$@** from your training — %2$lld km a week at %3$@ /km over the last eight weeks, after %4$@."
+            "value" : " **%1$@** from your training — %2$lld km a week at %3$@ /km over the last %4$@, after %5$@."
           }
         }
       }
@@ -62,7 +62,7 @@
     "—" : {
 
     },
-    ". %@ spent in zone 2 could not be measured exactly — no route or no heart-rate trace — and are left out rather than estimated." : {
+    ". %@ spent in zone 2 could not be measured exactly — no heart-rate trace, or nothing in Health saying how the distance came — and are left out rather than estimated." : {
 
     },
     "**%@** from your best %@ effort (%@), scaled to the distance after %@." : {
@@ -71,6 +71,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "**%1$@** from your best %2$@ effort (%3$@), scaled to the distance after %4$@."
+          }
+        }
+      }
+    },
+    "**%@** is your best %@ effort (%@) — the distance itself, no scaling needed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "**%1$@** is your best %2$@ effort (%3$@) — the distance itself, no scaling needed."
           }
         }
       }
@@ -84,6 +94,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@ ago" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ ago"
           }
         }
       }
@@ -128,8 +148,21 @@
         }
       }
     },
+    "%@ inside your goal" : {
+
+    },
     "%@ km" : {
 
+    },
+    "%@ km in **%@**, %@ of %@. Set the next race when you have one — this screen goes back to counting down." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ km in **%2$@**, %3$@ of %4$@. Set the next race when you have one — this screen goes back to counting down."
+          }
+        }
+      }
     },
     "%@ km, %@. Every total and record is recalculated without it, and the workout is removed from Apple Health." : {
       "localizations" : {
@@ -140,6 +173,9 @@
           }
         }
       }
+    },
+    "%@ over your goal" : {
+
     },
     "%@ per kilometre" : {
 
@@ -171,6 +207,9 @@
       }
     },
     "%@ vs avg" : {
+
+    },
+    "%@ was today" : {
 
     },
     "%@, %lld percent" : {
@@ -291,9 +330,6 @@
     "Appears once a couple of months carry runs spent in zone 2. Runs from other apps count too." : {
 
     },
-    "Apple Health only lets the app that recorded a run delete it, so Currimus cannot remove this one. Delete it in %@, or in the Fitness app, and it will disappear from Currimus on the next refresh." : {
-
-    },
     "at %@ → finish " : {
 
     },
@@ -346,6 +382,9 @@
 
     },
     "DAYS" : {
+
+    },
+    "DAYS AGO" : {
 
     },
     "DEFAULT" : {
@@ -517,7 +556,7 @@
     "Hides every kilometre" : {
 
     },
-    "high point · %@ m" : {
+    "high point · %@" : {
 
     },
     "HOLD ME IN" : {
@@ -533,6 +572,9 @@
 
     },
     "IN ZONE 2 · LAST 12 MONTHS" : {
+
+    },
+    "Indoor run — nowhere to draw" : {
 
     },
     "Intervals" : {
@@ -784,9 +826,6 @@
     "Recorded by %@" : {
 
     },
-    "Recorded by %@. This run belongs to Apple Health — delete it in the app that recorded it." : {
-
-    },
     "Recording problem: %@. %@" : {
       "localizations" : {
         "en" : {
@@ -884,10 +923,16 @@
     "TARGET /KM · TURN CROWN" : {
 
     },
+    "TARGET RACE · %@" : {
+
+    },
     "Tempo" : {
 
     },
     "That is" : {
+
+    },
+    "That race day has passed, and no run in your log covers the distance on it. Set the next one when you have it." : {
 
     },
     "The energy a runner spends per metre at every gradient from −45 % to +45 %, measured. It is what turns a climb into the flat pace that cost the same." : {
@@ -900,6 +945,9 @@
 
     },
     "This run came from Apple Health. Currimus counts it towards every total, but the run itself belongs to the app that recorded it — edit or delete it there." : {
+
+    },
+    "This run was recorded outside Currimus, and Apple Health only lets the app that recorded a run delete it. Remove it there, or in the Fitness app, and it will disappear from Currimus on the next refresh." : {
 
     },
     "This watch has no Health data, so a run cannot record heart rate or distance." : {
@@ -924,9 +972,6 @@
 
     },
     "Trail" : {
-
-    },
-    "TRAIL" : {
 
     },
     "Trail run" : {
@@ -963,6 +1008,9 @@
 
     },
     "What your trail pace is worth on the flat" : {
+
+    },
+    "within a minute of your goal" : {
 
     },
     "Without location there is no route, climb or elevation. Heart rate and distance still record." : {

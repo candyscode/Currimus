@@ -72,15 +72,11 @@ struct RunDetailView: View {
     /// undone, so it does not get to look like the primary action.
     @ViewBuilder
     private var deleteAction: some View {
-        if run.isImported {
-            // Health owns it, and HealthKit will not let another app delete
-            // another app's workout. Say where it can be done instead — without
-            // naming the source, for the reason in `DeletePrompt`: for Apple's
-            // own recordings that name is a device, not an app.
-            Text(DeletePrompt.importedExplanation(run))
-                .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
-                .padding(.top, 18)
-        } else {
+        // Nothing at all for an imported run. Health owns it and will not let
+        // another app delete it, but the Edit Run screen already says so at
+        // length, and repeating it here put a paragraph of apology at the
+        // bottom of every imported run's detail (Andi, 2026-07-30).
+        if !run.isImported {
             Button { confirmingDelete = true } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "trash").font(.system(size: 15, weight: .semibold))

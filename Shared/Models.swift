@@ -496,33 +496,26 @@ struct LogRowText: Equatable {
         isTrail = run.isTrail
         isIndoor = run.isTreadmill
 
-        let clock = Format.clock(run.duration)
-        // A record outranks where it was set.
+        // The second line is the time and the zone the run mostly sat in, and
+        // for a trail run what it climbed. One shape for every row.
         //
-        // The imported branch used to come first, so a run another app recorded
-        // could hold the 10 K best time on the Records screen and show no tag at
-        // all on its own row. Which app it happened in is not what a runner
-        // wants from that line — the record is (Andi, 2026-07-30). Below a
-        // record, the source goes back to doing its job: explaining why the row
-        // names no zone.
+        // It used to be four shapes, each repeating something the row already
+        // said or could not support: the recording app's name (which for
+        // anything Apple recorded is a device name), the word "Trail" beside
+        // the orange TRAIL tag on the line above, and a classification derived
+        // from splits and zones that imported runs do not have — so every one
+        // of them read "Easy". Andi, 2026-07-30.
+        //
+        // A record is the exception, and outranks all of it.
+        let clock = Format.clock(run.duration)
         if let prTag, prTag != "Longest" {
             detail = "\(clock) · "
             self.prTag = prTag
-        } else if run.isImported {
-            // Another app recorded it: name the source instead of claiming
-            // zone data Currimus never captured.
-            detail = "\(run.name) · \(clock)"
-            self.prTag = nil
-        } else if run.isTrail {
-            detail = "Trail · \(clock) · +\(Int(run.climbMeters ?? 0)) m"
-            self.prTag = nil
-        } else if run.dominantZone > 0 {
-            detail = "\(run.classification.label) · \(clock) · Z\(run.dominantZone)"
-            self.prTag = nil
         } else {
-            // No heart rate on this one. There is no zone 0 to name, so the
-            // line simply stops rather than inventing one.
-            detail = "\(run.classification.label) · \(clock)"
+            // "Zone 2", not "Z2" — the room is there now.
+            let zone = run.dominantZone > 0 ? String(localized: "Zone \(run.dominantZone)") : nil
+            let climb = run.isTrail ? "+\(Format.elevation(run.climbMeters ?? 0))" : nil
+            detail = [clock, zone, climb].compactMap { $0 }.joined(separator: " · ")
             self.prTag = nil
         }
     }

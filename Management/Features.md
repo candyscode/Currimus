@@ -1107,3 +1107,62 @@ Fünf neue Tests, 211 iOS-Tests grün, 27 watchOS-Tests grün, beide Ziele bauen
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/7a4be7e
+
+### CUR-36: Minor UI Improvements
+
+[ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done  (7 von 8 · Punkt 3 siehe unten)
+
+1) In Home: bei "goal 55 km" die Möglichkeit vorsehen, direkt zur Einstellung des Goals zu kommen, z.B. kleiner Button "modify goal" oder so.
+
+2) Importierter Lauf heißt immernoch Apple Watch von Andreas. Das wollten wir ja explizit nicht mehr haben. Lieber Morning Run, Afternoon Run, Easy Run oder Run in Neufahrn, Run in Munich irgendwas in die Richtung
+
+3) Wenn ich in die Race Ansicht gehe und dann auf Back drücke komme ich ja wieder zu Home. Dann dauert es aber eine halbe Sekunde, bis die Tabbar unten wieder erscheint. Bitte fixen.
+
+4) Im Detail View den Text unten "This run was recorded outside Currimus" entfernen, der Text, wenn man in Edit Run bei einem importierten Run geht ist ausreichend.
+
+5) Im Log steht immernoch oft "Apple Watch von Andreas" in den Items. Kann ersatzlos weg. Auch dass bei Trailruns nochmal in der zweiten Zeile Trail steht kann weg, wir haben dafür ja dieses orange Trail Label.
+
+6) In der zweiten Zeile im Log Item soll stehen Zeit und Haupt-Pulszone, wobei die dann ausgeschrieben werden kann, weil wir ja Platz haben "Zone 2" statt Z2.
+
+7) Die ganzen Erklärungstexte (worauf basiert diese Berechnung?) sind zu lang geworden, um sie in der UI standardmäßig anzuzeigen. Mach lieber einen kleinen info-Button hin, der dann ein Modal mit der Erklärung öffnet.
+
+8) In den Erklär-Texten sind teilweise wichtige Infos versteckt. Z.B. im Run Mode ist im ewig langen Fließtext die vorhergesagte Zeit nach Riegel. Solche Infos NIEMALS im Fließtext sondern die brauchen ein eigenes UI Feld. Dann bei jedem der Felder eine Möglichkeit, sich die Herleitung anzeigen zu lassen.
+
+#### Agent Comments
+
+Sieben der acht Punkte sind drin. **Punkt 3 nicht** — dazu unten, und das ist der einzige, bei dem ich Hilfe brauche.
+
+**1 · „goal 55 km" öffnet das Ziel.** Ein `WeeklyGoalMenu` mit derselben Optionsliste, die Settings schon benutzt — jetzt an beiden Stellen dasselbe Menü statt zweier Kopien. Auf Home trägt die Zeile ein kleines Auf/Ab-Chevron als Affordanz und behält ihre gedämpfte Caption-Optik: die Zahl ist eine Nebeninformation, kein Button.
+
+**2 · Importierte Läufe heißen nach der Tageszeit.** `RunNaming.defaultName` ist eine Regel für beide Quellen — die Uhr benannte ihre Läufe schon so, Health-Läufe nahmen `sourceRevision.source.name`. Night / Morning / Afternoon / Evening Run, plus „Indoor Run" fürs Laufband und „Trail run". Kein Reverse-Geocoding für „Run in Neufahrn", so verlockend das ist: die App macht keinerlei Netzwerkaufrufe, und das ist mehr wert als ein hübscheres Substantiv. Bestehende Einträge korrigieren sich von selbst, weil die importierte Liste bei jedem Foreground komplett ersetzt wird.
+
+**4 · Der Hinweis im Detail ist weg.** Der Edit-Run-Text sagt es, und der sagt jetzt „Recorded outside Currimus" statt „Recorded by <Name>" — der Name ist ja inzwischen Currimus' eigener.
+
+**5 + 6 · Die zweite Zeile im Log hat eine Form statt vier.** Zeit · Zone, ausgeschrieben, plus Höhenmeter beim Trail. Weg sind: der Quellenname, das Wort „Trail" neben dem orangen TRAIL-Label, und die Klassifikation — die kam aus Splits und Zonen, die importierte Läufe nicht haben, weshalb jeder von ihnen „Easy" hieß. **Sag Bescheid, wenn du die Klassifikation vermisst**; du hast in Punkt 6 „Zeit und Haupt-Pulszone" geschrieben, ich habe das wörtlich genommen.
+
+**7 · Erklärungen hinter einem ⓘ.** Neu: `Explanation`, `InfoButton`, `ExplanationSheet` und `ExplainedStat` in `iOS/Explain.swift`. Der Button ist 13 pt und in `Theme.faint` — er sitzt neben einem Kicker und darf nicht mit der Zahl darüber konkurrieren —, hat aber ein 30-pt-Ziel darunter. Das Sheet kommt mit `.medium`-Detent, weil die meisten Erklärungen ein Absatz sind, und wächst für die, die es nicht sind. Umgestellt: die beiden Absätze auf dem Zonen-Screen (der passt jetzt ohne Scrollen), die Steigungskorrektur im Progress-Tab, und die Fußnote unter dem Zone-2-Chart. **Nicht umgestellt: die „NEXT TIME"-Karten im Run-Detail** — die sind Rat und nicht Herleitung, sie *sind* der Inhalt der Karte.
+
+**8 · Die Prognosen sind Felder.** Der Race-Screen hatte eine Kachel „PREDICTED" und darunter einen Absatz, der beide Zahlen fett mitten im Satz trug. Jetzt: `FROM RACING` und `FROM TRAINING` nebeneinander, jede mit ⓘ. Der ganze Fließtext ist in die zwei Sheets gewandert, inklusive der Sätze über Stale-Basis, Extrapolation und — das ist der eigentliche Fund des Screens — wie weit die beiden Modelle auseinanderliegen und was das heißt.
+
+**Nebenbei gefunden und behoben: `GlassIconButton` hatte keine Accessibility-Labels.** Back, Close und Settings wurden von VoiceOver als „button" angesagt, sonst nichts. Ein Screen, dessen einziger Ausgang keinen Namen hat, ist ein Screen ohne Ausgang.
+
+#### Punkt 3 · die Tab-Bar-Verzögerung — nicht behoben
+
+Ich habe es versucht und **messbar nichts erreicht**, deshalb ist die Änderung wieder draußen statt als Fix verkauft.
+
+Der Verdacht war richtig formuliert: die Sichtbarkeit wird auf dem *gepushten Ziel* deklariert, also fängt die Leiste erst an zurückzukommen, wenn dieses Ziel vom Schirm ist. Ich habe sie stattdessen aus dem Navigations-Pfad abgeleitet (`path.isEmpty`), was den Zustand sofort beim Back-Tap umlegt.
+
+Gemessen mit einem neuen UI-Test: **1,81 s vorher, 1,82 s nachher.** Kein Unterschied. Und die Messung taugt auch nicht, um eine halbe Sekunde aufzulösen — `XCUIElement.tap()` kehrt erst zurück, wenn die App komplett still ist, die Zahl ist also „Tap-Synthese + alles Nachschwingen" und von beidem dominiert.
+
+Was der Versuch immerhin gezeigt hat: **zwei `toolbar(_:for: .tabBar)`-Deklarationen in einem Stack komponieren nicht** — die äußere gewinnt, auch gegen `.automatic`. Der Markiermodus des Logs zeigte plötzlich beide Leisten übereinander. Das ist jetzt ein UI-Test, damit es niemandem noch einmal passiert.
+
+**Was ich von dir bräuchte:** ein kurzes Bildschirmvideo vom Gerät (Back aus der Race-Ansicht). Daran kann ich abzählen, ob die Leiste *nach* dem Pop einschwebt oder ob sie mit ihm kommt und nur langsam einblendet — das sind zwei verschiedene Ursachen und zwei verschiedene Fixes. Ohne das rate ich, und ich habe schon einmal geraten.
+
+Fünfzehn neue Tests (11 Unit, 4 UI). 219 iOS-Tests, 27 watchOS-Tests, 7 UI-Tests, beide Ziele bauen, Snapshot-Referenzen neu aufgenommen.
+
+Drei bestehende Tests hielten das alte Verhalten fest und wurden nachgezogen: die „Z2"-Kurzform, der Quellenname in der Log-Zeile (den CUR-35 tags zuvor erst eingeführt hatte), und ein geschütztes Leerzeichen in meiner eigenen Erwartung.
+
+#### Link to completed work

@@ -105,7 +105,19 @@ struct HomeView: View {
         HStack(alignment: .firstTextBaseline) {
             Text("THIS WEEK").kicker(13, color: Theme.bright, tracking: 0.12)
             Spacer()
-            Text("goal \(Int(store.weeklyGoalKm)) km").font(.stat(13, weight: .regular)).foregroundStyle(Theme.muted)
+            // The goal is stated here and was only settable three taps away,
+            // behind a screen that does not mention it. Same menu as Settings.
+            WeeklyGoalMenu(goalKm: $store.weeklyGoalKm) {
+                HStack(spacing: 5) {
+                    Text("goal \(Int(store.weeklyGoalKm)) km")
+                        .font(.stat(13, weight: .regular))
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                }
+                .foregroundStyle(Theme.muted)
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
+            }
         }
         HStack(alignment: .firstTextBaseline, spacing: headline ? 12 : 10) {
             Text(Format.km(store.weekKm, decimals: 1))

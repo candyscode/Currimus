@@ -116,8 +116,10 @@ struct RunEditView: View {
     /// Currimus is only reading this one, so it must not offer to rewrite it.
     private var imported: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Recorded by \(original.name)").font(.sg(16, weight: .semibold))
-            Text("This run came from Apple Health. Currimus counts it towards every total, but the run itself belongs to the app that recorded it — edit or delete it there.")
+            // Not "Recorded by <name>": the name is Currimus' own now, and
+            // the source it replaced was a device name half the time anyway.
+            Text("Recorded outside Currimus").font(.sg(16, weight: .semibold))
+            Text("This run came from Apple Health. Currimus counts it towards every total, but the run itself belongs to the app that recorded it — edit or delete it there, or in the Fitness app.")
                 .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
         }
     }

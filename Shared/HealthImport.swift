@@ -513,7 +513,12 @@ enum HealthImport {
             id: workout.uuid,
             date: workout.startDate,
             type: .quick,
-            name: workout.sourceRevision.source.name,
+            // Not `sourceRevision.source.name`. That is the recording app's
+            // name only for third-party apps — for anything Apple's own Workout
+            // app recorded it is the *device* name, so the log filled up with
+            // rows reading "Apple Watch von Andreas", which says nothing about
+            // the run and says it over and over.
+            name: RunNaming.defaultName(for: workout.startDate, isIndoor: indoor),
             distanceKm: meters / 1000,
             duration: workout.duration,
             avgHR: Int((hr ?? 0).rounded()),

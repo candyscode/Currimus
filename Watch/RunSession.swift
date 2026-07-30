@@ -265,14 +265,11 @@ final class RunSession: NSObject, ObservableObject {
     }
 
     private var defaultName: String {
-        switch type {
-        case .trail: return String(localized: "Trail run")
-        case .pacer: return String(localized: "Pacer \(Format.pace(pacerTarget))")
-        case .quick:
-            let hour = Calendar.current.component(.hour, from: .now)
-            return hour < 11 ? String(localized: "Morning Run")
-                : (hour < 17 ? String(localized: "Run") : String(localized: "Evening Run"))
-        }
+        // A pacer run is named after what it was for; everything else takes the
+        // shared rule, so a run Currimus recorded and one read back out of
+        // Health are named the same way.
+        guard type != .pacer else { return String(localized: "Pacer \(Format.pace(pacerTarget))") }
+        return RunNaming.defaultName(for: startDate ?? .now, type: type)
     }
 
     private func resetMetrics() {

@@ -60,11 +60,7 @@ struct SettingsScreen: View {
                         }
                     }.buttonStyle(.plain)
                     hairline
-                    Menu {
-                        ForEach(Array(stride(from: 20, through: 90, by: 5)), id: \.self) { goal in
-                            Button("\(goal) km") { store.weeklyGoalKm = Double(goal) }
-                        }
-                    } label: {
+                    WeeklyGoalMenu(goalKm: $store.weeklyGoalKm) {
                         ChevronRow(title: "Weekly goal") { Text("\(Int(store.weeklyGoalKm)) km") }
                     }
                 }
@@ -436,11 +432,21 @@ struct DistanceDefaultWheel: View {
 
 struct HRZonesView: View {
     @EnvironmentObject private var store: RunStore
+    @State private var explaining: Explanation?
 
     var body: some View {
         PushedScreen(title: "Heart rate zones") {
             VStack(alignment: .leading, spacing: 0) {
-                Text("MAX HEART RATE").kicker(13, color: Theme.bright, tracking: 0.12)
+                HStack(spacing: 2) {
+                    Text("MAX HEART RATE").kicker(13, color: Theme.bright, tracking: 0.12)
+                    if let derivation = store.zones.derivation {
+                        InfoButton(label: "your max heart rate") {
+                            explaining = Explanation(title: String(localized: "Max heart rate"),
+                                                     body: derivation.maxExplanation)
+                        }
+                        .padding(.leading, -6)
+                    }
+                }
                 HStack(spacing: 20) {
                     Text("\(store.zones.maxHR)").font(.stat(72)).kerning(-2.9)
                     Spacer()
@@ -449,9 +455,6 @@ struct HRZonesView: View {
                 }
                 .padding(.top, 14)
 
-                if let derivation = store.zones.derivation {
-                    Explainer(markdown: derivation.maxExplanation, top: 10)
-                }
 
                 if let resting = store.zones.restingHR {
                     HStack {
@@ -478,7 +481,15 @@ struct HRZonesView: View {
                 .buttonStyle(.plain)
                 .padding(.top, 18)
 
-                Text("ZONES").kicker(13, color: Theme.bright, tracking: 0.12).padding(.top, 34)
+                HStack(spacing: 2) {
+                    Text("ZONES").kicker(13, color: Theme.bright, tracking: 0.12)
+                    InfoButton(label: "these boundaries") {
+                        explaining = Explanation(title: String(localized: "Your zones"),
+                                                 body: zoneExplanation + "\n\n" + maintenanceExplanation)
+                    }
+                    .padding(.leading, -6)
+                }
+                .padding(.top, 34)
                 VStack(spacing: 0) {
                     ForEach(1...5, id: \.self) { zone in
                         zoneRow(zone)
@@ -486,14 +497,9 @@ struct HRZonesView: View {
                     }
                 }
                 .padding(.top, 6)
-
-                Explainer(markdown: zoneExplanation, top: 18)
-
-                Text("HOW THESE ARE KEPT CURRENT").kicker(13, color: Theme.bright, tracking: 0.12)
-                    .padding(.top, 30)
-                Explainer(markdown: maintenanceExplanation, top: 10)
             }
         }
+        .explanationSheet($explaining)
     }
 
     /// Zones are re-read from Health on every launch, which is invisible by
