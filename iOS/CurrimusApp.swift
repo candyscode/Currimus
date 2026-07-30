@@ -141,8 +141,23 @@ struct RootView: View {
     }
 }
 
-/// One tab's navigation stack — owns its path, injects `pushRoute`, and hides
-/// the tab bar (with swipe-back restored) on pushed screens.
+/// One tab's navigation stack — owns its path and injects `pushRoute`.
+///
+/// The tab bar **stays** on pushed screens, which is both the platform's own
+/// behaviour and, measured, the only way to be rid of the gap Andi reported in
+/// CUR-36 #3. Hiding it cost 0.48 s of empty space on the way back (0.33 s on
+/// device), because SwiftUI restores the bar well after the pop animation has
+/// finished and then snaps it in without an animation at all. Three other ways
+/// of asking for the same hiding were measured — driving it from navigation
+/// state (2.3 s, worse), the iOS 26 `toolbarVisibility` spelling (no change),
+/// and removing the swipe-back probe (0.40 s) — and none of them moved it.
+///
+/// Fading it ourselves was the other idea and is not reachable: SwiftUI hands
+/// out no handle on the bar, and the iOS 26 floating bar is not a `UITabBar` in
+/// the view hierarchy to go looking for either.
+///
+/// What this costs is content scrolling under a translucent bar, which is what
+/// it does on the root screens already.
 struct TabRoot<Root: View>: View {
     @State private var path: [Route]
     private let root: Root
@@ -158,7 +173,6 @@ struct TabRoot<Root: View>: View {
                 .navigationDestination(for: Route.self) { route in
                     routeDestination(route)
                         .environment(\.pushRoute) { path.append($0) }
-                        .toolbar(.hidden, for: .tabBar)
                 }
         }
         .environment(\.pushRoute) { path.append($0) }

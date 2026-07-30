@@ -1149,7 +1149,35 @@ Sieben der acht Punkte sind drin. **Punkt 3 nicht** — dazu unten, und das ist 
 
 **Nebenbei gefunden und behoben: `GlassIconButton` hatte keine Accessibility-Labels.** Back, Close und Settings wurden von VoiceOver als „button" angesagt, sonst nichts. Ein Screen, dessen einziger Ausgang keinen Namen hat, ist ein Screen ohne Ausgang.
 
-#### Punkt 3 · die Tab-Bar-Verzögerung — nicht behoben
+#### Punkt 3 · die Tab-Bar-Verzögerung — behoben, nachdem sie messbar wurde
+
+**Nachtrag.** Andi hat ein Bildschirmvideo geliefert, und damit wurde aus Raten Messen. Ich habe die Einzelbilder mit AVFoundation extrahiert und die Helligkeit des Tab-Bar-Streifens Bild für Bild gerechnet:
+
+| | |
+|---|---|
+| Pop-Animation fertig | 1,467 s |
+| Tab-Bar erscheint | 1,800 s |
+| **Lücke** | **0,333 s** |
+
+Und sie fährt nicht ein, sie **springt** — von einem 60-Hz-Bild aufs nächste. Es ist keine langsame Animation, es ist eine späte.
+
+Dann dieselbe Messung auf dem Simulator nachgebaut (Bildschirmaufnahme während der UI-Test zurücktippt, Frames raus, Streifen messen). Der Simulator reproduziert es mit **0,483 s**, und damit ließen sich Kandidaten vergleichen statt vermuten:
+
+| Variante | Lücke |
+|---|---|
+| unverändert | 0,483 s |
+| Sichtbarkeit aus dem Navigationspfad (mein erster Versuch) | **2,300 s** — deutlich schlechter |
+| `toolbarVisibility` statt `toolbar` (iOS-26-Schreibweise) | 0,500 s — unverändert |
+| Swipe-Back-Probe aus dem gepushten Screen genommen | 0,400 s — fast unverändert |
+| **gar nicht ausblenden** | **keine Lücke** |
+
+Dein Vorschlag mit dem Einfaden war der richtige Instinkt und ich habe ihn gebaut: `TabBarFade`, die die Leiste selbst auf- und abblendet statt sie vom System verstecken zu lassen. Er ist wieder draußen, weil er **nicht erreichbar** ist: SwiftUI gibt keinen Griff auf die Leiste heraus, `tabBarController` ist von dort nil, und die schwebende iOS-26-Leiste ist auch keine `UITabBar`, nach der man die View-Hierarchie durchsuchen könnte. Was der Versuch immerhin gezeigt hat: bei Alpha 0 bleibt die Leiste im Accessibility-Baum — VoiceOver wäre auf einem gepushten Screen weiter darauf gelaufen.
+
+Also die Variante, die du selbst ins Spiel gebracht hast: **die Leiste bleibt stehen.** Keine Lücke, weil nichts wiederhergestellt wird, und es ist ohnehin das Standardverhalten der Plattform — `hidesBottomBarWhenPushed` ist opt-in. Dein Einwand zum Verdecken trägt: man kann scrollen. Ein UI-Test prüft, dass das auch am Ende eines langen Screens gilt (der „Delete run"-Button im Run-Detail ist nach dem Scrollen erreichbar — der Safe-Area-Inset kommt automatisch, sobald die Leiste da ist).
+
+Übrig bleibt eine Sache, die du sehen solltest: auf gepushten Screens leuchtet jetzt der Tab, aus dem man gekommen ist. Das ist iOS-Standard, aber es ist eine sichtbare Änderung am Design.
+
+#### Punkt 3 · der erste Anlauf (zur Nachvollziehbarkeit)
 
 Ich habe es versucht und **messbar nichts erreicht**, deshalb ist die Änderung wieder draußen statt als Fix verkauft.
 
