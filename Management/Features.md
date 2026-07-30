@@ -1166,3 +1166,5 @@ Fünfzehn neue Tests (11 Unit, 4 UI). 219 iOS-Tests, 27 watchOS-Tests, 7 UI-Test
 Drei bestehende Tests hielten das alte Verhalten fest und wurden nachgezogen: die „Z2"-Kurzform, der Quellenname in der Log-Zeile (den CUR-35 tags zuvor erst eingeführt hatte), und ein geschütztes Leerzeichen in meiner eigenen Erwartung.
 
 #### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/d407a09
