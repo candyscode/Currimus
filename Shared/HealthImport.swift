@@ -150,7 +150,13 @@ enum HealthImport {
         if case .failed = lookup { return .unavailable }
         var found = lookup.workout
         if found == nil, !run.isImported {
-            found = await ownWorkouts(matching: run, in: store).first
+            // The other half of the same question, and it used to swallow its
+            // error: a failed query looked exactly like "no such workout", so
+            // a rebuild interrupted by a locking phone marked every remaining
+            // run as final.
+            let own = await ownWorkouts(matching: run, in: store)
+            if case .failed = own { return .unavailable }
+            found = own.workouts.first
         }
         guard let workout = found else { return .noWorkout }
         let samples = await heartRateSamples(of: workout, in: store)
@@ -378,7 +384,7 @@ enum HealthImport {
 
         var workouts: [HKWorkout] = []
         for run in mine {
-            workouts.append(contentsOf: await ownWorkouts(matching: run, in: store))
+            workouts.append(contentsOf: await ownWorkouts(matching: run, in: store).workouts)
         }
         guard !workouts.isEmpty else { return .nothingFound }
 
@@ -397,7 +403,18 @@ enum HealthImport {
     /// The workouts Currimus itself saved for this run. Queried over a window
     /// around the run rather than by identifier: the log's id is Currimus', the
     /// workout's is Health's, and the two were never tied together.
-    private static func ownWorkouts(matching run: Run, in store: HKHealthStore) async -> [HKWorkout] {
+    /// Several workouts, or the admission that the question could not be put.
+    private enum WorkoutsLookup {
+        case found([HKWorkout])
+        case failed
+
+        var workouts: [HKWorkout] {
+            if case .found(let workouts) = self { return workouts }
+            return []
+        }
+    }
+
+    private static func ownWorkouts(matching run: Run, in store: HKHealthStore) async -> WorkoutsLookup {
         let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             HKQuery.predicateForWorkouts(with: .running),
             HKQuery.predicateForSamples(
@@ -405,21 +422,23 @@ enum HealthImport {
                 end: run.date.addingTimeInterval(run.duration + matchWindow)
             ),
         ])
-        let found: [HKWorkout] = await withCheckedContinuation { continuation in
+        let lookup: WorkoutsLookup = await withCheckedContinuation { continuation in
             let query = HKSampleQuery(
                 sampleType: .workoutType(),
                 predicate: predicate,
                 limit: HKObjectQueryNoLimit,
                 sortDescriptors: nil
-            ) { _, samples, _ in
-                continuation.resume(returning: samples as? [HKWorkout] ?? [])
+            ) { _, samples, error in
+                if error != nil { return continuation.resume(returning: .failed) }
+                continuation.resume(returning: .found(samples as? [HKWorkout] ?? []))
             }
             store.execute(query)
         }
-        return found.filter {
+        guard case .found(let found) = lookup else { return .failed }
+        return .found(found.filter {
             $0.sourceRevision.source.bundleIdentifier.hasPrefix(ownBundlePrefix)
                 && isSameOuting(start: $0.startDate, as: run)
-        }
+        })
     }
 
     private static func routes(of workout: HKWorkout, in store: HKHealthStore) async -> [HKObject] {

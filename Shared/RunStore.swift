@@ -98,6 +98,10 @@ final class RunStore: ObservableObject {
     private var cachedLatestBenchmark: LatestBenchmark??
     private var cachedFastestPaceOfMonth: Set<UUID>?
     private var cachedPrediction: RunAnalytics.Prediction??
+    /// The day the cached prediction was worked out on. Its recent-form window
+    /// is counted back from "now", so the answer ages even when the log does
+    /// not.
+    private var predictionDay: Date?
     /// Grouping and sorting the whole log ran on every body pass of the Log
     /// screen — including every tap of a checkbox in its marking mode.
     private var cachedMonths: [LogFilter: [(month: Date, runs: [Run])]] = [:]
@@ -112,6 +116,7 @@ final class RunStore: ObservableObject {
         cachedMonths = [:]
         cachedLogText = [:]
         cachedPrediction = nil
+        predictionDay = nil
     }
 
     var lastRun: Run? { allRuns.first }
@@ -260,7 +265,10 @@ final class RunStore: ObservableObject {
         case .unavailable:
             // Health could not answer — the device may still be locked, or
             // access not granted yet. Marking this as done would tell the
-            // runner everything was rebuilt when nothing was.
+            // runner everything was rebuilt when nothing was, and leaving it
+            // marked as *attempted* would mean nothing tries again until the
+            // app is relaunched.
+            attemptedThisSession.remove(run.id)
             return
         }
 
@@ -282,12 +290,18 @@ final class RunStore: ObservableObject {
             importedRuns[index].zoneDistanceKm = detail.zoneDistanceKm
             if !detail.splits.isEmpty { importedRuns[index].splits = detail.splits }
             importedRuns[index].gradeAdjustedSecPerKm = detail.gradeAdjustedSecPerKm
+            // Health has now given everything it holds for this run. If that
+            // still leaves it short — a route with no heart-rate trace beside
+            // it, or no route at all to take a gradient from — then no future
+            // rebuild can do better, and it should stop being offered.
+            if needsRebuild(importedRuns[index]) { knownUnrebuildable.insert(run.id) }
         } else if let index = runs.firstIndex(where: { $0.id == run.id }) {
             // One of ours, recorded before it kept distance per zone. Its own
             // splits and zone seconds stay — they were measured live and are
             // the better record.
             runs[index].zoneDistanceKm = detail.zoneDistanceKm
             runs[index].gradeAdjustedSecPerKm = detail.gradeAdjustedSecPerKm
+            if needsRebuild(runs[index]) { knownUnrebuildable.insert(run.id) }
         }
     }
 
@@ -355,6 +369,9 @@ final class RunStore: ObservableObject {
         allRuns.filter { needsRebuild($0) && !knownUnrebuildable.contains($0.id) }
     }
 
+    /// Test seam: what a full-but-empty answer from Health does to the queue.
+    func markUnrebuildableForTesting(_ id: UUID) { knownUnrebuildable.insert(id) }
+
     /// Whether Health could still add something to this run.
     ///
     /// A treadmill run is asked only for its zone distance: it has no route,
@@ -398,18 +415,19 @@ final class RunStore: ObservableObject {
     /// which manufactures an empty one when the file is missing: an indoor run
     /// has no route and never will, so inferring "not fetched yet" from an
     /// empty route re-queried Health on every single visit.
+    /// One rule for both, because two rules meant the background fill spent
+    /// its budget choosing runs the hydration then declined to touch — and
+    /// never marked them, so it chose them again on the next foreground.
     private func needsHydration(_ run: Run) -> Bool {
-        guard !attemptedThisSession.contains(run.id) else { return false }
-        guard let stored = RunSampleStore.load(run.id) else { return true }
-        // A run with zones but no route is either indoors or was fetched
-        // before Health granted the route type — worth one ask per session,
-        // which `attemptedThisSession` bounds.
-        return stored.route?.isEmpty ?? true
+        guard !attemptedThisSession.contains(run.id),
+              !knownUnrebuildable.contains(run.id) else { return false }
+        return needsRebuild(run)
     }
 
     /// Runs asked about in this session — background work does not ask twice.
-    /// Published so the Settings row's count follows along while it is open.
-    @Published private var attemptedThisSession: Set<UUID> = []
+    /// Not published: it does not feed the count, and republishing it fired a
+    /// re-render of every observing view once per run of a backfill.
+    private var attemptedThisSession: Set<UUID> = []
     /// Runs Health answered for and had nothing to give. Final, unlike a query
     /// that could not run at all.
     @Published private var knownUnrebuildable: Set<UUID> = []
@@ -825,9 +843,11 @@ final class RunStore: ObservableObject {
         // rather than on the log, and a race that passed midnight with the app
         // open would otherwise keep forecasting a finish it had already run.
         guard let race, !race.isPast else { return nil }
-        if let cachedPrediction { return cachedPrediction }
+        let today = Calendar.current.startOfDay(for: .now)
+        if let cachedPrediction, predictionDay == today { return cachedPrediction }
         let built = RunAnalytics.predict(race: race, runs: allRuns)
         cachedPrediction = .some(built)
+        predictionDay = today
         return built
     }
 

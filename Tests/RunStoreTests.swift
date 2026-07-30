@@ -390,6 +390,21 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(store.runsAwaitingRebuild, 1, "only the one that can still gain something")
     }
 
+    func testARunHealthCannotEnrichStopsBeingOffered() {
+        let store = makeStore()
+        // A route but no heart-rate trace — a run somebody recorded without a
+        // strap. Health holds the workout, answers in full, and there is still
+        // no zone distance to be had. Offering a rebuild for ever would be a
+        // promise the button cannot keep.
+        var strapless = run("Strava", km: 10, minutes: 50, imported: true)
+        strapless.zoneDistanceKm = nil
+        store.importedRuns = [strapless]
+        XCTAssertEqual(store.runsAwaitingRebuild, 1)
+
+        store.markUnrebuildableForTesting(strapless.id)
+        XCTAssertEqual(store.runsAwaitingRebuild, 0)
+    }
+
     // MARK: - Zones from another app's heart-rate trace
 
     /// Zones at max 190: 115 / 133 / 152 / 171.

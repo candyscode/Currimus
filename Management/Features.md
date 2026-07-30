@@ -784,6 +784,16 @@ Geprüft und in Ordnung: die `distanceTrace`-Umstellung verhält sich identisch 
 4. **Die gecachte Prognose fror `isPast` ein.** Der Cache hängt am Log, die Frage „ist das Rennen vorbei" aber an der Uhr: mit offener App über Mitternacht hätte der Screen weiter eine Prognose für ein bereits gelaufenes Rennen gezeigt. Die Prüfung liegt jetzt vor dem Cache.
 5. Kleinigkeiten: ein abgebrochener Rebuild konnte noch einen Fortschrittsstand über den neuen schreiben, und die beiden Mengen, die den Zähler speisen, waren nicht published — die Settings-Zeile konnte veralten, während man sie ansieht.
 
+**Zweiter Nachtrag: `/code-review` über den Fix-Commit — sieben weitere Funde.** Der erste davon traf wieder exakt die Stelle, die ich als repariert gemeldet hatte.
+
+1. **Die Trennung „Health hat nichts" / „Health kann nicht" hatte ich nur an einer von zwei Abfragen angebracht.** Die zweite (das Zeitfenster-Match für eigene Läufe) verschluckte ihren Fehler weiter — ein Rebuild, währenddessen sich das Telefon sperrt, hätte jeden verbleibenden eigenen Lauf als endgültig markiert und „All done" gemeldet. Also genau der Fehler, den der Commit zu beheben behauptete.
+2. **Ein Lauf mit Route, aber ohne Herzfrequenzspur** (mit Strava ohne Gurt aufgezeichnet) kam nie aus der Warteschlange: Health antwortet vollständig, es gibt trotzdem keine Zonen-Distanz, und markiert wurde nichts. Jetzt gilt: wenn eine *vollständige* Antwort den Lauf immer noch unvollständig lässt, kann kein späterer Rebuild mehr helfen — er wird endgültig markiert.
+3. **Das Nachladen wählte nach der einen Regel aus und die Hydrierung lehnte nach einer anderen ab** — die ausgewählten Läufe taten nichts, wurden nicht als versucht vermerkt und wurden beim nächsten Vordergrundwechsel erneut gewählt. Wieder Aushungern, nur an anderer Stelle. Jetzt eine Regel für beide.
+4. **Eine Abfrage, die gar nicht laufen konnte, zählte als Versuch.** Erster Start nach einem Neustart vor dem Entsperren: zwölf Läufe als versucht markiert, und bis zum nächsten App-Start versucht es nichts erneut.
+5. Punkt 2 deckt auch ab, was ich mit der Laufband-Ausnahme nur für Indoor-Läufe gelöst hatte — jeder Lauf ohne Route ist betroffen, nicht nur der auf dem Band.
+6. `attemptedThisSession` als `@Published` brachte für den Zähler nichts und löste pro nachgeladenem Lauf ein Neuzeichnen aller beobachtenden Views aus.
+7. Der Prognose-Cache fror weiterhin die Uhr ein — nicht mehr bei `isPast`, aber beim 120-Tage-Fenster. Er ist jetzt an den Kalendertag gebunden.
+
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/7910676
