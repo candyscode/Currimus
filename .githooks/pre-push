@@ -18,15 +18,33 @@ set -o pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 1
 IOS_SIM="${IOS_SIM:-iPhone 17 Pro}"
+WATCH_SIM="${WATCH_SIM:-Apple Watch Ultra 3 (49mm)}"
 
-echo "▶ pre-push · unit + simulation tests…"
-if ! xcodebuild test -project Currimus.xcodeproj -scheme CurrimusTests -configuration Debug \
-       -destination "platform=iOS Simulator,name=$IOS_SIM" -derivedDataPath build -quiet \
-       >/tmp/currimus-prepush-tests.log 2>&1; then
-  tail -30 /tmp/currimus-prepush-tests.log >&2
-  echo "" >&2
-  echo "✗ pre-push blocked: tests failed (full log: /tmp/currimus-prepush-tests.log)" >&2
-  echo "  bypass this push with:  git push --no-verify" >&2
-  exit 1
+run_suite() {
+  local label="$1" scheme="$2" destination="$3" log="/tmp/currimus-prepush-$2.log"
+  echo "▶ pre-push · $label…"
+  if ! xcodebuild test -project Currimus.xcodeproj -scheme "$scheme" -configuration Debug \
+         -destination "$destination" -derivedDataPath build -quiet >"$log" 2>&1; then
+    tail -30 "$log" >&2
+    echo "" >&2
+    echo "✗ pre-push blocked: $label failed (full log: $log)" >&2
+    echo "  bypass this push with:  git push --no-verify" >&2
+    exit 1
+  fi
+  echo "✓ pre-push · $label passed"
+}
+
+run_suite "unit + simulation tests" CurrimusTests \
+          "platform=iOS Simulator,name=$IOS_SIM"
+
+# The watch suite covers `RunSession` — the run itself, and the only substantial
+# type with no iOS counterpart. It is gated here for the reason it was written:
+# a target nothing runs automatically is a target that rots, which is exactly
+# how RunSession came to have no tests for a year. Set SKIP_WATCH_TESTS=1 for a
+# push that cannot wait for a second simulator to boot.
+if [ "${SKIP_WATCH_TESTS:-0}" = "1" ]; then
+  echo "⏭  pre-push · watch tests skipped (SKIP_WATCH_TESTS=1)"
+else
+  run_suite "watch session tests" CurrimusWatchTests \
+            "platform=watchOS Simulator,name=$WATCH_SIM"
 fi
-echo "✓ pre-push · tests passed"
