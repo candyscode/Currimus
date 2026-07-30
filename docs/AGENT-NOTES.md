@@ -145,10 +145,27 @@ to reintroduce:
   `run.classification` (which walks the splits twice) are precomputed once per
   log change in `RunStore.logText`. Do not put formatting back into `LogRow`.
 
-## Demo settings leak into the app group
+## Demo mode is sealed off from the app group (was not, until CUR-31)
 
-`RunStore.persistSettings()` writes even in demo mode (the widget has no other
-way to learn the goal), so a `-demo 1 -zones derived` run leaves its injected
-max HR in the real app-group defaults on that simulator. Harmless on a device;
-on this machine it means a snapshot reference can be recorded against a max HR
-some earlier run left behind. Worth knowing before chasing a phantom diff.
+A `-demo 1` store now reads nothing from the shared defaults and writes nothing
+to them: its settings are the plain defaults, every time. So a demo screenshot
+is a picture of the demo data and nothing else.
+
+Worth knowing because the old behaviour cost real time. `persistSettings()` used
+to write even in demo mode, and `loadSettings()` ran unconditionally, so a
+`-demo 1 -zones derived` run left its injected max HR in that simulator's app
+group and **every later demo run read it back**. The symptom was a watch demo run
+sitting in zone 5 from end to end with its caption stuck on "MAX" — against a
+stray `maxHR: 136` no screen mentioned. If you ever see a demo run whose numbers
+cannot come from `SampleData`, check whether that seal has been broken again:
+
+```bash
+python3 -c "
+import plistlib, json
+p='<simulator>/data/Containers/Shared/AppGroup/<id>/Library/Preferences/group.com.currimus.app.plist'
+print(json.loads(plistlib.load(open(p,'rb'))['settings.v1']))"
+```
+
+The stale values may still be sitting in an app group on this machine. They are
+harmless now — `testADemoStoreNeitherReadsNorWritesTheSharedSettings` is what
+keeps them harmless.

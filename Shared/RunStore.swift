@@ -63,7 +63,12 @@ final class RunStore: ObservableObject {
             importedRuns = Self.loadImported(from: defaults)
             race = Self.loadRace(from: defaults)
         }
-        loadSettings()
+        // A demo store reads nothing and writes nothing: its settings are the
+        // defaults, every time. See `persistSettings` for what this used to
+        // cost — the short version is that a demo run inherited whatever a
+        // previous debug session had left in the real app group, so the watch's
+        // whole simulated run sat in zone 5 against a stray max HR of 136.
+        if !self.isDemo { loadSettings() }
         isLoading = false
         // Seed the shared store on first launch: without this the widget shows
         // the default goal until the user happens to change a setting.
@@ -611,14 +616,18 @@ final class RunStore: ObservableObject {
     }
 
     private func persistSettings() {
-        guard !isLoading else { return }
-        // On the io queue, not here. This fires on every single toggle in
-        // Settings, and a JSON encode plus three synchronous `UserDefaults`
-        // writes on the main thread is precisely the work that makes a switch
-        // stutter under the finger. The queue is serial, so the order the
-        // settings were changed in is the order they land in; the widget reads
-        // them on its own tick and cannot tell the difference. Demo builds
-        // included — the widget has no other way to learn the goal.
+        // Demo builds excluded, like every other write.
+        //
+        // This used to write anyway, on the argument that the widget had no
+        // other way to learn the goal. It bought nothing: `write(runs)` is
+        // already skipped in demo mode, so the widget saw demo settings beside
+        // real runs — a mixture of two states, worse than either. What it cost
+        // was real. A `-demo 1 -zones derived` run left its injected max heart
+        // rate in the app group of that simulator, and every later demo run
+        // read it back: the watch's simulated run then sat in zone 5 from end
+        // to end, its caption stuck on "MAX", and a snapshot reference recorded
+        // in that state was a picture of a stray number.
+        guard !isLoading, !isDemo else { return }
         nonisolated(unsafe) let defaults = self.defaults
         let settings = watchSettings
         let goal = weeklyGoalKm

@@ -909,14 +909,28 @@ Drei neue Fälle für die beiden Flatter-Pfade. 190 Tests grün (vorher 187).
 
 [ ] In Specification
 [ ] Open
-[X] WIP
-[ ] Done
+[ ] WIP
+[X] Done
 
 Aus dem Audit vom 30.07.2026. `RunStore.init` ruft `loadSettings()` unbedingt auf, und `persistSettings()` schreibt bewusst auch im Demo-Modus. Ein `-demo 1`-Lauf übernimmt damit, was eine frühere Debug-Sitzung in der App-Group hinterlassen hat.
 
 Beobachtet: im App-Group des Watch-Simulators lag `maxHR: 136`. Deshalb stand die Zonenleiste im ganzen Demo-Lauf auf Zone 5, die Caption sagte dauerhaft „MAX" statt „RUN", und die Summary „mostly 5". Auf iOS dasselbe mit `maxHR: 187` aus einem `-zones derived`-Lauf.
 
 Das ist mehr als ein Schönheitsfehler: die committeten Watch-Snapshot-Referenzen können gegen einen Fremdwert aufgenommen sein, und jede Beobachtung am Simulator ist unzuverlässig, solange das so ist. Der Demo-Pfad muss feste Zonen setzen statt die App-Group zu lesen.
+
+#### Agent Comments
+
+Beide Richtungen zugemacht: `loadSettings()` läuft im Demo-Modus nicht mehr, und `persistSettings()` hat jetzt denselben `!isDemo`-Guard wie jeder andere Schreibvorgang. Ein Demo-Store ist damit ein festes Bild und kein Fenster auf den echten.
+
+**Die Begründung für das Schreiben trug nicht.** Sie lautete „das Widget hat keinen anderen Weg, das Ziel zu erfahren" — aber `write(runs)` wird im Demo-Modus längst übersprungen, das Widget sah also Demo-Einstellungen neben echten Läufen. Eine Mischung aus zwei Zuständen ist schlechter als jeder der beiden einzeln. Gekostet hat es dagegen etwas: den ganzen zone-5-Lauf auf der Uhr.
+
+**Verifiziert am Simulator, mit dem Fremdwert absichtlich stehengelassen.** Die App-Group des Watch-Simulators enthält weiterhin `maxHR: 136`; der Demo-Lauf zeigt jetzt Caption „RUN", Zone 4 und die Nadel am unteren Rand — also die Zonen, die aus `HRZones()`-Defaults und dem simulierten Puls von ~157 folgen. Vorher: „MAX", Zone 5, Balken voll.
+
+`docs/AGENT-NOTES.md` beschrieb den Leak als Tatsache, die man kennen muss. Der Abschnitt beschreibt jetzt die Abdichtung, behält aber das Symptom und den plist-Befehl — falls die Naht je wieder aufgeht, ist das die Spur.
+
+Ein Test hält beide Richtungen fest. 191 Tests grün (vorher 190).
+
+#### Link to completed work
 
 ### CUR-32: Vier Zahlen, die etwas anderes behaupten, als sie messen
 

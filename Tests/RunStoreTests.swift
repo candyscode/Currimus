@@ -175,6 +175,34 @@ final class RunStoreTests: XCTestCase {
         XCTAssertNotNil(HRZones.changeSummary(from: second.zones, to: moved))
     }
 
+    /// A demo store is a fixed picture, not a window onto the real one.
+    ///
+    /// It used to read the shared settings and write them back, so a
+    /// `-demo 1 -zones derived` run left its injected max heart rate in the app
+    /// group and every later demo run inherited it — which is how the watch's
+    /// simulated run came to sit in zone 5 from end to end. See CUR-31.
+    func testADemoStoreNeitherReadsNorWritesTheSharedSettings() {
+        let real = makeStore()
+        real.zones = Self.derivedZones
+        real.weeklyGoalKm = 99
+        real.alwaysOnReduced = false
+        RunStore.flushPendingWrites()
+
+        let demo = RunStore(seeded: true, defaults: defaults, isDemo: true)
+        XCTAssertEqual(demo.zones.maxHR, HRZones().maxHR, "demo inherited a real max HR")
+        XCTAssertNil(demo.zones.derivation)
+        XCTAssertEqual(demo.weeklyGoalKm, 55)
+        XCTAssertTrue(demo.alwaysOnReduced)
+
+        // And it must not have written its own defaults over the real ones.
+        demo.weeklyGoalKm = 12
+        demo.zones = HRZones(maxHR: 136)
+        RunStore.flushPendingWrites()
+        let reloaded = makeStore()
+        XCTAssertEqual(reloaded.weeklyGoalKm, 99, "a demo run overwrote the real goal")
+        XCTAssertEqual(reloaded.zones.maxHR, 187, "a demo run overwrote the real max HR")
+    }
+
     private static var derivedZones: HRZones {
         HRZones(maxHR: 187, overrides: nil, restingHR: 48,
                 derivation: HRDerivation(maxSource: .measured, maxDate: .now, age: 38,
