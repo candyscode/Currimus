@@ -461,6 +461,7 @@ struct LogRowText: Equatable {
     var distance: String
     var pace: String
     var isTrail: Bool
+    var isIndoor: Bool
     /// The plain part of the second line.
     var detail: String
     /// The benchmark tag that closes the second line, drawn in signal.
@@ -472,6 +473,7 @@ struct LogRowText: Equatable {
         distance = Format.km(run.distanceKm)
         pace = Format.pace(run.paceSecPerKm)
         isTrail = run.isTrail
+        isIndoor = run.isTreadmill
 
         let clock = Format.clock(run.duration)
         if run.isImported {

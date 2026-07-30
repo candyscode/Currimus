@@ -61,10 +61,14 @@ enum SampleData {
                 slot = Slot(weekday: 7, kind: .intervals, km: 9, pace: 300, hr: 168)
             }
 
+            // One easy run a month happens on a treadmill — enough that the
+            // indoor tag, the empty map and the distance-sample reconstruction
+            // are all visible in a demo build.
+            let indoor = slot.kind == .easy && (daysBack / 7) % 4 == 2
             let hour = slot.kind == .tempo ? 6 : (slot.kind == .trail ? 8 : 7)
             let date = cal.date(bySettingHour: hour, minute: [58, 2, 15, 31][daysBack % 4], second: 0, of: day)!
             guard date <= .now else { continue }
-            runs.append(make(slot, date: date, sharpen: progress))
+            runs.append(make(slot, date: date, sharpen: progress, indoor: indoor))
         }
 
         // A recent 10K PR and a 5K PR so records/prediction have real bests.
@@ -74,7 +78,8 @@ enum SampleData {
         return runs.sorted { $0.date > $1.date }
     }
 
-    private static func make(_ slot: Slot, date: Date, sharpen: Double) -> Run {
+    private static func make(_ slot: Slot, date: Date, sharpen: Double,
+                             indoor: Bool = false) -> Run {
         let km = (slot.km * 100).rounded() / 100
         let whole = max(Int(km.rounded(.down)), 1)
 
@@ -104,7 +109,15 @@ enum SampleData {
         case .trail:     zones = [0.06, 0.30, 0.40, 0.20, 0.04]
         }
 
-        let (climb, descent, high, alt) = elevation(for: slot.kind, km: km)
+        // A treadmill has no route, no climb and nothing to draw.
+        let (climb, descent, high, alt) = indoor
+            ? (nil as Double?, nil as Double?, nil as Double?, nil as [Double]?)
+            : elevation(for: slot.kind, km: km)
+        // Built once: it is the run's track, its grade adjustment and, for a
+        // treadmill, the thing that is simply absent.
+        let track = indoor || alt == nil
+            ? nil
+            : route(km: km, duration: duration, altitudes: alt ?? [])
         let names: [Kind: String] = [
             .easy: "Easy run", .tempo: "Morning tempo", .intervals: "Intervals",
             .long: "Long run", .trail: "Ridge trail",
@@ -121,10 +134,12 @@ enum SampleData {
             zoneSeconds: zones.map { $0 * duration },
             climbMeters: climb, descentMeters: descent, highPointMeters: high,
             altitudeSamples: alt,
-            route: route(km: km, duration: duration, altitudes: alt),
+            route: track,
             zoneDistanceKm: zoneDistance(km: km, zoneSeconds: zones.map { $0 * duration }),
-            gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(
-                route: route(km: km, duration: duration, altitudes: alt), duration: duration),
+            isIndoor: indoor ? true : nil,
+            gradeAdjustedSecPerKm: track.flatMap {
+                RunAnalytics.gradeAdjustedPace(route: $0, duration: duration)
+            },
             // Quicker steps at quicker paces, as a real runner's cadence goes
             // — and a demo long run that sits under the mark, so the form hint
             // has something to fire on.

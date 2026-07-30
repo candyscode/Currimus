@@ -745,6 +745,8 @@ Beides behoben:
 - **Die Rekonstruktion braucht keine Route mehr.** Sie lief bisher über den GPS-Track; jetzt läuft sie über „zurückgelegte Distanz zum Zeitpunkt t" — und die schreibt die Uhr auch auf dem Laufband, als `distanceWalkingRunning`-Samples. Damit bekommen Indoor-Läufe Zone-2-Distanz *und* Kilometer-Splits wie jeder andere Lauf. Dieselbe Rechnung, nur eine andere Quelle für dieselbe Kurve.
 - **Der Indoor-Marker aus Health** (`HKMetadataKeyIndoorWorkout`) wird gelesen und angezeigt: die Karte sagt jetzt „Indoor run — nowhere to draw" mit Laufband-Symbol.
 
+**Nachtrag (Andi): stehen sie denn im Log?** Ja — unter *All* und unter *Road* (das heißt technisch „nicht Trail"), und sie zählen in jede Summe, jedes Wochenziel und jeden Pace-Schnitt. Nur ansehen konnte man es der Zeile nicht: gleiche Darstellung wie ein Lauf draußen, obwohl Route, Höhenmeter und die Art, wie die Distanz zustande kam, sich unterscheiden. Sie tragen jetzt ein `INDOOR`-Kürzel neben der Distanz — in gedämpftem Grau, nicht in Signal-Orange, weil es eine Tatsache ist und keine Auszeichnung. Ein Lauf pro Monat in den Demodaten ist jetzt ein Laufband-Lauf, damit Kürzel, leere Karte und die Rekonstruktion aus Distanz-Samples überhaupt sichtbar sind.
+
 Was Indoor-Läufe weiterhin nicht bekommen: eine Steigungskorrektur. Ohne Höhenprofil gibt es keine Steigung, und für ein flaches Laufband ist die angepasste Pace die Pace — die Steigungsfunktion mancher Bänder schreibt Health nichts Verwertbares.
 
 #### Link to completed work

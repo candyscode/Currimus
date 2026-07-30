@@ -293,6 +293,11 @@ struct LogRow: View {
                 HStack(spacing: 8) {
                     Text("\(text.distance) km").font(.stat(18))
                     if text.isTrail { TrailTag() }
+                    // Marked for the same reason trail is: a treadmill run
+                    // counts in every total, but it has no route, no climb and
+                    // a distance the watch worked out rather than measured —
+                    // and none of that is visible from the numbers alone.
+                    if text.isIndoor { RunTag(text: "INDOOR") }
                 }
                 detail
             }
@@ -320,11 +325,22 @@ struct LogRow: View {
 }
 
 struct TrailTag: View {
+    var body: some View { RunTag(text: "TRAIL", isAccent: true) }
+}
+
+/// The small outlined mark beside a distance — what kind of run this was,
+/// where that changes how the numbers should be read.
+struct RunTag: View {
+    var text: String
+    /// Indoor is a fact, not an achievement, so it does not take the accent.
+    var isAccent: Bool = false
+
     var body: some View {
-        Text("TRAIL")
+        let color = isAccent ? Theme.signal : Theme.dim
+        return Text(text)
             .font(.sg(10, weight: .bold)).kerning(1)
-            .foregroundStyle(Theme.signal)
+            .foregroundStyle(color)
             .padding(.horizontal, 6).padding(.vertical, 2)
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.signal.opacity(0.4), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(color.opacity(0.4), lineWidth: 1))
     }
 }
