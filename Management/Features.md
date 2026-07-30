@@ -883,12 +883,27 @@ Eine Ursache, drei Symptome: `WatchSettings` **ist** der persistierte Einstellun
 
 [ ] In Specification
 [ ] Open
-[X] WIP
-[ ] Done
+[ ] WIP
+[X] Done
 
 Aus dem Audit vom 30.07.2026. `ZoneCoach.update` setzt `lastFired = nil`, sobald der Cue kurz `nil` wird. Pendelt der Puls um eine Zonengrenze — was er ständig tut —, gilt der Cue bei der Rückkehr als „neu" und feuert sofort: der `leftZone`-Alarm bringt 3 Sekunden Dauervibration plus Vollbildwarnung alle zwei Sekunden statt der beabsichtigten 60-Sekunden-Kadenz. Per Test bewiesen.
 
 Das ist der Fehler, an dem Nutzer ein Vibrationsfeature dauerhaft abschalten.
+
+#### Agent Comments
+
+Der Zustand war „welcher Cue galt zuletzt" — und der wurde weggeworfen, sobald keiner galt. Er ist jetzt „welcher Cue **wurde zuletzt gespielt**, und wann", und der überlebt eine Pause. Damit ist ein Cue, der einen Tick aussetzt und wiederkommt, derselbe Cue und nicht news.
+
+Zwei Fälle brauchten eine Unterscheidung, sonst wäre es entweder weiterhin zu laut oder plötzlich zu stumm:
+
+- **Ein anderer Cue-Typ unterbricht weiter sofort.** Vom Zonenboden geradewegs durch die Decke zu korrigieren muss jetzt gesagt werden, nicht in vier Sekunden.
+- **Zwei `leftZone`-Alarme sind derselbe Typ**, und dort ist die Frage, ob es *schlimmer* wurde. Von Zone 3 auf 4 bei Ziel 2 ist eine neue Tatsache; von 4 zurück auf 3 ist derselbe Alarm aus etwas geringerer Entfernung und wartet seine Minute ab. Ohne das hätte ein Puls, der auf der 3/4-Grenze sitzt, jeden zweiten Tick alarmiert — ein zweiter Flatter-Pfad, der im ursprünglichen Befund noch nicht drin war und beim Umbau aufgefallen ist.
+
+**Ein bestehender Test hat die falsche Entscheidung festgehalten** und wurde ersetzt: `testReturningToTheMiddleClearsTheCadence` behauptete „drifting low again is news, whatever the clock says". Genau dieses „whatever the clock says" *war* der Fehler — ein Puls sitzt nicht still auf der 15-%-Linie, er flattert darüber. Der Nachfolger `testACueThatLapsedForATickDoesNotStartOver` prüft beides: Flattern schweigt, und nach der eigenen Kadenz spricht es wieder. Dazu kommt `testDriftingLowAgainMuchLaterStillSpeaks`, damit die Gegenrichtung nicht still verlorengeht.
+
+Drei neue Fälle für die beiden Flatter-Pfade. 190 Tests grün (vorher 187).
+
+#### Link to completed work
 
 ### CUR-31: Der Demo-Pfad liest die echten Einstellungen
 

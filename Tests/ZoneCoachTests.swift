@@ -59,12 +59,56 @@ final class ZoneCoachTests: XCTestCase {
         XCTAssertEqual(coach.update(zone: 2, position: 0.95, now: 1), .slowDown)
     }
 
-    func testReturningToTheMiddleClearsTheCadence() {
+    /// A cue that lapses and comes back is the same cue, not news.
+    ///
+    /// This test used to assert the opposite — "drifting low again is news,
+    /// whatever the clock says" — and that was the bug behind CUR-30. A heart
+    /// rate does not sit still on the 15 % line, it flutters across it, so
+    /// "whatever the clock says" meant a cue every other tick. Drifting low
+    /// again *is* news; it is news at the cue's own cadence.
+    func testACueThatLapsedForATickDoesNotStartOver() {
         var coach = coach()
         XCTAssertEqual(coach.update(zone: 2, position: 0.1, now: 0), .speedUp)
         XCTAssertNil(coach.update(zone: 2, position: 0.5, now: 1))
-        // Drifting low again is news, whatever the clock says.
-        XCTAssertEqual(coach.update(zone: 2, position: 0.1, now: 2), .speedUp)
+        XCTAssertNil(coach.update(zone: 2, position: 0.1, now: 2),
+                     "fluttering across the band edge must not re-fire")
+        // Once its own cadence has passed it says so again, lapse or no lapse.
+        XCTAssertEqual(coach.update(zone: 2, position: 0.1, now: 3.5), .speedUp)
+    }
+
+    /// Correcting properly and drifting back minutes later is a fresh cue.
+    func testDriftingLowAgainMuchLaterStillSpeaks() {
+        var coach = coach()
+        XCTAssertEqual(coach.update(zone: 2, position: 0.1, now: 0), .speedUp)
+        XCTAssertNil(coach.update(zone: 2, position: 0.5, now: 60))
+        XCTAssertEqual(coach.update(zone: 2, position: 0.1, now: 600), .speedUp)
+    }
+
+    /// The one that mattered: three seconds of buzzing plus a full-screen
+    /// warning must not restart every time the zone is briefly regained.
+    func testTheAlarmDoesNotRestartOnAOneTickReturnToTheZone() {
+        var coach = coach()
+        XCTAssertNil(coach.update(zone: 2, position: 0.5, now: 0))
+        XCTAssertEqual(coach.update(zone: 3, position: 0.5, now: 1), .leftZone(3))
+        for second in stride(from: 2.0, through: 20.0, by: 2) {
+            XCTAssertNil(coach.update(zone: 2, position: 0.5, now: second),
+                         "back inside the zone says nothing")
+            XCTAssertNil(coach.update(zone: 3, position: 0.5, now: second + 1),
+                         "and losing it again inside the minute is the same alarm")
+        }
+        XCTAssertEqual(coach.update(zone: 3, position: 0.5, now: 61), .leftZone(3))
+    }
+
+    /// Nor may it restart because the heart rate crossed a boundary between two
+    /// zones that are *both* wrong.
+    func testFlutteringBetweenTwoWrongZonesIsOneAlarm() {
+        var coach = coach()
+        XCTAssertNil(coach.update(zone: 2, position: 0.5, now: 0))
+        XCTAssertEqual(coach.update(zone: 4, position: 0.5, now: 1), .leftZone(4))
+        // Nearer the target than the alarm that already played: same alarm.
+        XCTAssertNil(coach.update(zone: 3, position: 0.5, now: 2))
+        XCTAssertNil(coach.update(zone: 4, position: 0.5, now: 3))
+        XCTAssertNil(coach.update(zone: 3, position: 0.5, now: 4))
     }
 
     // MARK: - Losing the zone

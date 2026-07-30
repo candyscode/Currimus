@@ -38,8 +38,16 @@ struct ZoneCoach {
     /// The zone the runner asked to be held in.
     var targetZone: Int
 
-    private var lastCue: Cue?
-    private var lastFired: TimeInterval?
+    /// The cue that last actually played, and when.
+    ///
+    /// Kept across a lapse, which is the whole point. It used to be cleared the
+    /// moment a cue stopped being true, so a cue that lapsed for one tick and
+    /// came back counted as *new* and fired at once — and a heart rate does not
+    /// sit still on a zone boundary, it flutters across it. Losing zone 2 for a
+    /// second, regaining it, losing it again bought three seconds of buzzing
+    /// and a full-screen warning every other tick, which is how a vibration
+    /// feature gets switched off for good.
+    private var fired: (cue: Cue, at: TimeInterval)?
     /// Whether the target zone has been reached at all yet.
     private var hasArrived = false
 
@@ -53,22 +61,38 @@ struct ZoneCoach {
     /// not connected is how a feature gets switched off for good.
     mutating func update(zone: Int?, position: Double, now: TimeInterval) -> Cue? {
         if zone == targetZone { hasArrived = true }
-        let cue = pending(zone: zone, position: position)
-        defer { lastCue = cue }
-        guard let cue else {
-            lastFired = nil
-            return nil
-        }
-        // A cue that has just changed fires immediately; one that is still
-        // true repeats on its own cadence, so standing at the bottom of the
-        // zone keeps telling the runner without buzzing every single second.
-        guard cue == lastCue, let lastFired else {
-            self.lastFired = now
-            return cue
-        }
-        guard now - lastFired >= Self.interval(for: cue) else { return nil }
-        self.lastFired = now
+        guard let cue = pending(zone: zone, position: position) else { return nil }
+        guard let fired else { return play(cue, at: now) }
+        // Something genuinely different is said at once; anything else — the
+        // same cue still true, or true again — waits for its own cadence.
+        if interrupts(cue, playing: fired.cue) { return play(cue, at: now) }
+        guard now - fired.at >= Self.interval(for: cue) else { return nil }
+        return play(cue, at: now)
+    }
+
+    private mutating func play(_ cue: Cue, at now: TimeInterval) -> Cue {
+        fired = (cue, now)
         return cue
+    }
+
+    /// Whether a cue is different enough from the one last played to cut that
+    /// one's cadence short.
+    ///
+    /// A different *kind* always is: overcorrecting from the bottom of the zone
+    /// straight through the top has to be said now, not four seconds from now.
+    ///
+    /// Two `leftZone` alarms are the same kind, and there the question is
+    /// whether it got worse. Drifting from zone 3 to zone 4 with a target of 2
+    /// is a new fact; falling back from 4 to 3 is the same alarm from a little
+    /// nearer and waits its turn. Treating every change of zone as news meant a
+    /// heart rate sitting on the 3/4 boundary alarmed on every other tick.
+    private func interrupts(_ cue: Cue, playing previous: Cue) -> Bool {
+        switch (cue, previous) {
+        case (.leftZone(let now), .leftZone(let before)):
+            return abs(now - targetZone) > abs(before - targetZone)
+        default:
+            return cue != previous
+        }
     }
 
     private func pending(zone: Int?, position: Double) -> Cue? {
