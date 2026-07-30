@@ -296,6 +296,25 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertLessThan(gap, 300 / 1.4)
     }
 
+    func testATreadmillRunIsMeasuredFromItsDistanceSamples() throws {
+        // No GPS at all: ten minutes, a kilometre every five, easy for the
+        // first half and hard for the second.
+        let trace: [RunAnalytics.DistancePoint] =
+            stride(from: 0, through: 600, by: 30).map { (km: Double($0) / 300, at: TimeInterval($0)) }
+        let heartRate: [(bpm: Int, at: TimeInterval)] =
+            stride(from: 0, through: 600, by: 10).map { (bpm: $0 < 300 ? 125 : 160, at: TimeInterval($0)) }
+
+        let distance = try XCTUnwrap(
+            RunAnalytics.zoneDistanceKm(trace: trace, heartRate: heartRate, zones: testZones))
+        XCTAssertEqual(distance[1], 1.0, accuracy: 0.05)
+        XCTAssertEqual(distance[3], 1.0, accuracy: 0.05)
+
+        // And its splits, so an indoor run can hold a record like any other.
+        let splits = RunAnalytics.splits(trace: trace)
+        XCTAssertEqual(splits.count, 2)
+        XCTAssertEqual(splits[0], 300, accuracy: 5)
+    }
+
     func testWithoutATrackThereIsNoGradientToRead() {
         XCTAssertNil(RunAnalytics.gradeAdjustedPace(route: [], duration: 900))
     }

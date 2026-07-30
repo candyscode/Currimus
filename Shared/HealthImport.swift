@@ -152,11 +152,21 @@ enum HealthImport {
         let trace = samples.map {
             (bpm: $0.bpm, at: $0.at.timeIntervalSince(workout.startDate))
         }
+        // A track when there is one, and otherwise the distance samples the
+        // watch wrote anyway — which is what a treadmill run has instead. It
+        // is the same arithmetic either way, and without this an indoor run
+        // could never contribute to zone-2 pace or hold a record.
+        var distance = RunAnalytics.distanceTrace(fromRoute: route)
+        if distance.count < 2 {
+            distance = await distanceTrace(of: workout, in: store)
+        }
         return WorkoutDetail(
             zoneSeconds: zoneSeconds(from: samples, zones: zones, end: workout.endDate),
             route: route,
-            zoneDistanceKm: RunAnalytics.zoneDistanceKm(route: route, heartRate: trace, zones: zones),
-            splits: RunAnalytics.splits(fromRoute: route),
+            zoneDistanceKm: RunAnalytics.zoneDistanceKm(trace: distance, heartRate: trace, zones: zones),
+            splits: RunAnalytics.splits(trace: distance),
+            // Gradients need a track; a treadmill has none, and a flat run's
+            // adjusted pace is its pace.
             gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(route: route,
                                                                   duration: workout.duration)
         )
@@ -233,6 +243,33 @@ enum HealthImport {
             }
             store.execute(query)
         }
+    }
+
+    /// Cumulative distance over the workout, from Health's own samples.
+    private static func distanceTrace(of workout: HKWorkout,
+                                      in store: HKHealthStore) async -> [RunAnalytics.DistancePoint] {
+        let samples: [HKQuantitySample] = await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: HKQuantityType(.distanceWalkingRunning),
+                predicate: HKQuery.predicateForSamples(withStart: workout.startDate,
+                                                       end: workout.endDate),
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+            ) { _, samples, _ in
+                continuation.resume(returning: samples as? [HKQuantitySample] ?? [])
+            }
+            store.execute(query)
+        }
+        // Each sample is the distance covered over its own interval, so they
+        // add up to the run.
+        var covered = 0.0
+        var points: [RunAnalytics.DistancePoint] = [(km: 0, at: 0)]
+        for sample in samples {
+            covered += sample.quantity.doubleValue(for: .meter()) / 1000
+            points.append((km: covered,
+                           at: max(sample.endDate.timeIntervalSince(workout.startDate), 0)))
+        }
+        return points
     }
 
     private static func routeSeries(of workout: HKWorkout,
@@ -379,6 +416,10 @@ enum HealthImport {
             .doubleValue(for: .count().unitDivided(by: .minute()))
         let climb = (workout.metadata?[HKMetadataKeyElevationAscended] as? HKQuantity)?
             .doubleValue(for: .meter())
+        // A treadmill run says so in its metadata, and saying it back is the
+        // difference between "no GPS track for this run" reading as a fault
+        // and reading as a fact.
+        let indoor = (workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool) == true
         // Cadence is steps over moving time. Most apps write the step count
         // with the workout; the ones that do not simply have no cadence, which
         // is a missing measurement rather than a zero.
@@ -404,6 +445,7 @@ enum HealthImport {
             zoneSeconds: [0, 0, 0, 0, 0],
             climbMeters: climb,
             imported: true,
+            isIndoor: indoor ? true : nil,
             cadenceSpm: cadence
         )
     }

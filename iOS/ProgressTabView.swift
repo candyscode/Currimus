@@ -214,7 +214,7 @@ struct ProgressScreen: View {
         // than estimated, and saying how many keeps that from looking like
         // runs going missing.
         return Text(unmeasured > 0
-                    ? base + String(localized: ". \(Format.plural(unmeasured, "run", "runs")) spent in zone 2 could not be measured exactly — no route or no heart-rate trace — and are left out rather than estimated.")
+                    ? base + String(localized: ". \(Format.plural(unmeasured, "run", "runs")) spent in zone 2 could not be measured exactly — no heart-rate trace, or nothing in Health saying how the distance came — and are left out rather than estimated.")
                     : base)
             .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)

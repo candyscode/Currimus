@@ -24,9 +24,15 @@ struct RaceView: View {
             Text("\(race.name.uppercased()) · \(race.date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).year()).uppercased())")
                 .kicker(13, color: Theme.bright, tracking: 0.12)
 
+            // A race that has been run counts the other way. This used to
+            // show its countdown straight through zero — "-3 DAYS", 136 pt.
             HStack(alignment: .firstTextBaseline, spacing: 16) {
-                Text("\(race.daysUntil())").font(.stat(136)).kerning(-6.8)
-                Text("DAYS").font(.sg(24, weight: .semibold)).kerning(2.4).foregroundStyle(Theme.signal)
+                Text("\(race.isPast ? race.daysSince : race.daysUntil())")
+                    .font(.stat(136)).kerning(-6.8)
+                Text(race.isPast ? "DAYS AGO" : "DAYS")
+                    .font(.sg(24, weight: .semibold)).kerning(2.4)
+                    .foregroundStyle(Theme.signal)
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
             .padding(.top, 4)
 
@@ -36,7 +42,11 @@ struct RaceView: View {
                     BigDetailStat(value: Format.pace(race.requiredPace), label: "REQUIRED /KM", accent: true).gx()
                 }
                 GridRow {
-                    if let p = store.prediction {
+                    if race.isPast {
+                        BigDetailStat(value: store.raceResult.map { Format.clock($0.duration) } ?? "—",
+                                      label: store.raceResult == nil ? "NO RUN THAT DAY" : "YOUR TIME",
+                                      accent: store.raceResult != nil).gx()
+                    } else if let p = store.prediction {
                         // The slower of the two models; the paragraph below
                         // breaks them apart.
                         BigDetailStat(value: Format.clock(p.headline),
@@ -108,6 +118,7 @@ struct RaceView: View {
     /// about race sharpness. Where they disagree, that gap is the most useful
     /// thing on this screen, and averaging it away would throw it out.
     private func predictionNote(_ race: Race) -> String {
+        if race.isPast { return resultNote(race) }
         guard let p = store.prediction else {
             return String(localized: "Run a 5 K, 10 K or half — or anything longer — and the prediction appears.")
         }
@@ -135,6 +146,25 @@ struct RaceView: View {
             note += String(localized: " Your longest run is still well short of the race, which neither model can see.")
         }
         return note
+    }
+
+
+    /// After the fact: how it went against the goal, or the plain admission
+    /// that no run in the log looks like that race.
+    private func resultNote(_ race: Race) -> String {
+        guard let result = store.raceResult else {
+            return String(localized: "That race day has passed, and no run in your log covers the distance on it. Set the next one when you have it.")
+        }
+        let delta = result.duration - race.goalTime
+        let against: String
+        if abs(delta) < 60 {
+            against = String(localized: "within a minute of your goal")
+        } else if delta < 0 {
+            against = String(localized: "\(Format.clock(-delta)) inside your goal")
+        } else {
+            against = String(localized: "\(Format.clock(delta)) over your goal")
+        }
+        return String(localized: "\(Format.km(result.distanceKm, decimals: 1)) km in **\(Format.clock(result.duration))**, \(against) of \(Format.clock(race.goalTime)). Set the next race when you have one — this screen goes back to counting down.")
     }
 
 }

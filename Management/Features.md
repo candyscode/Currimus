@@ -708,3 +708,46 @@ Es gibt eine, und zwar die kanonische: [Minetti et al. (2002)](https://journals.
 
 https://github.com/candyscode/Currimus/commit/ba5debb
 
+\n\n### CUR-25: Ein Rennen, das vorbei ist
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Rückfrage von Andi: Was passiert, wenn der Marathon gestern war? Gibt es dafür ein sinnvolles Handling?
+
+#### Agent Comments
+
+Nein, gab es nicht — an drei Stellen:
+
+- **Home ließ das Rennen verschwinden.** Der Block prüfte `!race.isPast`, und der Ersatz-Hinweis („Training toward a race? Set it up") erschien nur, wenn *gar kein* Rennen gesetzt war. Nach dem Renntag blieb also nur der Wochenblock: kein Ergebnis, kein Weg zurück zum Race-Screen, kein Angebot für das nächste.
+- **Der Race-Screen zählte durch die Null hindurch** — „-3" in 136 pt, daneben „DAYS".
+- **Prognose und Required Pace liefen weiter**, als stünde das Rennen noch bevor.
+
+Jetzt: der Countdown zählt nach dem Renntag andersherum („3 DAYS AGO"), die Prognose fällt weg, und an ihrer Stelle steht, **was tatsächlich passiert ist**. Currimus sucht dazu einen Lauf am Renntag über mindestens 95 % der Distanz — niemand öffnet mitten im Rennen eine App, um ein Häkchen zu setzen, und ein Marathon im Log am Marathontag ist kein Zufall. Der Text darunter stellt Zeit und Ziel gegenüber („42,4 km in **3:52:41**, 6:19 inside your goal of 3:59:00") oder sagt ehrlich, dass kein passender Lauf da ist. Home zeigt eine ruhige Zeile „Freiburg Marathon · 3 days ago", die dorthin führt.
+
+### CUR-26: Laufband-Läufe aus Apple Health
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Rückfrage von Andi: Wie behandeln wir Indoor-Läufe aus Apple Health?
+
+#### Agent Comments
+
+Sie wurden importiert und in alle Summen gezählt — aber alles, was an der GPS-Route hängt, fiel für sie aus: **keine Zone-2-Pace** (seit CUR-21 fallen sie damit ganz aus dem Graphen), **keine Splits** (und damit praktisch keine Chance auf einen 5K/10K-Rekord, weil nur die Durchschnitts-Pace des ganzen Laufs blieb), keine Steigungskorrektur. Und nirgends stand, dass es an der Halle lag: die Karte sagte „No GPS track for this run", was wie ein Fehler aussieht statt wie eine Tatsache.
+
+Beides behoben:
+
+- **Die Rekonstruktion braucht keine Route mehr.** Sie lief bisher über den GPS-Track; jetzt läuft sie über „zurückgelegte Distanz zum Zeitpunkt t" — und die schreibt die Uhr auch auf dem Laufband, als `distanceWalkingRunning`-Samples. Damit bekommen Indoor-Läufe Zone-2-Distanz *und* Kilometer-Splits wie jeder andere Lauf. Dieselbe Rechnung, nur eine andere Quelle für dieselbe Kurve.
+- **Der Indoor-Marker aus Health** (`HKMetadataKeyIndoorWorkout`) wird gelesen und angezeigt: die Karte sagt jetzt „Indoor run — nowhere to draw" mit Laufband-Symbol.
+
+Was Indoor-Läufe weiterhin nicht bekommen: eine Steigungskorrektur. Ohne Höhenprofil gibt es keine Steigung, und für ein flaches Laufband ist die angepasste Pace die Pace — die Steigungsfunktion mancher Bänder schreibt Health nichts Verwertbares.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-25
+

@@ -7,13 +7,53 @@
     " · TRAIL" : {
 
     },
+    " **%@** from your training — %lld km a week at %@ /km over the last eight weeks, after %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : " **%1$@** from your training — %2$lld km a week at %3$@ /km over the last eight weeks, after %4$@."
+          }
+        }
+      }
+    },
+    " %@ here has no GPS track, so it falls back to Currimus' own rule of thumb — roughly 0.4 s per metre climbed. Rebuild from Health in Settings to replace it." : {
+
+    },
     " Apple keeps its own copy of these zones and does not publish them to other apps, so the two can still differ by a beat or two where the underlying max heart rate differs. If Fitness shows something else, set the max here by hand and the boundaries follow." : {
 
     },
     " Change anything here by hand and the automatic update stops, until you tap Recalculate." : {
 
     },
+    " None of your trail runs carries a GPS track yet, so these use Currimus' own rule of thumb instead — roughly 0.4 s of the run's time attributed to each metre climbed, and less than half of that given back on the way down. Rebuild from Health in Settings to replace it with the real thing." : {
+
+    },
+    " Nothing in the last four months reached that distance, so the first number describes the shape you were in then." : {
+
+    },
+    " Same pace, %lld bpm higher than it used to be. Heat, fatigue or a hard block will do that." : {
+
+    },
+    " Same pace, %lld bpm lower than it used to be — that is fitness." : {
+
+    },
+    " Same pace, same heart rate." : {
+
+    },
+    " The second number is an extrapolation — your volume and pace sit outside the range that study covered, so read it as a direction rather than a time." : {
+
+    },
     " These are yours right now — you changed them by hand, so the automatic update leaves them alone until you tap Recalculate." : {
+
+    },
+    " Your longest run is still well short of the race, which neither model can see." : {
+
+    },
+    " Your speed is ahead of your training: that gap is long runs and weekly volume." : {
+
+    },
+    " Your training is ahead of your racing: the endurance is there, the sharpness is not." : {
 
     },
     "–" : {
@@ -22,8 +62,18 @@
     "—" : {
 
     },
-    ". Older runs count whole, so the early months are approximate." : {
+    ". %@ spent in zone 2 could not be measured exactly — no route or no heart-rate trace — and are left out rather than estimated." : {
 
+    },
+    "**%@** from your best %@ effort (%@), scaled to the distance after %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "**%1$@** from your best %2$@ effort (%3$@), scaled to the distance after %4$@."
+          }
+        }
+      }
     },
     "/km" : {
 
@@ -34,6 +84,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@ km in zone 2" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ km in zone 2"
           }
         }
       }
@@ -85,6 +145,9 @@
 
     },
     "%@ per kilometre, fastest" : {
+
+    },
+    "%@ read back out of Apple Health." : {
 
     },
     "%@ since %@" : {
@@ -146,9 +209,6 @@
     "%lld bpm" : {
 
     },
-    "%lld days" : {
-
-    },
     "%lld km" : {
 
     },
@@ -158,16 +218,6 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld of 5, %2$@"
-          }
-        }
-      }
-    },
-    "%lld runs · %@ km in zone 2" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld runs · %2$@ km in zone 2"
           }
         }
       }
@@ -184,6 +234,16 @@
     },
     "%lld selected" : {
 
+    },
+    "%lld steps a minute, where you normally hold about %lld at this pace. One run is not a trend — tired legs, a long day, new shoes and a headwind all do this. Worth a glance if it stays." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld steps a minute, where you normally hold about %2$lld at this pace. One run is not a trend — tired legs, a long day, new shoes and a headwind all do this. Worth a glance if it stays."
+          }
+        }
+      }
     },
     "%lld–%lld bpm" : {
       "localizations" : {
@@ -219,6 +279,9 @@
     "10 km" : {
 
     },
+    "All done" : {
+
+    },
     "Already have runs? Bring them in" : {
 
     },
@@ -226,9 +289,6 @@
 
     },
     "Appears once a couple of months carry runs spent in zone 2. Runs from other apps count too." : {
-
-    },
-    "Appears once a few easy runs sit at a similar pace" : {
 
     },
     "Apple Health only lets the app that recorded a run delete it, so Currimus cannot remove this one. Delete it in %@, or in the Fitness app, and it will disappear from Currimus on the next refresh." : {
@@ -274,6 +334,9 @@
 
     },
     "CURRIMUS" : {
+
+    },
+    "Currimus measures what it can and models the rest. Where it models, it says whose work it is using — here and on the screen that shows the number." : {
 
     },
     "Currimus reads your max heart rate and your resting heart rate from Apple Health every time it opens, and rebuilds the boundaries from them — fitness moves, and zones built on last year's numbers describe last year's runner. Max is the highest believable daily peak of the past year, resting is Health's own 60-day average, and the five zones split the span between them at 50 / 60 / 70 / 80 / 90 %, which is the model the Fitness app uses." : {
@@ -345,10 +408,32 @@
     "End the other workout, then try again." : {
 
     },
+    "Estimated from your age (%lld), after %@ — Apple Health has not seen a hard enough effort to measure it from yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Estimated from your age (%1$lld), after %2$@ — Apple Health has not seen a hard enough effort to measure it from yet."
+          }
+        }
+      }
+    },
+    "Estimated from your age." : {
+
+    },
+    "Estimating maximum heart rate from age, when Apple Health has never seen a hard effort to measure it from." : {
+
+    },
     "Evening Run" : {
 
     },
+    "Every metre climbed counts here, on trails and on the road — including runs another app recorded, where it saved the elevation. The climb rate above counts trail runs only." : {
+
+    },
     "Every number in Currimus is set in Space Grotesk, by Florian Karsten." : {
+
+    },
+    "Every run has its zones, track and splits." : {
 
     },
     "FAST" : {
@@ -382,6 +467,9 @@
     "Grade-adjusted pace" : {
 
     },
+    "Grade-adjusted pace is what your climbing would have cost you on the flat: every stretch of the run is converted using the energy a runner actually spends at that gradient, measured by %@ from −45 %% to +45 %%." : {
+
+    },
     "Half marathon" : {
 
     },
@@ -394,7 +482,7 @@
     "Health is not reporting distance for this run, so it cannot be saved. Check that Distance is allowed for Currimus." : {
 
     },
-    "Heart rate at %@ pace" : {
+    "Heart rate at %@ /km" : {
 
     },
     "Heart rate at your steady pace" : {
@@ -600,6 +688,9 @@
     "Nothing set yet" : {
 
     },
+    "of %lld" : {
+
+    },
     "Off" : {
 
     },
@@ -630,10 +721,16 @@
     "PACER · ON TARGET %@" : {
 
     },
+    "PACER · TARGET %@" : {
+
+    },
     "Pacer %@" : {
 
     },
     "Pick the runs to delete" : {
+
+    },
+    "Predicting a marathon from the volume and pace of the eight weeks before it." : {
 
     },
     "PROFILE" : {
@@ -651,7 +748,10 @@
     "RACE DAY · %@" : {
 
     },
-    "race day in %lld days" : {
+    "race day in %@" : {
+
+    },
+    "race day is today" : {
 
     },
     "Race name" : {
@@ -661,6 +761,18 @@
 
     },
     "Reading Apple Health…" : {
+
+    },
+    "Reading the heart-rate trace and GPS track of each run. You can leave this running or stop it — what is done stays done." : {
+
+    },
+    "Reads the heart-rate trace and GPS track of older runs out of Health, so their zone-2 pace, records and splits are measured rather than missing. A dozen are done on each launch anyway; this finishes the lot." : {
+
+    },
+    "Rebuilding from Health" : {
+
+    },
+    "Rebuilt" : {
 
     },
     "Recalculate from Apple Health" : {
@@ -685,7 +797,7 @@
         }
       }
     },
-    "Records come from your runs automatically. No badges, no confetti." : {
+    "Records come from your runs automatically. No badges, no confetti.\n\nA 5 K or 10 K record is the fastest continuous stretch of that distance inside any run — the run does not have to end there. Runs another app recorded arrive without kilometre splits, so those count at their average pace over the whole run, which is fair evidence but rarely a record. A longer run beats one of these only by being genuinely faster over the distance." : {
 
     },
     "Recovery" : {
@@ -695,6 +807,9 @@
 
     },
     "Remove this race?" : {
+
+    },
+    "RESEARCH" : {
 
     },
     "Resting heart rate" : {
@@ -709,6 +824,9 @@
     "Run" : {
 
     },
+    "Run a 5 K, 10 K or half — or anything longer — and the prediction appears." : {
+
+    },
     "Run name" : {
 
     },
@@ -718,13 +836,13 @@
     "Runs from Apple Health belong to the app that recorded them — delete those there." : {
 
     },
-    "Same effort, less work" : {
-
-    },
     "Save" : {
 
     },
     "Save race" : {
+
+    },
+    "Scaling a known race time to another distance — the basis of every race prediction here." : {
 
     },
     "Second half %lld s/km faster — a negative split." : {
@@ -737,6 +855,9 @@
 
     },
     "Set up race, zones and pacer" : {
+
+    },
+    "Shorter steps than usual" : {
 
     },
     "Shows every kilometre" : {
@@ -757,6 +878,9 @@
     "Steady" : {
 
     },
+    "Stop" : {
+
+    },
     "TARGET /KM · TURN CROWN" : {
 
     },
@@ -764,6 +888,9 @@
 
     },
     "That is" : {
+
+    },
+    "The energy a runner spends per metre at every gradient from −45 % to +45 %, measured. It is what turns a climb into the flat pace that cost the same." : {
 
     },
     "The watch starts every Pacer setup with these values — change either with the crown before you run. Syncs instantly." : {
@@ -814,13 +941,22 @@
     "Try shorter, quicker steps" : {
 
     },
+    "unchanged" : {
+
+    },
     "Uphill, pace lies — climb rate and grade-adjusted pace tell the truth. Same rule as on the watch." : {
 
     },
     "Vibration cues" : {
 
     },
+    "waiting for pace" : {
+
+    },
     "Weekly volume, last four weeks" : {
+
+    },
+    "What a five to ten per cent quicker step rate does to the load a knee absorbs — the reason for the cadence hint." : {
 
     },
     "WHAT YOU WILL FEEL" : {
@@ -835,15 +971,24 @@
     "Workout not started" : {
 
     },
-    "You held %lld steps a minute at %@ /km. Aiming for about %lld — five per cent quicker — shortens the stride without changing the pace, so the foot lands under you instead of out in front. That is where most of the impact your knees absorb comes from. It helps to imagine running on a slippery path: short, light, frequent steps." : {
+    "You held %lld steps a minute at %@ /km. Aiming for about %lld — five per cent quicker — shortens the stride without changing the pace, so the foot lands under you instead of out in front. That is where most of the impact your knees absorb comes from, after %@. It helps to imagine running on a slippery path: short, light, frequent steps." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "You held %1$lld steps a minute at %2$@ /km. Aiming for about %3$lld — five per cent quicker — shortens the stride without changing the pace, so the foot lands under you instead of out in front. That is where most of the impact your knees absorb comes from. It helps to imagine running on a slippery path: short, light, frequent steps."
+            "value" : "You held %1$lld steps a minute at %2$@ /km. Aiming for about %3$lld — five per cent quicker — shortens the stride without changing the pace, so the foot lands under you instead of out in front. That is where most of the impact your knees absorb comes from, after %4$@. It helps to imagine running on a slippery path: short, light, frequent steps."
           }
         }
       }
+    },
+    "YOUR BEST · %@" : {
+
+    },
+    "Your own median easy pace, across the runs that sat near it." : {
+
+    },
+    "Your own median easy pace. Appears once a few easy runs sit near it." : {
+
     },
     "Yours." : {
 

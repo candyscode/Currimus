@@ -248,7 +248,7 @@
 		42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekSnapshot.swift; sourceTree = "<group>"; };
 		46E064E4F53870876EEA1602 /* HealthImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthImport.swift; sourceTree = "<group>"; };
 		485542A4B0D645CFCC648C51 /* TopBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopBar.swift; sourceTree = "<group>"; };
-		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A2F7A36A31D6342D15638DA /* Currimus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Currimus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
 		506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAnalytics.swift; sourceTree = "<group>"; };
 		51FB40448E3F1E3BB0DE9E3A /* RunHints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunHints.swift; sourceTree = "<group>"; };
@@ -256,7 +256,7 @@
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
 		5CD6D8198237FDA19530FD50 /* RunEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunEditView.swift; sourceTree = "<group>"; };
 		60332871CFEA2AFE9925CDAE /* RunPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunPalette.swift; sourceTree = "<group>"; };
-		611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		61423834EFBB80EBFAC112C9 /* CurrimusWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatchWidgets.entitlements; sourceTree = "<group>"; };
 		62E33AFA1FFA39DF433C9B73 /* RunSimulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSimulationTests.swift; sourceTree = "<group>"; };
 		65AEBA896B9201B26676F060 /* Scaffold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scaffold.swift; sourceTree = "<group>"; };
@@ -981,6 +981,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -1089,6 +1090,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.currimus.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;

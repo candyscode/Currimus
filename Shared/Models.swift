@@ -105,6 +105,9 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// added later: runs recorded before this existed have no such record, and
     /// their zone-2 pace can only ever be approximated from the run as a whole.
     var zoneDistanceKm: [Double]?
+    /// Set when the workout was recorded indoors — a treadmill, or a track
+    /// session with GPS off. Optional like every field added later.
+    var isIndoor: Bool?
     /// Flat-equivalent pace (s/km) worked out from this run's own gradients,
     /// after Minetti. Optional like every field added later; without it the
     /// screens fall back to a rule of thumb and say so.
@@ -127,6 +130,10 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     var isImported: Bool { imported == true }
 
     var isTrail: Bool { type == .trail }
+
+    /// No GPS because there was nothing to record, rather than because
+    /// something failed.
+    var isTreadmill: Bool { isIndoor == true }
 
     /// Whether this is a run at all, or a recording that measured nothing.
     ///
@@ -222,6 +229,8 @@ struct Race: Codable, Equatable {
 
     var isToday: Bool { daysUntil() == 0 }
     var isPast: Bool { daysUntil() < 0 }
+    /// How long ago it was, for a race that has been run.
+    var daysSince: Int { max(-daysUntil(), 0) }
 
     /// Pace needed to hit the goal (s/km).
     var requiredPace: TimeInterval { goalTime / distance.km }

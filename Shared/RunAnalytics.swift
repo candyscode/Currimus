@@ -366,21 +366,46 @@ enum RunAnalytics {
     static func zoneDistanceKm(route: [Coordinate],
                                heartRate: [(bpm: Int, at: TimeInterval)],
                                zones: HRZones) -> [Double]? {
-        guard route.count >= 2, !heartRate.isEmpty else { return nil }
+        zoneDistanceKm(trace: distanceTrace(fromRoute: route), heartRate: heartRate, zones: zones)
+    }
+
+    /// Cumulative distance over time — everything below works on this rather
+    /// than on a GPS track, because a treadmill run has no track and Health
+    /// still knows how far it went and when.
+    typealias DistancePoint = (km: Double, at: TimeInterval)
+
+    static func distanceTrace(fromRoute route: [Coordinate]) -> [DistancePoint] {
+        guard route.count >= 2 else { return [] }
+        var points: [DistancePoint] = [(km: 0, at: route[0].t)]
+        var covered = 0.0
+        for (from, to) in zip(route, route.dropFirst()) {
+            let span = to.t - from.t
+            let km = haversineKm(from, to)
+            // A pause or a jump carries the clock forward without the ground,
+            // so nothing is attributed across it.
+            if span >= 0, span <= maxSegmentGap, km > 0, km <= maxSegmentKm { covered += km }
+            points.append((km: covered, at: to.t))
+        }
+        return points
+    }
+
+    static func zoneDistanceKm(trace points: [DistancePoint],
+                               heartRate: [(bpm: Int, at: TimeInterval)],
+                               zones: HRZones) -> [Double]? {
+        guard points.count >= 2, !heartRate.isEmpty else { return nil }
         let trace = heartRate.sorted { $0.at < $1.at }
         var distance = [Double](repeating: 0, count: 5)
         var index = 0
 
-        for (from, to) in zip(route, route.dropFirst()) {
-            let span = to.t - from.t
-            guard span >= 0, span <= maxSegmentGap else { continue }
-            let km = haversineKm(from, to)
-            guard km > 0, km <= maxSegmentKm else { continue }
+        for (from, to) in zip(points, points.dropFirst()) {
+            let km = to.km - from.km
+            let span = to.at - from.at
+            guard km > 0, span >= 0, span <= maxSegmentGap else { continue }
 
-            // The heart rate in the middle of the segment: the trace is
-            // sorted, so this walks forward with the route rather than
-            // searching it again for every step.
-            let middle = (from.t + to.t) / 2
+            // The heart rate in the middle of the stretch: the trace is
+            // sorted, so this walks forward with the run rather than being
+            // searched again at every step.
+            let middle = (from.at + to.at) / 2
             while index + 1 < trace.count, trace[index + 1].at <= middle { index += 1 }
             var sample = trace[index]
             if index + 1 < trace.count,
@@ -404,25 +429,28 @@ enum RunAnalytics {
     /// four slow ones that followed. The route says where the runner was and
     /// when, so the kilometre marks can be found again.
     static func splits(fromRoute route: [Coordinate]) -> [TimeInterval] {
-        guard route.count >= 2 else { return [] }
+        splits(trace: distanceTrace(fromRoute: route))
+    }
+
+    static func splits(trace points: [DistancePoint]) -> [TimeInterval] {
+        guard points.count >= 2 else { return [] }
         var splits: [TimeInterval] = []
         var covered = 0.0
-        var lastMarkTime = route[0].t
+        var lastMarkTime = points[0].at
 
-        for (from, to) in zip(route, route.dropFirst()) {
-            let span = to.t - from.t
-            guard span >= 0, span <= maxSegmentGap else { continue }
-            let km = haversineKm(from, to)
-            guard km > 0, km <= maxSegmentKm else { continue }
+        for (from, to) in zip(points, points.dropFirst()) {
+            let span = to.at - from.at
+            let km = to.km - from.km
+            guard span >= 0, span <= maxSegmentGap, km > 0 else { continue }
 
             var remaining = km
-            var segmentStart = from.t
+            var segmentStart = from.at
             // A single segment can cross a kilometre mark, and on a coarse
             // track it can cross more than one.
             while covered + remaining >= Double(splits.count + 1) {
                 let toMark = Double(splits.count + 1) - covered
                 let share = toMark / remaining
-                let markTime = segmentStart + (to.t - segmentStart) * share
+                let markTime = segmentStart + (to.at - segmentStart) * share
                 splits.append(markTime - lastMarkTime)
                 lastMarkTime = markTime
                 segmentStart = markTime

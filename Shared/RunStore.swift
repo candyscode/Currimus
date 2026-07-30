@@ -770,8 +770,23 @@ final class RunStore: ObservableObject {
     // MARK: - Records & prediction
 
     var prediction: RunAnalytics.Prediction? {
-        guard let race else { return nil }
+        // A race that has been run needs no forecast; what it needs is a
+        // result, which `raceResult` finds.
+        guard let race, !race.isPast else { return nil }
         return RunAnalytics.predict(race: race, runs: allRuns)
+    }
+
+    /// The run that was the race, if there is one.
+    ///
+    /// Matched on the day and the distance rather than on anything the runner
+    /// had to declare: nobody opens an app mid-race to tick a box, and a
+    /// marathon in the log on marathon day is not a coincidence.
+    var raceResult: Run? {
+        guard let race, race.isPast else { return nil }
+        return allRuns.first {
+            Calendar.current.isDate($0.date, inSameDayAs: race.date)
+                && $0.distanceKm >= race.distance.km * 0.95
+        }
     }
 
     /// Longest run and its date.

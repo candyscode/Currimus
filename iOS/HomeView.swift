@@ -29,7 +29,15 @@ struct HomeView: View {
                     weekBlock(headline: false)
                 } else {
                     weekBlock(headline: true)
-                    if store.race == nil { setupRaceRow }
+                    // A race that has been run used to vanish from here
+                    // entirely — no result, and no offer of a next one, since
+                    // the prompt below only appeared when there was no race at
+                    // all. The runner was left with nothing but a week block.
+                    if let race = store.race, race.isPast {
+                        pastRaceRow(race)
+                    } else if store.race == nil {
+                        setupRaceRow
+                    }
                 }
 
                 if let last = store.lastRun {
@@ -106,6 +114,24 @@ struct HomeView: View {
         }
         .padding(.top, headline ? 4 : 6)
         WeekBars(kmPerDay: store.weekByDay).padding(.top, headline ? 24 : 20)
+    }
+
+    private func pastRaceRow(_ race: Race) -> some View {
+        Button { push(.race) } label: {
+            GlassCard(cornerRadius: 20, padding: EdgeInsets(top: 16, leading: 22, bottom: 16, trailing: 22)) {
+                HStack {
+                    Text(race.daysSince == 0
+                         ? "\(race.name) was today"
+                         : "\(race.name) · \(Format.plural(race.daysSince, "day", "days")) ago")
+                        .font(.sg(15)).foregroundStyle(Theme.bright)
+                        .lineLimit(1)
+                    Spacer()
+                    Chevron()
+                }
+            }
+            .padding(.top, 18)
+        }
+        .buttonStyle(.plain)
     }
 
     private var setupRaceRow: some View {

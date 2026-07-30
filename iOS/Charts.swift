@@ -415,9 +415,14 @@ struct MapCard: View {
         ZStack {
             Theme.card
             VStack(spacing: 6) {
-                Image(systemName: "point.topleft.down.to.point.bottomright.curvepath")
+                Image(systemName: run.isTreadmill
+                      ? "figure.run.treadmill"
+                      : "point.topleft.down.to.point.bottomright.curvepath")
                     .font(.system(size: 22)).foregroundStyle(Theme.faint)
-                Text("No GPS track for this run")
+                // A treadmill run has no track because there was nothing to
+                // track, which is not the same as a recording that failed.
+                Text(run.isTreadmill ? "Indoor run — nowhere to draw"
+                                     : "No GPS track for this run")
                     .font(.sg(13)).foregroundStyle(Theme.muted)
             }
         }
