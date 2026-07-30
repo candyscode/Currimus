@@ -1105,3 +1105,5 @@ Vier Entscheidungen zu den offenen Punkten aus dem Audit vom 30.07.2026 (CUR-29 
 Fünf neue Tests, 211 iOS-Tests grün, 27 watchOS-Tests grün, beide Ziele bauen, Snapshot-Referenzen neu aufgenommen (die Distanzen standen dort mit Komma).
 
 #### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/7a4be7e
