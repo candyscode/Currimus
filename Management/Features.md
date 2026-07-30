@@ -749,5 +749,5 @@ Was Indoor-Läufe weiterhin nicht bekommen: eine Steigungskorrektur. Ohne Höhen
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-25
+https://github.com/candyscode/Currimus/commit/66b1d82
 
