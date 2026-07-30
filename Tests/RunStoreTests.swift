@@ -372,6 +372,24 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(carried.gradeAdjustedSecPerKm, 295)
     }
 
+    func testATreadmillRunIsNotWaitingForAGradeAdjustment() {
+        let store = makeStore()
+        // No route, so no gradients — ever. It used to sit in the rebuild
+        // queue for good, eating the per-launch budget ahead of the imported
+        // runs the zone-2 chart needs.
+        var indoor = run("Treadmill", km: 10, minutes: 50, imported: true)
+        indoor.isIndoor = true
+        indoor.zoneDistanceKm = [0, 8, 2, 0, 0]
+        indoor.gradeAdjustedSecPerKm = nil
+
+        var outdoor = run("Road", km: 10, minutes: 50, imported: true)
+        outdoor.zoneDistanceKm = [0, 8, 2, 0, 0]
+        outdoor.gradeAdjustedSecPerKm = nil
+
+        store.importedRuns = [indoor, outdoor]
+        XCTAssertEqual(store.runsAwaitingRebuild, 1, "only the one that can still gain something")
+    }
+
     // MARK: - Zones from another app's heart-rate trace
 
     /// Zones at max 190: 115 / 133 / 152 / 171.

@@ -242,14 +242,27 @@ final class RunStore: ObservableObject {
             askedHealth = true
             await HealthImport.requestAuthorization(healthStore)
         }
-        // Marked before the answer, not after: a run whose workout Health no
-        // longer holds returns nothing, and marking only successes left it in
-        // the count for ever — the rebuild row kept offering to fix something
-        // it could not, and every launch re-queried the same dead runs.
-        hydratedImported.insert(run.id)
-        guard let detail = await HealthImport.detail(for: run, zones: zones,
-                                                     fallbackRoute: samples(for: run).route,
-                                                     in: healthStore) else { return }
+        // Asked, whatever comes back: background work does not ask twice in
+        // one session.
+        attemptedThisSession.insert(run.id)
+        let outcome = await HealthImport.detail(for: run, zones: zones,
+                                                fallbackRoute: samples(for: run).route,
+                                                in: healthStore)
+        let detail: HealthImport.WorkoutDetail
+        switch outcome {
+        case .detail(let found):
+            detail = found
+        case .noWorkout:
+            // Health answered and has nothing. That is final, so the rebuild
+            // stops offering this one.
+            knownUnrebuildable.insert(run.id)
+            return
+        case .unavailable:
+            // Health could not answer — the device may still be locked, or
+            // access not granted yet. Marking this as done would tell the
+            // runner everything was rebuilt when nothing was.
+            return
+        }
 
         // Written to the sidecar, not just to the run: the imported list is
         // replaced wholesale on every refresh, and zones that lived only there
@@ -304,6 +317,10 @@ final class RunStore: ObservableObject {
             for (index, run) in pending.enumerated() {
                 if Task.isCancelled { break }
                 await self?.hydrate(run, force: true)
+                // Checked again after the await: cancelling frees the slot at
+                // once, so a new rebuild may already be reporting its own
+                // progress by the time this step returns.
+                guard !Task.isCancelled else { break }
                 self?.rebuild = Rebuild(done: index + 1, total: pending.count)
             }
             // Only if it is still ours: a cancelled run may finish its last
@@ -335,10 +352,19 @@ final class RunStore: ObservableObject {
     /// this it would sit in the count for ever and the button would promise
     /// something it cannot deliver.
     private var rebuildable: [Run] {
-        allRuns.filter {
-            ($0.zoneDistanceKm == nil || $0.gradeAdjustedSecPerKm == nil)
-                && !hydratedImported.contains($0.id)
-        }
+        allRuns.filter { needsRebuild($0) && !knownUnrebuildable.contains($0.id) }
+    }
+
+    /// Whether Health could still add something to this run.
+    ///
+    /// A treadmill run is asked only for its zone distance: it has no route,
+    /// so it has no gradients and never will, and counting it as outstanding
+    /// for a grade adjustment left it in the queue for ever — eating the
+    /// background budget every launch, newest first, ahead of the imported
+    /// runs the zone-2 chart actually needs.
+    private func needsRebuild(_ run: Run) -> Bool {
+        if run.zoneDistanceKm == nil { return true }
+        return run.gradeAdjustedSecPerKm == nil && !run.isTreadmill
     }
 
     /// Fills in what Health can still tell us about imported runs, a few at a
@@ -352,12 +378,14 @@ final class RunStore: ObservableObject {
     func backfillImported(limit: Int = 12) async {
         guard !isDemo else { return }
         let cutoff = Calendar.current.date(byAdding: .month, value: -12, to: .now) ?? .distantPast
-        // The same list the Settings row counts. They used to disagree — the
-        // fill looked only for missing zone distance, the row also for a
-        // missing grade adjustment — so the count could never reach zero from
-        // background work alone.
-        let pending = rebuildable
-            .filter { $0.date >= cutoff }
+        // Imported runs, as the name says. The manual rebuild in Settings
+        // covers our own older runs as well; doing that on every foreground
+        // spent two or three Health queries per run for something nobody had
+        // asked for.
+        let pending = importedRuns
+            .filter { $0.date >= cutoff && needsRebuild($0)
+                && !attemptedThisSession.contains($0.id)
+                && !knownUnrebuildable.contains($0.id) }
             .sorted { $0.date > $1.date }
             .prefix(limit)
         for run in pending { await hydrate(run) }
@@ -371,16 +399,20 @@ final class RunStore: ObservableObject {
     /// has no route and never will, so inferring "not fetched yet" from an
     /// empty route re-queried Health on every single visit.
     private func needsHydration(_ run: Run) -> Bool {
-        guard !hydratedImported.contains(run.id) else { return false }
+        guard !attemptedThisSession.contains(run.id) else { return false }
         guard let stored = RunSampleStore.load(run.id) else { return true }
         // A run with zones but no route is either indoors or was fetched
         // before Health granted the route type — worth one ask per session,
-        // which `hydratedImported` bounds.
+        // which `attemptedThisSession` bounds.
         return stored.route?.isEmpty ?? true
     }
 
-    /// Imported runs already asked about in this session, route or no route.
-    private var hydratedImported: Set<UUID> = []
+    /// Runs asked about in this session — background work does not ask twice.
+    /// Published so the Settings row's count follows along while it is open.
+    @Published private var attemptedThisSession: Set<UUID> = []
+    /// Runs Health answered for and had nothing to give. Final, unlike a query
+    /// that could not run at all.
+    @Published private var knownUnrebuildable: Set<UUID> = []
     /// Health is asked for permission once per session, at the first hydration.
     private var askedHealth = false
     #endif
@@ -789,12 +821,12 @@ final class RunStore: ObservableObject {
     /// splits; since they gained them it is the most expensive thing Home
     /// reads, and Home read it on every body pass.
     var prediction: RunAnalytics.Prediction? {
+        // Outside the cache, and deliberately: this one depends on the clock
+        // rather than on the log, and a race that passed midnight with the app
+        // open would otherwise keep forecasting a finish it had already run.
+        guard let race, !race.isPast else { return nil }
         if let cachedPrediction { return cachedPrediction }
-        // A race that has been run needs no forecast; what it needs is a
-        // result, which `raceResult` finds.
-        let built = race.flatMap { race -> RunAnalytics.Prediction? in
-            race.isPast ? nil : RunAnalytics.predict(race: race, runs: allRuns)
-        }
+        let built = RunAnalytics.predict(race: race, runs: allRuns)
         cachedPrediction = .some(built)
         return built
     }

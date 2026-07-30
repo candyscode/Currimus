@@ -776,6 +776,14 @@ Vier Funde, alle bestätigt und behoben. Zwei davon sind derselbe Fehlertyp wie 
 
 Geprüft und in Ordnung: die `distanceTrace`-Umstellung verhält sich identisch zur Routen-Variante (die bestehenden Tests decken beide Wege ab), die Behandlung des vergangenen Rennens auf allen drei Screens, die Reihenfolge der Rebuild-Tasks bei Abbruch, und dass `Explainer` nur auf Screens liegt, die nicht in der Scroll-Hot-Path sind.
 
+**Nachtrag: `/code-review` über genau diesen Commit — fünf weitere Funde, alle bestätigt.** Ich hatte diese Änderungen selbst reviewt und die Hälfte davon übersehen.
+
+1. **Das Hintergrund-Nachladen verhungerte an Laufband-Läufen.** Ich hatte es auf dieselbe Liste umgestellt wie die Settings-Zeile — die zählt aber auch fehlende Steigungskorrektur, und ein Indoor-Lauf bekommt die *nie* (keine Route, keine Steigung). Da die Liste nach Datum sortiert und auf zwölf begrenzt ist, hätten ein paar aktuelle Laufband-Läufe das Budget jedes Starts vollständig aufgebraucht — und die importierten Läufe, für die das Nachladen existiert, wären nie drangekommen. `needsRebuild` weiß jetzt, was ein Lauf überhaupt gewinnen kann.
+2. **Und es lief plötzlich auch über die eigenen Läufe**, obwohl es „Imported" heißt: zwei bis drei Health-Abfragen pro Lauf bei jedem Vordergrundwechsel, für etwas, das niemand angefordert hatte. Wieder auf importierte Läufe begrenzt; der manuelle Rebuild deckt weiterhin alles ab.
+3. **„Health hat das nicht" und „Health kann gerade nicht antworten" waren dasselbe.** Bei gesperrtem Gerät liefert HealthKit nichts zurück — mein Fix aus CUR-27 hätte dann bis zu zwölf Läufe als erledigt markiert, und die Settings-Zeile hätte „All done" gemeldet, ohne dass irgendetwas rekonstruiert wurde. Die Abfrage unterscheidet jetzt beides (Fehler → kein endgültiges Urteil).
+4. **Die gecachte Prognose fror `isPast` ein.** Der Cache hängt am Log, die Frage „ist das Rennen vorbei" aber an der Uhr: mit offener App über Mitternacht hätte der Screen weiter eine Prognose für ein bereits gelaufenes Rennen gezeigt. Die Prüfung liegt jetzt vor dem Cache.
+5. Kleinigkeiten: ein abgebrochener Rebuild konnte noch einen Fortschrittsstand über den neuen schreiben, und die beiden Mengen, die den Zähler speisen, waren nicht published — die Settings-Zeile konnte veralten, während man sie ansieht.
+
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/7910676

@@ -126,19 +126,33 @@ enum HealthImport {
     /// `fallbackRoute` is used when Health has no route of its own for the
     /// workout — a run Currimus recorded keeps its track in its own sidecar,
     /// and there is no reason to fetch it twice.
+    /// Why a rebuild produced nothing, which is not one question but two.
+    ///
+    /// "Health has no such workout" is final — that run will never gain
+    /// anything and should stop being offered. "Health could not answer" is
+    /// not: the device may be locked, or access not yet granted, and treating
+    /// that as final tells the runner everything is rebuilt when nothing was.
+    enum DetailOutcome {
+        case detail(WorkoutDetail)
+        case noWorkout
+        case unavailable
+    }
+
     static func detail(for run: Run, zones: HRZones,
                        fallbackRoute: [Coordinate]? = nil,
-                       in store: HKHealthStore) async -> WorkoutDetail? {
-        guard isAvailable else { return nil }
+                       in store: HKHealthStore) async -> DetailOutcome {
+        guard isAvailable else { return .unavailable }
         // An imported run carries the workout's own UUID as its id, so it can
         // be asked for directly. A run Currimus recorded has an id of its own
         // and has to be found by when it happened — the same match the delete
         // uses, and the same reason: the two ids were never tied together.
-        var found = await workout(with: run.id, in: store)
+        let lookup = await workout(with: run.id, in: store)
+        if case .failed = lookup { return .unavailable }
+        var found = lookup.workout
         if found == nil, !run.isImported {
             found = await ownWorkouts(matching: run, in: store).first
         }
-        guard let workout = found else { return nil }
+        guard let workout = found else { return .noWorkout }
         let samples = await heartRateSamples(of: workout, in: store)
         let locations = await routeLocations(of: workout, in: store)
         var route = locations.map {
@@ -160,7 +174,7 @@ enum HealthImport {
         if distance.count < 2 {
             distance = await distanceTrace(of: workout, in: store)
         }
-        return WorkoutDetail(
+        return .detail(WorkoutDetail(
             zoneSeconds: zoneSeconds(from: samples, zones: zones, end: workout.endDate),
             route: route,
             zoneDistanceKm: RunAnalytics.zoneDistanceKm(trace: distance, heartRate: trace, zones: zones),
@@ -169,18 +183,35 @@ enum HealthImport {
             // adjusted pace is its pace.
             gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(route: route,
                                                                   duration: workout.duration)
-        )
+        ))
     }
 
-    private static func workout(with id: UUID, in store: HKHealthStore) async -> HKWorkout? {
+    /// A lookup either answered — with a workout or with nothing — or it did
+    /// not run at all.
+    private enum WorkoutLookup {
+        case found(HKWorkout)
+        case none
+        case failed
+
+        var workout: HKWorkout? {
+            if case .found(let workout) = self { return workout }
+            return nil
+        }
+    }
+
+    private static func workout(with id: UUID, in store: HKHealthStore) async -> WorkoutLookup {
         await withCheckedContinuation { continuation in
             let query = HKSampleQuery(
                 sampleType: .workoutType(),
                 predicate: HKQuery.predicateForObject(with: id),
                 limit: 1,
                 sortDescriptors: nil
-            ) { _, samples, _ in
-                continuation.resume(returning: samples?.first as? HKWorkout)
+            ) { _, samples, error in
+                if error != nil { return continuation.resume(returning: .failed) }
+                guard let workout = samples?.first as? HKWorkout else {
+                    return continuation.resume(returning: WorkoutLookup.none)
+                }
+                continuation.resume(returning: .found(workout))
             }
             store.execute(query)
         }
