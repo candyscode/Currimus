@@ -1042,16 +1042,63 @@ final class RunAnalyticsTests: XCTestCase {
         }
     }
 
-    /// Elevation is written one way. There used to be three: a hard-coded
-    /// German full stop here, a POSIX point in `Format.km`, and a space-grouped
-    /// formatter of its own in the trail detail.
-    func testElevationIsGroupedByTheLocaleAndNotByHand() {
-        let grouped = Format.elevation(1622)
-        XCTAssertTrue(grouped.hasSuffix("\u{00A0}m"), "non-breaking unit")
-        XCTAssertEqual(grouped.filter(\.isNumber), "1622")
-        XCTAssertEqual(Format.elevation(1622, unit: false).filter(\.isNumber), "1622")
-        // Not the string "1.622" in an English UI, where that reads as one and
-        // a half metres. Whatever the locale's separator is, it is the locale's.
+    /// Every number is written one way, and that way does not depend on the
+    /// region of the device — or of the machine that recorded a snapshot
+    /// reference. Andi's call (2026-07-30): the interface is English throughout,
+    /// so "22,2 km" beside an English label reads as a fault, and following the
+    /// region for numbers but not for words is the mismatch.
+    func testNumbersAreWrittenOneFixedWayWhateverTheRegion() {
+        XCTAssertEqual(Format.km(22.2, decimals: 1), "22.2")
+        XCTAssertEqual(Format.km(12), "12.00")
+        XCTAssertEqual(Format.km(1234.5, decimals: 1), "1234.5", "distances are not grouped")
+        // A full stop for the decimal means a comma for the thousands; the two
+        // cannot both be a full stop, which is what the old elevation formatter
+        // wrote into an English UI ("1.622 m" reads as one and a half metres).
+        XCTAssertEqual(Format.elevation(1622, unit: false), "1,622")
+        XCTAssertEqual(Format.elevation(1622), "1,622\u{00A0}m", "non-breaking unit")
         XCTAssertEqual(Format.elevation(234, unit: false), "234", "no grouping under a thousand")
+        XCTAssertEqual(Format.pacerDistance(RaceDistance.half.km), "21.1 km")
+        XCTAssertEqual(Format.pacerDistance(10), "10 km")
+    }
+
+    // MARK: - The record outranks where it was set
+
+    /// A run another app recorded could hold the 10 K best time on the Records
+    /// screen and show no tag at all on its own row, because the imported branch
+    /// was tested first. Which app it happened in is not what a runner wants
+    /// from that line (Andi, 2026-07-30).
+    func testAnImportedRunShowsThePRItHoldsRatherThanItsSource() {
+        let run = Run(date: .now, name: "Apple Watch von Andreas", distanceKm: 10,
+                      duration: 2400, avgHR: 168, imported: true)
+        let text = LogRowText(run: run, prTag: "10K PR")
+        XCTAssertEqual(text.prTag, "10K PR")
+        XCTAssertFalse(text.detail.contains("Apple Watch"),
+                       "the source gives way to the record")
+        XCTAssertTrue(text.detail.contains(Format.clock(2400)))
+    }
+
+    /// Below a record the source goes back to doing its job — explaining why
+    /// the row names no zone.
+    func testAnImportedRunWithoutAPRStillNamesItsSource() {
+        let run = Run(date: .now, name: "Strava", distanceKm: 8,
+                      duration: 2600, avgHR: 150, imported: true)
+        XCTAssertTrue(LogRowText(run: run, prTag: nil).detail.hasPrefix("Strava · "))
+        // "Longest" is not a benchmark time, so it does not displace the source.
+        XCTAssertTrue(LogRowText(run: run, prTag: "Longest").detail.hasPrefix("Strava · "))
+    }
+
+    /// The delete explanation names no source.
+    ///
+    /// `sourceRevision.source.name` is the app's name only for third-party apps;
+    /// for a workout Apple's own Workout app recorded it is the *device* name,
+    /// so "delete it in Andi's Apple Watch" sent someone to a watch when the
+    /// answer is the Fitness app on their phone.
+    func testTheDeleteExplanationDoesNotNameTheSource() {
+        let run = Run(date: .now, name: "Apple Watch von Andreas", distanceKm: 10,
+                      duration: 2400, avgHR: 168, imported: true)
+        let text = DeletePrompt.importedExplanation(run)
+        XCTAssertFalse(text.contains("Apple Watch"), "a device name is not an app to delete in")
+        XCTAssertFalse(text.contains(run.name))
+        XCTAssertTrue(text.contains("Fitness"), "and it still says where to go")
     }
 }

@@ -40,11 +40,13 @@
 		2ECACF05656A544A071E091E /* SpaceGrotesk-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E717959C80C76B4970E1A1D3 /* SpaceGrotesk-SemiBold.ttf */; };
 		2FBDE3651DB7F383C79F5873 /* RunStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F9B6C5CE55770CF0FED06C /* RunStoreTests.swift */; };
 		30FD586FE2192029303A3449 /* Sources.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9C70AAD130EFB356A706713 /* Sources.swift */; };
+		3278063C09F8EF8E59CF5E71 /* DeletePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A9E23B763A0D6F79209CA6 /* DeletePrompt.swift */; };
 		36AD42538236A5E3C7DEBBFA /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9706CC7AC3AF5DD0051A05A8 /* SampleData.swift */; };
 		374F1ED8509045D94909A27E /* ZoneCoach.swift in Sources */ = {isa = PBXBuildFile; fileRef = 730680C78DD898F3B49BC2BB /* ZoneCoach.swift */; };
 		3B9AAD3CBBED7A363608CBC2 /* RunHintsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1743CD59636C6E4B5816C5E /* RunHintsTests.swift */; };
 		3BF77CAB3DF7E39F5F5C0F62 /* SwipeToDeleteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2896414722F0534F76F64E00 /* SwipeToDeleteUITests.swift */; };
 		3EDCB951E6A8420B6587553D /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
+		40C032F8B5AB2EB41D26E2F6 /* DeletePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A9E23B763A0D6F79209CA6 /* DeletePrompt.swift */; };
 		40D4E4DB344B503AAF1DF4B9 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		420A6A484F0DE550B615F0C8 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		449E3A09C2FB15F329217684 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
@@ -77,6 +79,7 @@
 		5B29CAA45111F1A2496CB5B5 /* RecordingIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC5D9A0957780EACF963837 /* RecordingIssue.swift */; };
 		5DAB3C3134575691D9112096 /* SpaceGrotesk-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7C209714F563309F93D95928 /* SpaceGrotesk-Regular.ttf */; };
 		5EB0431CDE6F6DE2261CAB1B /* SpaceGrotesk-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 858D839FA995513CE4FBFBFB /* SpaceGrotesk-Bold.ttf */; };
+		6124AE3FB3F6B8066C89049F /* DeletePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A9E23B763A0D6F79209CA6 /* DeletePrompt.swift */; };
 		6444CDA1CAB6E8DAE64EDEFC /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */; };
 		6531B6F7EE07A875F176BC98 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */; };
@@ -135,6 +138,7 @@
 		9B9424914A12A92D7CB3F61C /* RaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEBAEDA4D72D2CAAE6D14325 /* RaceView.swift */; };
 		9C154D0CA18F02DF6958BD91 /* RunScenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0AB554106862365931D05C /* RunScenario.swift */; };
 		9CC8B6A27D8741A8D89AE66A /* RunSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591C33FACB6B9A5D87A858BB /* RunSession.swift */; };
+		9D2D620D97DD76E3A1ABDD28 /* DeletePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A9E23B763A0D6F79209CA6 /* DeletePrompt.swift */; };
 		9EC56FA77356716AE1A78894 /* PromptGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98521C771A99F28A1A83C8B0 /* PromptGateTests.swift */; };
 		A10FC0458A9B7ADD0008EE8A /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
 		A1A5B66C0F1E6EF71826474B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6CFB5CC07067218F2414163 /* Assets.xcassets */; };
@@ -193,6 +197,7 @@
 		DC5F3F32B0274951D97B1959 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		DE0C57860063777DB60AD519 /* DebugFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E09415889FE9881BBFFB33 /* DebugFlags.swift */; };
 		DFE3AE9703B785C2C8B87651 /* RunHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51FB40448E3F1E3BB0DE9E3A /* RunHints.swift */; };
+		E228644509890E532A893178 /* DeletePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A9E23B763A0D6F79209CA6 /* DeletePrompt.swift */; };
 		E7AD9B70C6E27CE0D4CB116D /* RecordingIssue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC5D9A0957780EACF963837 /* RecordingIssue.swift */; };
 		E86BFECCF96440F2567693E0 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742835D6D8B7C6204427A3C0 /* SharedComponents.swift */; };
 		EC55258A7F95B65787BEEDD2 /* RecordingIssueViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E3EEBDD46A2C2878930F10 /* RecordingIssueViews.swift */; };
@@ -337,6 +342,7 @@
 		CF3515C4DD609F7375C055AA /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		D22E4A08BC4686C2D7CC7F5A /* CurrimusWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CurrimusWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2A0A8C374CC2DF912776427 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
+		D7A9E23B763A0D6F79209CA6 /* DeletePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletePrompt.swift; sourceTree = "<group>"; };
 		DCBE840AF1F7A6789D2DADA0 /* Currimus.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Currimus.entitlements; sourceTree = "<group>"; };
 		DD88986EEA97DE1411F9263F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E024589EC7343ED3809D8F41 /* RunExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunExportTests.swift; sourceTree = "<group>"; };
@@ -356,6 +362,7 @@
 			children = (
 				4EA7CA19D96A380C1E5D2ECF /* AppDefaults.swift */,
 				31E09415889FE9881BBFFB33 /* DebugFlags.swift */,
+				D7A9E23B763A0D6F79209CA6 /* DeletePrompt.swift */,
 				7041C5B5C3C56EA9BCBC5895 /* FontLoader.swift */,
 				46E064E4F53870876EEA1602 /* HealthImport.swift */,
 				A7FBB797F1648FC729833297 /* HeartRateProfile.swift */,
@@ -762,6 +769,7 @@
 				A6734944701C0004DB0EEB48 /* AlwaysOn.swift in Sources */,
 				6924813CBAB2B1FE0D43B31E /* AppDefaults.swift in Sources */,
 				DE0C57860063777DB60AD519 /* DebugFlags.swift in Sources */,
+				6124AE3FB3F6B8066C89049F /* DeletePrompt.swift in Sources */,
 				CA35F13CFFC33FBF28853586 /* FontLoader.swift in Sources */,
 				4E9DC5F07B3CCE7B709E81C6 /* HealthImport.swift in Sources */,
 				C1BC79A4D874C952DAE8F3E1 /* HeartRateProfile.swift in Sources */,
@@ -806,6 +814,7 @@
 			files = (
 				861722063404981A6CD43987 /* AppDefaults.swift in Sources */,
 				9727438948BE77F429EBCE65 /* DebugFlags.swift in Sources */,
+				E228644509890E532A893178 /* DeletePrompt.swift in Sources */,
 				4CBCD27EBAFE272144D57CC1 /* FontLoader.swift in Sources */,
 				47D3F5548C3FD6747232EAA3 /* HealthImport.swift in Sources */,
 				868EC442098C4BD06E26115B /* HeartRateProfile.swift in Sources */,
@@ -850,6 +859,7 @@
 				29F109AB2C5C54FCA7053EE2 /* AppDefaults.swift in Sources */,
 				8B6414D964170CF94DE59755 /* CurrimusWidgets.swift in Sources */,
 				D47B33063F6CCE2BCC5A6DB3 /* DebugFlags.swift in Sources */,
+				40C032F8B5AB2EB41D26E2F6 /* DeletePrompt.swift in Sources */,
 				2981B3EADB4136CEB5C61AD3 /* FontLoader.swift in Sources */,
 				4C3178B122AD4A60DCDDA078 /* HealthImport.swift in Sources */,
 				AF7888360F4BF7DBD2E1BF2A /* HeartRateProfile.swift in Sources */,
@@ -884,6 +894,7 @@
 			files = (
 				59C1689504F073FD5427B555 /* AppDefaults.swift in Sources */,
 				6E0E8937DB06E6CB6ED06BBE /* DebugFlags.swift in Sources */,
+				9D2D620D97DD76E3A1ABDD28 /* DeletePrompt.swift in Sources */,
 				C5882E12F521EBB4B47539FB /* FontLoader.swift in Sources */,
 				6EE52691CBC2839DDC3C9078 /* HealthImport.swift in Sources */,
 				935D1899E69304A859A0EC09 /* HeartRateProfile.swift in Sources */,
@@ -923,6 +934,7 @@
 				7772564C47ADC2DC7E2C838C /* Charts.swift in Sources */,
 				D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */,
 				A26A16C3F90065FA5A88BC10 /* DebugFlags.swift in Sources */,
+				3278063C09F8EF8E59CF5E71 /* DeletePrompt.swift in Sources */,
 				58D78360BAFF6BF5665AC772 /* FirstLaunchView.swift in Sources */,
 				5871CAE9414DFEAD955B7C4B /* FontLoader.swift in Sources */,
 				8E2EBF3DF43C6B4E2BEC91AF /* Glass.swift in Sources */,

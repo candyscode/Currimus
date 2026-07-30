@@ -42,11 +42,13 @@ struct RunView: View {
                 case .pacer:
                     TopBarCaption(text: "PACER", color: palette.label)
                 default:
-                    if session.currentZone >= 5 {
-                        TopBarCaption(text: "MAX", color: palette.signal)
-                    } else {
-                        TopBarCaption(text: "RUN", color: palette.label)
-                    }
+                    // Always "RUN". This used to flip to an orange "MAX" in
+                    // zone 5 — the same shape CUR-4 removed from the pace: a
+                    // state that comes and goes, in the slot that everywhere
+                    // else on the watch names the screen you are on. The zone
+                    // bar two centimetres below says the same thing calmly and
+                    // more precisely, with a segment, a needle and a number.
+                    TopBarCaption(text: "RUN", color: palette.label)
                 }
             }
         }

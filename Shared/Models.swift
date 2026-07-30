@@ -497,7 +497,18 @@ struct LogRowText: Equatable {
         isIndoor = run.isTreadmill
 
         let clock = Format.clock(run.duration)
-        if run.isImported {
+        // A record outranks where it was set.
+        //
+        // The imported branch used to come first, so a run another app recorded
+        // could hold the 10 K best time on the Records screen and show no tag at
+        // all on its own row. Which app it happened in is not what a runner
+        // wants from that line — the record is (Andi, 2026-07-30). Below a
+        // record, the source goes back to doing its job: explaining why the row
+        // names no zone.
+        if let prTag, prTag != "Longest" {
+            detail = "\(clock) · "
+            self.prTag = prTag
+        } else if run.isImported {
             // Another app recorded it: name the source instead of claiming
             // zone data Currimus never captured.
             detail = "\(run.name) · \(clock)"
@@ -505,9 +516,6 @@ struct LogRowText: Equatable {
         } else if run.isTrail {
             detail = "Trail · \(clock) · +\(Int(run.climbMeters ?? 0)) m"
             self.prTag = nil
-        } else if let prTag, prTag != "Longest" {
-            detail = "\(clock) · "
-            self.prTag = prTag
         } else if run.dominantZone > 0 {
             detail = "\(run.classification.label) · \(clock) · Z\(run.dominantZone)"
             self.prTag = nil
@@ -537,23 +545,35 @@ enum Format {
             : "\(m):\(String(format: "%02d", s))"
     }
 
-    /// A distance in km. Locale-aware, so a German reader gets "12,00" —
-    /// `String(format:)` is POSIX and always wrote a full stop.
+    /// Every number in this app is written one way, whatever the device's
+    /// region: a full stop for the decimal, a comma for the thousands.
+    ///
+    /// Deliberately *not* locale-aware, which is Andi's call (2026-07-30) — the
+    /// interface is English throughout, and "22,2 km" beside an English label
+    /// reads as a fault rather than as a translation. Following the region for
+    /// numbers and not for words is the mismatch, so it follows neither.
+    ///
+    /// What this replaced was worse than either: three formatters that
+    /// disagreed. `elevation` grouped with a hard-coded full stop — the German
+    /// convention, in an English UI, where "1.622 m" reads as one and a half
+    /// metres — `km` was POSIX, and the trail detail had a third that grouped
+    /// with a space. Fixed here also means the UI-snapshot references do not
+    /// depend on the region of the machine that recorded them.
+    ///
+    /// `en_US` and not `en_US_POSIX`: the POSIX locale exists for
+    /// machine-readable output and switches grouping off altogether, so a
+    /// four-digit climb came out as "1622".
+    private static let fixed = Locale(identifier: "en_US")
+
     static func km(_ km: Double, decimals: Int = 2) -> String {
-        km.formatted(.number.precision(.fractionLength(decimals)).grouping(.never))
+        km.formatted(.number.precision(.fractionLength(decimals))
+            .grouping(.never).locale(fixed))
     }
 
-    /// Elevation with grouping and a non-breaking unit: 1622 → "1,622 m" in
-    /// English, "1.622 m" in German. `unit: false` drops the suffix for stat
-    /// rows, where the label carries the unit.
-    ///
-    /// The separator used to be a hard-coded full stop — the German convention,
-    /// printed into an English UI, where "1.622 m" reads as one and a half
-    /// metres. There were three of these: this one, `Format.km`'s POSIX point,
-    /// and a third formatter in the trail detail that grouped with a space, so
-    /// the same climb was written two ways on two screens.
+    /// Elevation with grouping and a non-breaking unit: 1622 → "1,622 m".
+    /// `unit: false` drops the suffix for stat rows, where the label carries it.
     static func elevation(_ meters: Double, unit: Bool = true) -> String {
-        let digits = Int(meters.rounded()).formatted(.number)
+        let digits = Int(meters.rounded()).formatted(.number.locale(fixed))
         return unit ? digits + "\u{00A0}m" : digits
     }
 
@@ -566,7 +586,7 @@ enum Format {
         if km == RaceDistance.half.km || km == RaceDistance.marathon.km {
             return "\(Self.km(km, decimals: 1)) km"
         }
-        return "\(Int(km).formatted(.number)) km"
+        return "\(Int(km).formatted(.number.locale(fixed))) km"
     }
 
     /// "1 run", "2 runs". Every naive "\(n) runs" in the app read "1 runs"

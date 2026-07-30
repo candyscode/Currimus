@@ -74,8 +74,10 @@ struct RunDetailView: View {
     private var deleteAction: some View {
         if run.isImported {
             // Health owns it, and HealthKit will not let another app delete
-            // another app's workout. Say where it can be done instead.
-            Text("Recorded by \(run.name). This run belongs to Apple Health — delete it in the app that recorded it.")
+            // another app's workout. Say where it can be done instead — without
+            // naming the source, for the reason in `DeletePrompt`: for Apple's
+            // own recordings that name is a device, not an app.
+            Text(DeletePrompt.importedExplanation(run))
                 .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3)
                 .padding(.top, 18)
         } else {

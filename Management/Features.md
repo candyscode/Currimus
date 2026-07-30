@@ -1071,3 +1071,37 @@ Ein Test musste angepasst werden, weil meine Annahme falsch war und nicht der Co
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/7a14f3b
+
+### CUR-35: Andis Entscheidungen zum Audit
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Vier Entscheidungen zu den offenen Punkten aus dem Audit vom 30.07.2026 (CUR-29 … CUR-34).
+
+1. **Zahlenformat: „22.2" bleiben lassen.** Also nicht der Region folgen.
+2. **Löschhinweis generisch** — „wurde außerhalb von Currimus angelegt", ohne Nennung der genauen Quelle. Und **beim PR keine Vermerkung der Quelle**: „ist ja dem Nutzer egal wo er es aufgestellt hat, Hauptsache der Rekord ist da."
+3. **Die „MAX"-Caption auf dem Run-Screen kann weg.**
+4. **Der BPM-Stepper bleibt wie er ist.**
+
+#### Agent Comments
+
+**1 · Ein festes Format, nicht null Formate.** `Format.km` folgt nicht mehr der Region — aber der alte Zustand war nicht der Zielzustand, sondern drei Formatierer, die sich widersprachen. Alle drei laufen jetzt über ein festes `Locale(identifier: "en_US")`: Punkt als Dezimal-, Komma als Tausendertrennzeichen. Das ist in sich schlüssig (bei „22.2" *muss* die Gruppierung ein Komma sein, sonst liest „1.622 m" wieder als eineinhalb Meter), und weil es fest ist, hängen die UI-Snapshot-Referenzen nicht mehr an der Region der Maschine, die sie aufgenommen hat.
+
+`en_US` und nicht `en_US_POSIX`: die POSIX-Variante ist für maschinenlesbare Ausgabe gedacht und schaltet die Gruppierung ganz ab — ein vierstelliger Höhenmeterwert kam als „1622" heraus. Ein Test hält jetzt beide Trennzeichen fest.
+
+**2 · Löschhinweis ohne Quelle, an einer Stelle.** `DeletePrompt.importedExplanation` nennt keine Quelle mehr, und das Run-Detail benutzt jetzt dieselbe Funktion statt eines eigenen zweiten Satzes. Der Grund ist stärker als „generisch ist ruhiger": `sourceRevision.source.name` ist nur bei Fremd-Apps ein App-Name — bei einem von Apples Workout-App aufgezeichneten Lauf ist es der **Gerätename**, und „delete it in Apple Watch von Andreas" schickt jemanden zu einer Uhr, wenn die Antwort die Fitness-App auf dem Telefon ist. Ein Satz, der für Strava stimmt und für die Apple Watch nicht, ist schlechter als einer, der nichts nennt und auf Fitness zeigt.
+
+**`DeletePrompt` ist nach `Shared/` gewandert.** Es war in `iOS/`, und das Testziel kompiliert `Tests` + `Shared` — nichts in `iOS/` ist von einem Test aus erreichbar. Text, der dem Nutzer etwas behauptet, gehört dorthin, wo ein Test ihn lesen kann; `LogRowText` liegt aus demselben Grund schon dort.
+
+**3 · Der Rekord schlägt die Quelle.** In `LogRowText` wird der PR-Zweig jetzt *vor* dem Import-Zweig geprüft. Ein fremd aufgezeichneter Lauf, der die 10-km-Bestzeit hält, zeigt sie damit auch auf seiner eigenen Zeile — vorher stand sie auf dem Records-Screen und die Zeile trug kein Tag. Unterhalb eines Rekords macht die Quelle weiter ihre Arbeit: sie erklärt, warum die Zeile keine Zone nennt. „Longest" ist keine Benchmark-Zeit und verdrängt die Quelle nicht.
+
+**4 · Die „MAX"-Caption ist weg**, der Run-Screen sagt immer „RUN". Dieselbe Form, die CUR-4 der Pace genommen hat: ein Zustand, der kommt und geht, in dem Slot, der überall sonst auf der Uhr den Screen benennt. Die Zonenleiste zwei Zentimeter darunter sagt dasselbe ruhiger und genauer.
+
+**5 · Der BPM-Stepper bleibt unberührt**, wie entschieden.
+
+Fünf neue Tests, 211 iOS-Tests grün, 27 watchOS-Tests grün, beide Ziele bauen, Snapshot-Referenzen neu aufgenommen (die Distanzen standen dort mit Komma).
+
+#### Link to completed work
