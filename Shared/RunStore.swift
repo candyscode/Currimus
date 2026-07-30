@@ -249,7 +249,7 @@ final class RunStore: ObservableObject {
         }
         // Asked, whatever comes back: background work does not ask twice in
         // one session.
-        attemptedThisSession.insert(run.id)
+        rebuildQueue.asking(run.id)
         let outcome = await HealthImport.detail(for: run, zones: zones,
                                                 fallbackRoute: samples(for: run).route,
                                                 in: healthStore)
@@ -260,7 +260,7 @@ final class RunStore: ObservableObject {
         case .noWorkout:
             // Health answered and has nothing. That is final, so the rebuild
             // stops offering this one.
-            knownUnrebuildable.insert(run.id)
+            rebuildQueue.settle(run.id)
             return
         case .unavailable:
             // Health could not answer — the device may still be locked, or
@@ -268,40 +268,40 @@ final class RunStore: ObservableObject {
             // runner everything was rebuilt when nothing was, and leaving it
             // marked as *attempted* would mean nothing tries again until the
             // app is relaunched.
-            attemptedThisSession.remove(run.id)
+            rebuildQueue.couldNotAsk(run.id)
             return
         }
 
-        // Written to the sidecar, not just to the run: the imported list is
-        // replaced wholesale on every refresh, and zones that lived only there
-        // vanished from under the detail screen the runner was looking at.
-        let rebuilt = detail.zoneSeconds.reduce(0, +) >= 1 ? detail.zoneSeconds : nil
-        if !detail.route.isEmpty || rebuilt != nil {
-            let samples = RunSamples(route: detail.route.isEmpty ? nil : detail.route,
-                                     zoneSeconds: rebuilt,
-                                     zoneDistanceKm: detail.zoneDistanceKm,
-                                     splits: detail.splits.isEmpty ? nil : detail.splits,
-                                     gradeAdjustedSecPerKm: detail.gradeAdjustedSecPerKm)
+        // One value, written in one place. The sidecar keeps a copy because
+        // the imported list is replaced wholesale on every refresh, and
+        // anything living only there is one foreground from being lost —
+        // which is how the zones went missing once and the grade adjustment
+        // twice.
+        let rebuilt = Reconstruction(
+            zoneSeconds: detail.zoneSeconds.reduce(0, +) >= 1 ? detail.zoneSeconds : nil,
+            zoneDistanceKm: detail.zoneDistanceKm,
+            splits: detail.splits.isEmpty ? nil : detail.splits,
+            gradeAdjustedSecPerKm: detail.gradeAdjustedSecPerKm,
+            route: detail.route.isEmpty ? nil : detail.route
+        )
+        if !rebuilt.isEmpty {
+            let samples = RunSamples(rebuilt: rebuilt)
             sampleCache[run.id] = samples
             RunSampleStore.save(samples, for: run.id)
         }
+        // `applied(to:)` only ever fills gaps: a run Currimus recorded knows
+        // its own zones and splits better than anything reassembled after the
+        // fact.
         if let index = importedRuns.firstIndex(where: { $0.id == run.id }) {
-            if let rebuilt { importedRuns[index].zoneSeconds = rebuilt }
-            importedRuns[index].zoneDistanceKm = detail.zoneDistanceKm
-            if !detail.splits.isEmpty { importedRuns[index].splits = detail.splits }
-            importedRuns[index].gradeAdjustedSecPerKm = detail.gradeAdjustedSecPerKm
-            // Health has now given everything it holds for this run. If that
-            // still leaves it short — a route with no heart-rate trace beside
-            // it, or no route at all to take a gradient from — then no future
-            // rebuild can do better, and it should stop being offered.
-            if needsRebuild(importedRuns[index]) { knownUnrebuildable.insert(run.id) }
+            importedRuns[index] = rebuilt.applied(to: importedRuns[index]).strippingSamples
+            // Health has now given everything it holds. If that still leaves
+            // the run short — a route with no heart-rate trace beside it, or
+            // no route at all to take a gradient from — no future rebuild can
+            // do better, and it should stop being offered.
+            if HealthRebuild.canGain(importedRuns[index]) { rebuildQueue.settle(run.id) }
         } else if let index = runs.firstIndex(where: { $0.id == run.id }) {
-            // One of ours, recorded before it kept distance per zone. Its own
-            // splits and zone seconds stay — they were measured live and are
-            // the better record.
-            runs[index].zoneDistanceKm = detail.zoneDistanceKm
-            runs[index].gradeAdjustedSecPerKm = detail.gradeAdjustedSecPerKm
-            if needsRebuild(runs[index]) { knownUnrebuildable.insert(run.id) }
+            runs[index] = rebuilt.applied(to: runs[index]).strippingSamples
+            if HealthRebuild.canGain(runs[index]) { rebuildQueue.settle(run.id) }
         }
     }
 
@@ -325,7 +325,7 @@ final class RunStore: ObservableObject {
     /// the runner's back.
     func rebuildEverythingFromHealth() {
         guard rebuildTask == nil else { return }
-        let pending = rebuildable.sorted { $0.date > $1.date }
+        let pending = rebuildQueue.outstanding(in: allRuns).sorted { $0.date > $1.date }
         rebuild = Rebuild(done: 0, total: pending.count)
         rebuildTask = Task { @MainActor [weak self] in
             for (index, run) in pending.enumerated() {
@@ -356,33 +356,10 @@ final class RunStore: ObservableObject {
     }
 
     /// How many runs a rebuild would still have to fetch.
-    var runsAwaitingRebuild: Int { rebuildable.count }
-
-    /// Runs with no measured distance per zone that have not already been
-    /// asked about this session.
-    ///
-    /// The second half matters: a run whose workout Health no longer holds, or
-    /// one that never had a route, can never gain the measurement — without
-    /// this it would sit in the count for ever and the button would promise
-    /// something it cannot deliver.
-    private var rebuildable: [Run] {
-        allRuns.filter { needsRebuild($0) && !knownUnrebuildable.contains($0.id) }
-    }
+    var runsAwaitingRebuild: Int { rebuildQueue.outstanding(in: allRuns).count }
 
     /// Test seam: what a full-but-empty answer from Health does to the queue.
-    func markUnrebuildableForTesting(_ id: UUID) { knownUnrebuildable.insert(id) }
-
-    /// Whether Health could still add something to this run.
-    ///
-    /// A treadmill run is asked only for its zone distance: it has no route,
-    /// so it has no gradients and never will, and counting it as outstanding
-    /// for a grade adjustment left it in the queue for ever — eating the
-    /// background budget every launch, newest first, ahead of the imported
-    /// runs the zone-2 chart actually needs.
-    private func needsRebuild(_ run: Run) -> Bool {
-        if run.zoneDistanceKm == nil { return true }
-        return run.gradeAdjustedSecPerKm == nil && !run.isTreadmill
-    }
+    func markUnrebuildableForTesting(_ id: UUID) { rebuildQueue.settle(id) }
 
     /// Fills in what Health can still tell us about imported runs, a few at a
     /// time and newest first.
@@ -399,12 +376,8 @@ final class RunStore: ObservableObject {
         // covers our own older runs as well; doing that on every foreground
         // spent two or three Health queries per run for something nobody had
         // asked for.
-        let pending = importedRuns
-            .filter { $0.date >= cutoff && needsRebuild($0)
-                && !attemptedThisSession.contains($0.id)
-                && !knownUnrebuildable.contains($0.id) }
-            .sorted { $0.date > $1.date }
-            .prefix(limit)
+        let pending = rebuildQueue.next(from: importedRuns.filter { $0.date >= cutoff },
+                                        limit: limit)
         for run in pending { await hydrate(run) }
     }
 
@@ -415,22 +388,15 @@ final class RunStore: ObservableObject {
     /// which manufactures an empty one when the file is missing: an indoor run
     /// has no route and never will, so inferring "not fetched yet" from an
     /// empty route re-queried Health on every single visit.
-    /// One rule for both, because two rules meant the background fill spent
-    /// its budget choosing runs the hydration then declined to touch — and
-    /// never marked them, so it chose them again on the next foreground.
-    private func needsHydration(_ run: Run) -> Bool {
-        guard !attemptedThisSession.contains(run.id),
-              !knownUnrebuildable.contains(run.id) else { return false }
-        return needsRebuild(run)
-    }
+    /// Whether to put the question at all. One rule, in one place: this was
+    /// three predicates read by three callers, and every bug in this path came
+    /// out of changing one of them.
+    private func needsHydration(_ run: Run) -> Bool { rebuildQueue.shouldAsk(run) }
 
-    /// Runs asked about in this session — background work does not ask twice.
-    /// Not published: it does not feed the count, and republishing it fired a
-    /// re-render of every observing view once per run of a backfill.
-    private var attemptedThisSession: Set<UUID> = []
-    /// Runs Health answered for and had nothing to give. Final, unlike a query
-    /// that could not run at all.
-    @Published private var knownUnrebuildable: Set<UUID> = []
+    /// Who has been asked, who is finished with, and what is still
+    /// outstanding — see `HealthRebuild`. Published so the Settings row's
+    /// count follows a background fill running while it is on screen.
+    @Published private var rebuildQueue = HealthRebuild()
     /// Health is asked for permission once per session, at the first hydration.
     private var askedHealth = false
     #endif
@@ -471,16 +437,10 @@ final class RunStore: ObservableObject {
     /// back to being placed by its average heart rate.
     func carryingHydratedZones(_ run: Run) -> Run {
         guard let known = importedRuns.first(where: { $0.id == run.id }) else { return run }
-        var carried = run
-        if run.zoneSeconds.reduce(0, +) < 1, known.zoneSeconds.reduce(0, +) >= 1 {
-            carried.zoneSeconds = known.zoneSeconds
-        }
-        // Same for everything else rebuilt out of Health: a refresh reads the
-        // workout's summary, which has none of it.
-        carried.zoneDistanceKm = run.zoneDistanceKm ?? known.zoneDistanceKm
-        carried.gradeAdjustedSecPerKm = run.gradeAdjustedSecPerKm ?? known.gradeAdjustedSecPerKm
-        if run.splits.isEmpty { carried.splits = known.splits }
-        return carried
+        // Every rebuilt field lives in one type, so this cannot fall behind
+        // the next one that gets added — which is exactly how the zones went
+        // missing once and the grade adjustment twice.
+        return Reconstruction(of: known).applied(to: run)
     }
 
     /// Re-derives the zones from Health. Never touches zones the user has

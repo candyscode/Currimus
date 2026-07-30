@@ -798,3 +798,37 @@ Geprüft und in Ordnung: die `distanceTrace`-Umstellung verhält sich identisch 
 
 https://github.com/candyscode/Currimus/commit/7910676
 
+\n\n### CUR-28: Den Rekonstruktions-Zustand auf einen Typ zusammenziehen
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Vier Fehler in drei Tagen im selben Pfad, jeder mit derselben Form: eine Bedingung liegt an zwei Stellen, und ich ändere eine. Ursache angehen statt weiter Symptome.
+
+#### Agent Comments
+
+Die Fehlerliste, bevor etwas geändert wurde — sie ist die Begründung:
+
+| | Was | Weil |
+|---|---|---|
+| CUR-16 #1 | Der Refresh warf die geholten Zonen weg | `carryingHydratedZones` kannte `zoneSeconds` nicht |
+| CUR-27 #1 | Der Refresh warf die Steigungskorrektur weg | dieselbe Funktion, neues Feld, wieder vergessen |
+| CUR-27#2 #1 | Das Nachladen verhungerte an Laufband-Läufen | Auswahl-Prädikat und „was kann ein Lauf gewinnen" waren dasselbe Prädikat für zwei Fragen |
+| CUR-27#3 #3 | Auswahl und Hydrierung waren sich uneinig | zwei Regeln für „soll ich fragen" |
+
+Zwei Ursachen, zwei Zusammenführungen:
+
+**1 · `Reconstruction`** — alles, was Health an einen Lauf zurückgeben kann und die Workout-Zusammenfassung nicht trägt: Zonensekunden, Zonen-Distanz, Splits, Steigungskorrektur, Route. Ein neues Feld war bisher **fünf** Änderungen (Sidecar, dessen Initialisierer, das Zurückschreiben nach dem Abruf, das Zusammenführen auf den Lauf, das Übertragen über den Refresh) — und beim fünften ging es zweimal schief. Jetzt ist es eine. `applied(to:)` ist die einzige Stelle, die diese Felder auf einen Lauf schreibt, und sie überschreibt nie, was der Lauf selbst gemessen hat.
+
+Das Dateiformat der Sidecar-Dateien bleibt unverändert (eigene `Codable`-Zuordnung auf die bisherigen flachen Schlüssel), damit bestehende Installationen nichts neu holen müssen.
+
+**2 · `HealthRebuild`** — die Buchführung: wer wurde schon gefragt, wer ist endgültig erledigt, was steht noch aus. Vorher drei Prädikate und zwei Mengen verstreut über den Store, jedes von zwei bis drei Aufrufern unterschiedlich benutzt. Jetzt beantwortet ein Typ alle drei Fragen — „kann Health hier noch etwas beitragen", „soll ich jetzt fragen", „wie viele sind offen" —, und die Antworten können nicht mehr auseinanderlaufen.
+
+Verhalten unverändert: alle bestehenden Tests laufen ohne Anpassung durch, inklusive der Fälle aus den vier Reviews.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-28
+

@@ -405,6 +405,55 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(store.runsAwaitingRebuild, 0)
     }
 
+    // MARK: - One place per question
+
+    func testAReconstructionOnlyEverFillsGaps() {
+        var run = self.run("Own", km: 10, minutes: 50)
+        run.zoneSeconds = [0, 2400, 600, 0, 0]
+        run.splits = Array(repeating: 300, count: 10)
+
+        // What the watch measured live wins over anything reassembled after
+        // the fact; what it never had gets filled in.
+        let rebuilt = Reconstruction(zoneSeconds: [3000, 0, 0, 0, 0],
+                                     zoneDistanceKm: [0, 8, 2, 0, 0],
+                                     splits: Array(repeating: 999, count: 10),
+                                     gradeAdjustedSecPerKm: 290)
+        let applied = rebuilt.applied(to: run)
+        XCTAssertEqual(applied.zoneSeconds, [0, 2400, 600, 0, 0], "its own zones stand")
+        XCTAssertEqual(applied.splits.first, 300, "its own splits stand")
+        XCTAssertEqual(applied.zoneDistanceKm, [0, 8, 2, 0, 0], "and the gaps are filled")
+        XCTAssertEqual(applied.gradeAdjustedSecPerKm, 290)
+    }
+
+    func testASidecarWrittenByAnEarlierBuildStillReads() throws {
+        // The stored shape is flat and predates `Reconstruction`; files in
+        // that shape are on real devices right now.
+        let json = """
+        {"altitude":[100,110],"zoneSeconds":[0,2400,600,0,0],"splits":[300,300],\
+        "zoneDistanceKm":[0,8,2,0,0],"gradeAdjustedSecPerKm":290}
+        """.replacingOccurrences(of: "\\\n", with: "")
+        let samples = try JSONDecoder().decode(RunSamples.self, from: Data(json.utf8))
+        XCTAssertEqual(samples.altitude, [100, 110])
+        XCTAssertEqual(samples.rebuilt.zoneSeconds, [0, 2400, 600, 0, 0])
+        XCTAssertEqual(samples.rebuilt.zoneDistanceKm, [0, 8, 2, 0, 0])
+        XCTAssertEqual(samples.rebuilt.gradeAdjustedSecPerKm, 290)
+        XCTAssertEqual(samples.rebuilt.splits?.count, 2)
+    }
+
+    func testASidecarRoundTripsThroughTheOldKeys() throws {
+        let samples = RunSamples(altitude: [10, 20],
+                                 rebuilt: Reconstruction(zoneSeconds: [1, 2, 3, 4, 5],
+                                                         zoneDistanceKm: [1, 2, 3, 4, 5],
+                                                         splits: [300],
+                                                         gradeAdjustedSecPerKm: 295))
+        let data = try JSONEncoder().encode(samples)
+        let text = String(decoding: data, as: UTF8.self)
+        // Written flat, so an older build could still read it back.
+        XCTAssertTrue(text.contains("\"zoneDistanceKm\""), text)
+        XCTAssertTrue(text.contains("\"gradeAdjustedSecPerKm\""), text)
+        XCTAssertEqual(try JSONDecoder().decode(RunSamples.self, from: data), samples)
+    }
+
     // MARK: - Zones from another app's heart-rate trace
 
     /// Zones at max 190: 115 / 133 / 152 / 171.

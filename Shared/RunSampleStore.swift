@@ -3,40 +3,53 @@ import Foundation
 /// The heavy half of a run — the GPS track and the altitude series.
 struct RunSamples: Codable, Equatable {
     var altitude: [Double]?
-    var route: [Coordinate]?
-    /// Seconds per zone, for runs whose zones had to be rebuilt from Health
-    /// rather than recorded. Kept here rather than only on the run: the
-    /// imported list is replaced wholesale on every refresh, and anything
-    /// living only in it is one foreground away from being lost.
-    var zoneSeconds: [TimeInterval]?
-    /// Distance per zone and per-kilometre splits, reconstructed from the two
-    /// above for a run Currimus did not record itself. Same reason as
-    /// `zoneSeconds`: the imported list is replaced wholesale on every
-    /// refresh, so anything living only there is one foreground from gone.
-    var zoneDistanceKm: [Double]?
-    var splits: [TimeInterval]?
-    var gradeAdjustedSecPerKm: Double?
+    /// Everything Health can put back — see `Reconstruction`. Held as one
+    /// value so that adding a field is one change rather than five.
+    var rebuilt = Reconstruction()
+
+    var route: [Coordinate]? { rebuilt.route }
 
     static let empty = RunSamples()
 
-    var isEmpty: Bool {
-        (altitude?.isEmpty ?? true) && (route?.isEmpty ?? true)
-            && (zoneSeconds?.isEmpty ?? true)
-    }
+    var isEmpty: Bool { (altitude?.isEmpty ?? true) && rebuilt.isEmpty }
 
-    init(altitude: [Double]? = nil, route: [Coordinate]? = nil,
-         zoneSeconds: [TimeInterval]? = nil, zoneDistanceKm: [Double]? = nil,
-         splits: [TimeInterval]? = nil, gradeAdjustedSecPerKm: Double? = nil) {
+    init(altitude: [Double]? = nil, rebuilt: Reconstruction = Reconstruction()) {
         self.altitude = altitude
-        self.route = route
-        self.zoneSeconds = zoneSeconds
-        self.zoneDistanceKm = zoneDistanceKm
-        self.splits = splits
-        self.gradeAdjustedSecPerKm = gradeAdjustedSecPerKm
+        self.rebuilt = rebuilt
     }
 
     init(_ run: Run) {
-        self.init(altitude: run.altitudeSamples, route: run.route)
+        self.init(altitude: run.altitudeSamples,
+                  rebuilt: Reconstruction(route: run.route))
+    }
+
+    /// The stored shape is flat and predates `Reconstruction`, and sidecar
+    /// files written by earlier builds are still on disk — so the keys stay
+    /// exactly where they were and only the code above them is grouped.
+    private enum CodingKeys: String, CodingKey {
+        case altitude, route, zoneSeconds, zoneDistanceKm, splits, gradeAdjustedSecPerKm
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        altitude = try container.decodeIfPresent([Double].self, forKey: .altitude)
+        rebuilt = Reconstruction(
+            zoneSeconds: try container.decodeIfPresent([TimeInterval].self, forKey: .zoneSeconds),
+            zoneDistanceKm: try container.decodeIfPresent([Double].self, forKey: .zoneDistanceKm),
+            splits: try container.decodeIfPresent([TimeInterval].self, forKey: .splits),
+            gradeAdjustedSecPerKm: try container.decodeIfPresent(Double.self, forKey: .gradeAdjustedSecPerKm),
+            route: try container.decodeIfPresent([Coordinate].self, forKey: .route)
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(altitude, forKey: .altitude)
+        try container.encodeIfPresent(rebuilt.route, forKey: .route)
+        try container.encodeIfPresent(rebuilt.zoneSeconds, forKey: .zoneSeconds)
+        try container.encodeIfPresent(rebuilt.zoneDistanceKm, forKey: .zoneDistanceKm)
+        try container.encodeIfPresent(rebuilt.splits, forKey: .splits)
+        try container.encodeIfPresent(rebuilt.gradeAdjustedSecPerKm, forKey: .gradeAdjustedSecPerKm)
     }
 }
 
@@ -128,21 +141,8 @@ extension Run {
 
     /// The run with its samples put back, for a detail screen or an export.
     func merging(_ samples: RunSamples) -> Run {
-        var copy = self
+        var copy = samples.rebuilt.applied(to: self)
         copy.altitudeSamples = samples.altitude ?? altitudeSamples
-        copy.route = samples.route ?? route
-        // Only when the run has none of its own: a recorded run's zones are
-        // the authority, and this is the fallback for one rebuilt from Health.
-        if zoneSeconds.reduce(0, +) < 1, let rebuilt = samples.zoneSeconds, rebuilt.count == 5 {
-            copy.zoneSeconds = rebuilt
-        }
-        if zoneDistanceKm == nil, let rebuilt = samples.zoneDistanceKm, rebuilt.count == 5 {
-            copy.zoneDistanceKm = rebuilt
-        }
-        if splits.isEmpty, let rebuilt = samples.splits, !rebuilt.isEmpty {
-            copy.splits = rebuilt
-        }
-        copy.gradeAdjustedSecPerKm = gradeAdjustedSecPerKm ?? samples.gradeAdjustedSecPerKm
         return copy
     }
 
