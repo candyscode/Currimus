@@ -753,3 +753,30 @@ Was Indoor-Läufe weiterhin nicht bekommen: eine Steigungskorrektur. Ohne Höhen
 
 https://github.com/candyscode/Currimus/commit/66b1d82
 
+\n\n### CUR-27: Review der Commits seit dem letzten Review
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Review aller Commits seit dem letzten Code-Review in dieser Session (24 Commits, CUR-15 bis CUR-26).
+
+#### Agent Comments
+
+Vier Funde, alle bestätigt und behoben. Zwei davon sind derselbe Fehlertyp wie Befund 1 des letzten Reviews — der Refresh ersetzt die importierte Liste vollständig, und alles, was nur dort lebt, ist einen Vordergrund vom Verschwinden entfernt.
+
+1. **Die Steigungskorrektur überlebte keinen Refresh.** `carryingHydratedZones` trug Zonen, Zonen-Distanz und Splits über die Aktualisierung, aber nicht `gradeAdjustedSecPerKm`. Die aus Health rekonstruierte Minetti-Pace war beim nächsten Wechsel in den Vordergrund wieder weg, und der Trail-Progress fiel auf die Faustregel zurück. Jetzt mit Test, der *alle* rekonstruierten Felder prüft statt nur das, an das ich gerade dachte.
+
+2. **Der Rebuild-Button versprach etwas, das er nicht halten konnte.** `hydratedImported` wurde erst *nach* einer erfolgreichen Antwort gesetzt. Ein Lauf, dessen Workout nicht mehr in Health liegt, kam also nie aus der Zählung heraus: die Zeile bot ewig „3 runs" an, und jeder Start fragte dieselben toten Läufe erneut ab. Genau die Behauptung, die in CUR-21 als erledigt notiert war — dort jetzt korrigiert.
+
+3. **Hintergrund-Nachladen und Settings-Zeile waren sich uneinig.** Das Nachladen suchte nur nach fehlender Zonen-Distanz, die Zeile auch nach fehlender Steigungskorrektur. Die Zahl konnte damit durch Hintergrundarbeit allein nie auf null gehen. Beide lesen jetzt dieselbe Liste.
+
+4. **`store.prediction` war ungecacht** — und seit CUR-21 deutlich teurer, weil importierte Läufe jetzt Splits haben: die Prognose sucht die beste Leistung über drei Distanzen, zweimal (aktuelles Fenster und gesamtes Log), und liest dabei jeden Split jedes Laufs. Home las das bei *jedem* Body-Pass. Jetzt gecacht wie jede andere Aggregation, invalidiert mit dem Log. Das ist derselbe Fehlertyp wie die Lags aus CUR-18, nur an einer neuen Stelle.
+
+Geprüft und in Ordnung: die `distanceTrace`-Umstellung verhält sich identisch zur Routen-Variante (die bestehenden Tests decken beide Wege ab), die Behandlung des vergangenen Rennens auf allen drei Screens, die Reihenfolge der Rebuild-Tasks bei Abbruch, und dass `Explainer` nur auf Screens liegt, die nicht in der Scroll-Hot-Path sind.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/CUR-27
+

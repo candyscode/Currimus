@@ -352,6 +352,26 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(store.carryingHydratedZones(fresher).zoneSeconds, [0, 1200, 1800, 0, 0])
     }
 
+    func testEverythingRebuiltFromHealthSurvivesARefresh() {
+        let store = makeStore()
+        var theirs = run("Fitness", km: 10, minutes: 50, imported: true)
+        theirs.zoneSeconds = [0, 2400, 600, 0, 0]
+        theirs.zoneDistanceKm = [0, 8, 2, 0, 0]
+        theirs.splits = Array(repeating: 300, count: 10)
+        theirs.gradeAdjustedSecPerKm = 295
+        store.importedRuns = [theirs]
+
+        // What a refresh reads back is the workout's summary: no zones, no
+        // splits, no per-zone distance and no grade adjustment.
+        var summary = run("Fitness", km: 10, minutes: 50, imported: true)
+        summary.id = theirs.id
+        let carried = store.carryingHydratedZones(summary)
+        XCTAssertEqual(carried.zoneSeconds, [0, 2400, 600, 0, 0])
+        XCTAssertEqual(carried.zoneDistanceKm, [0, 8, 2, 0, 0])
+        XCTAssertEqual(carried.splits.count, 10)
+        XCTAssertEqual(carried.gradeAdjustedSecPerKm, 295)
+    }
+
     // MARK: - Zones from another app's heart-rate trace
 
     /// Zones at max 190: 115 / 133 / 152 / 171.

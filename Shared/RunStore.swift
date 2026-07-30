@@ -97,6 +97,7 @@ final class RunStore: ObservableObject {
     private var cachedHolders: [UUID: String]?
     private var cachedLatestBenchmark: LatestBenchmark??
     private var cachedFastestPaceOfMonth: Set<UUID>?
+    private var cachedPrediction: RunAnalytics.Prediction??
     /// Grouping and sorting the whole log ran on every body pass of the Log
     /// screen — including every tap of a checkbox in its marking mode.
     private var cachedMonths: [LogFilter: [(month: Date, runs: [Run])]] = [:]
@@ -110,6 +111,7 @@ final class RunStore: ObservableObject {
         cachedFastestPaceOfMonth = nil
         cachedMonths = [:]
         cachedLogText = [:]
+        cachedPrediction = nil
     }
 
     var lastRun: Run? { allRuns.first }
@@ -240,11 +242,14 @@ final class RunStore: ObservableObject {
             askedHealth = true
             await HealthImport.requestAuthorization(healthStore)
         }
+        // Marked before the answer, not after: a run whose workout Health no
+        // longer holds returns nothing, and marking only successes left it in
+        // the count for ever — the rebuild row kept offering to fix something
+        // it could not, and every launch re-queried the same dead runs.
+        hydratedImported.insert(run.id)
         guard let detail = await HealthImport.detail(for: run, zones: zones,
                                                      fallbackRoute: samples(for: run).route,
                                                      in: healthStore) else { return }
-        // Asked, and answered.
-        hydratedImported.insert(run.id)
 
         // Written to the sidecar, not just to the run: the imported list is
         // replaced wholesale on every refresh, and zones that lived only there
@@ -301,7 +306,9 @@ final class RunStore: ObservableObject {
                 await self?.hydrate(run, force: true)
                 self?.rebuild = Rebuild(done: index + 1, total: pending.count)
             }
-            self?.rebuildTask = nil
+            // Only if it is still ours: a cancelled run may finish its last
+            // step after the next rebuild has already been started.
+            if !Task.isCancelled { self?.rebuildTask = nil }
         }
     }
 
@@ -345,8 +352,12 @@ final class RunStore: ObservableObject {
     func backfillImported(limit: Int = 12) async {
         guard !isDemo else { return }
         let cutoff = Calendar.current.date(byAdding: .month, value: -12, to: .now) ?? .distantPast
-        let pending = importedRuns
-            .filter { $0.date >= cutoff && $0.zoneDistanceKm == nil }
+        // The same list the Settings row counts. They used to disagree — the
+        // fill looked only for missing zone distance, the row also for a
+        // missing grade adjustment — so the count could never reach zero from
+        // background work alone.
+        let pending = rebuildable
+            .filter { $0.date >= cutoff }
             .sorted { $0.date > $1.date }
             .prefix(limit)
         for run in pending { await hydrate(run) }
@@ -417,6 +428,7 @@ final class RunStore: ObservableObject {
         // Same for everything else rebuilt out of Health: a refresh reads the
         // workout's summary, which has none of it.
         carried.zoneDistanceKm = run.zoneDistanceKm ?? known.zoneDistanceKm
+        carried.gradeAdjustedSecPerKm = run.gradeAdjustedSecPerKm ?? known.gradeAdjustedSecPerKm
         if run.splits.isEmpty { carried.splits = known.splits }
         return carried
     }
@@ -769,11 +781,22 @@ final class RunStore: ObservableObject {
 
     // MARK: - Records & prediction
 
+    /// Cached like every other aggregate on this screen's path.
+    ///
+    /// It walks the best effort over three distances, twice — once over the
+    /// recent window and once over the whole log — and each of those reads
+    /// every split of every run. That was cheap while imported runs had no
+    /// splits; since they gained them it is the most expensive thing Home
+    /// reads, and Home read it on every body pass.
     var prediction: RunAnalytics.Prediction? {
+        if let cachedPrediction { return cachedPrediction }
         // A race that has been run needs no forecast; what it needs is a
         // result, which `raceResult` finds.
-        guard let race, !race.isPast else { return nil }
-        return RunAnalytics.predict(race: race, runs: allRuns)
+        let built = race.flatMap { race -> RunAnalytics.Prediction? in
+            race.isPast ? nil : RunAnalytics.predict(race: race, runs: allRuns)
+        }
+        cachedPrediction = .some(built)
+        return built
     }
 
     /// The run that was the race, if there is one.
