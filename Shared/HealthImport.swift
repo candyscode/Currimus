@@ -283,19 +283,30 @@ enum HealthImport {
     }
 
     /// Cumulative distance over the workout, from Health's own samples.
+    ///
+    /// **One source, or the numbers double.** `HKSampleQuery` does not
+    /// deduplicate the way the Health app's own charts do: an iPhone carried on
+    /// a run writes `distanceWalkingRunning` alongside the watch, and adding
+    /// both up gives a run twice as long as it was. Every kilometre mark then
+    /// falls at half the real distance, so the recovered splits come out roughly
+    /// twice as fast — and those splits set records.
+    ///
+    /// Samples tied to the workout are asked for first. Plenty of apps save a
+    /// workout without tying anything to it, so the fallback is the same
+    /// *source* over the workout's window — the app that recorded the run is the
+    /// one whose distance describes it — rather than everything in the window
+    /// from every source on the device.
     private static func distanceTrace(of workout: HKWorkout,
                                       in store: HKHealthStore) async -> [RunAnalytics.DistancePoint] {
-        let samples: [HKQuantitySample] = await withCheckedContinuation { continuation in
-            let query = HKSampleQuery(
-                sampleType: HKQuantityType(.distanceWalkingRunning),
-                predicate: HKQuery.predicateForSamples(withStart: workout.startDate,
-                                                       end: workout.endDate),
-                limit: HKObjectQueryNoLimit,
-                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
-            ) { _, samples, _ in
-                continuation.resume(returning: samples as? [HKQuantitySample] ?? [])
-            }
-            store.execute(query)
+        var samples = await distanceSamples(HKQuery.predicateForObjects(from: workout), in: store)
+        if samples.isEmpty {
+            samples = await distanceSamples(
+                NSCompoundPredicate(andPredicateWithSubpredicates: [
+                    HKQuery.predicateForObjects(from: workout.sourceRevision.source),
+                    HKQuery.predicateForSamples(withStart: workout.startDate,
+                                                end: workout.endDate),
+                ]),
+                in: store)
         }
         // Each sample is the distance covered over its own interval, so they
         // add up to the run.
@@ -307,6 +318,21 @@ enum HealthImport {
                            at: max(sample.endDate.timeIntervalSince(workout.startDate), 0)))
         }
         return points
+    }
+
+    private static func distanceSamples(_ predicate: NSPredicate,
+                                        in store: HKHealthStore) async -> [HKQuantitySample] {
+        await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: HKQuantityType(.distanceWalkingRunning),
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+            ) { _, samples, _ in
+                continuation.resume(returning: samples as? [HKQuantitySample] ?? [])
+            }
+            store.execute(query)
+        }
     }
 
     private static func routeSeries(of workout: HKWorkout,

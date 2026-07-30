@@ -136,6 +136,36 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNil(RunAnalytics.trainingPrediction(runs: sparse))
     }
 
+    /// Eight runs are not a training block if they all happened last fortnight.
+    ///
+    /// The guard counted runs and the arithmetic divided by eight regardless, so
+    /// a keen fortnight reported a third of its real weekly volume — and this
+    /// curve turns that into about a quarter of an hour of extra marathon, which
+    /// the screen then leads with because it leads with the slower of the two.
+    func testAKeenFortnightIsNotEightWeeksOfTraining() {
+        let fortnight = (0..<10).map { trainingRun(14, pace: 300, daysAgo: $0) }
+        XCTAssertNil(RunAnalytics.trainingPrediction(runs: fortnight))
+    }
+
+    /// A block shorter than the window is divided by the weeks it covers.
+    func testAShortBlockIsDividedByTheWeeksItActuallyCovers() throws {
+        // Five weeks, four runs a week, 15 km each — 60 km a week, not 37.5.
+        let runs = (0..<20).map { trainingRun(15, pace: 300, daysAgo: $0 * 35 / 20) }
+        let prediction = try XCTUnwrap(RunAnalytics.trainingPrediction(runs: runs))
+        XCTAssertEqual(prediction.weeklyKm, 60, accuracy: 2)
+        XCTAssertEqual(prediction.weeksCovered, 5,
+                       "the sentence on screen must name the period it read")
+    }
+
+    /// Resting the last fortnight of a long block still divides by eight — the
+    /// block is eight weeks old whether or not it ends in running.
+    func testATaperStillCountsAsPartOfTheBlock() throws {
+        let runs = (0..<24).map { trainingRun(15, pace: 300, daysAgo: 14 + $0 * 42 / 24) }
+        let prediction = try XCTUnwrap(RunAnalytics.trainingPrediction(runs: runs))
+        XCTAssertEqual(prediction.weeksCovered, 8)
+        XCTAssertEqual(prediction.weeklyKm, 45, accuracy: 2, "24 x 15 km over eight weeks")
+    }
+
     func testTheMarathonLeadsWithTheMoreCautiousOfTheTwo() throws {
         // A sharp 10 K and thin training: Riegel is optimistic, Tanda is not,
         // and the screen must not lead with the flattering one.
@@ -852,5 +882,110 @@ final class RunAnalyticsTests: XCTestCase {
         {"pacerTargetSecPerKm":315,"kilometerAlert":true,"countdownEnabled":true,"maxHR":190}
         """.data(using: .utf8)!
         XCTAssertNil(try JSONDecoder().decode(WatchSettings.self, from: legacy).alwaysOnReduced)
+    }
+
+    // MARK: - CUR-32 · steepest gradient
+
+    /// A ramp measured over the ground it was climbed on.
+    func testTheSteepestStretchIsMeasuredFromTheTrack() throws {
+        // 400 m due north, climbing 40 m — a steady 10 %.
+        let route = (0...40).map { step in
+            Coordinate(lat: 47.0 + Double(step) * 0.00009, lon: 11.0,
+                       elevation: 400 + Double(step), t: Double(step) * 6)
+        }
+        let gradient = try XCTUnwrap(RunAnalytics.steepestGradient(route: route))
+        XCTAssertEqual(gradient, 0.10, accuracy: 0.02)
+    }
+
+    /// A descent is as steep as a climb — a runner asking how steep it got
+    /// means either.
+    func testADescentCountsAsSteepness() throws {
+        let route = (0...40).map { step in
+            Coordinate(lat: 47.0 + Double(step) * 0.00009, lon: 11.0,
+                       elevation: 800 - Double(step), t: Double(step) * 6)
+        }
+        XCTAssertEqual(try XCTUnwrap(RunAnalytics.steepestGradient(route: route)),
+                       0.10, accuracy: 0.02)
+    }
+
+    /// Metre-scale elevation noise must not become a ramp. This is the whole
+    /// reason the window is 100 m and not the 20 m the pace adjustment uses:
+    /// a maximum goes looking for the noisiest sample it can find.
+    func testElevationJitterIsNotAWall() throws {
+        // Flat ground, 2 m of sensor wobble on every fix.
+        let route = (0...80).map { step in
+            Coordinate(lat: 47.0 + Double(step) * 0.00009, lon: 11.0,
+                       elevation: 400 + (step.isMultiple(of: 2) ? 2 : 0), t: Double(step) * 6)
+        }
+        let gradient = try XCTUnwrap(RunAnalytics.steepestGradient(route: route))
+        XCTAssertLessThan(gradient, 0.03, "jitter on the flat read as a ramp")
+    }
+
+    func testNoTrackMeansNoSteepestStretch() {
+        XCTAssertNil(RunAnalytics.steepestGradient(route: []))
+        XCTAssertNil(RunAnalytics.steepestGradient(
+            route: [Coordinate(lat: 47, lon: 11, elevation: 400, t: 0)]))
+    }
+
+    // MARK: - CUR-32 · a race over a distance the runner has already run
+
+    /// A 5 K race could never be predicted: the candidate list held nothing
+    /// shorter, and the race's own distance was excluded. Meanwhile the screen
+    /// promised "run a 5 K and the prediction appears".
+    func testAFiveKRaceIsPredictedFromAFiveK() throws {
+        let fiveK = Run(date: .now.addingTimeInterval(-86_400), name: "5K", distanceKm: 5,
+                        duration: 1200, avgHR: 170, splits: Array(repeating: 240, count: 5))
+        let race = Race(name: "Parkrun", distance: .fiveK,
+                        date: .now.addingTimeInterval(14 * 86_400), goalTime: 1180)
+        let prediction = try XCTUnwrap(RunAnalytics.predict(race: race, runs: [fiveK]))
+        XCTAssertEqual(prediction.basisLabel, "5K")
+        XCTAssertEqual(prediction.time, 1200, accuracy: 1, "Riegel over the identity is the effort")
+        XCTAssertTrue(prediction.isOverRaceDistance,
+                      "the note must not credit Riegel with an identity")
+    }
+
+    /// And where the runner has covered the race distance, that is the basis —
+    /// a marathon predicts a marathon better than a half scaled up does.
+    func testAMarathonInTheLogIsTheBasisForAMarathon() throws {
+        let marathon = Run(date: .now.addingTimeInterval(-30 * 86_400), name: "M",
+                           distanceKm: 42.2, duration: 12_600, avgHR: 165)
+        let half = Run(date: .now.addingTimeInterval(-20 * 86_400), name: "H",
+                       distanceKm: 21.1, duration: 5_400, avgHR: 170)
+        let race = Race(name: "M2", distance: .marathon,
+                        date: .now.addingTimeInterval(42 * 86_400), goalTime: 12_000)
+        let prediction = try XCTUnwrap(RunAnalytics.predict(race: race, runs: [marathon, half]))
+        XCTAssertEqual(prediction.basisLabel, "Marathon")
+        XCTAssertTrue(prediction.isOverRaceDistance)
+    }
+
+    /// Below the race, nothing changes: the closest benchmark under it still
+    /// wins, and it is still scaled.
+    func testAShorterBenchmarkIsStillScaled() throws {
+        let half = Run(date: .now, name: "H", distanceKm: 21.1, duration: 5_400, avgHR: 170)
+        let race = Race(name: "M", distance: .marathon,
+                        date: .now.addingTimeInterval(42 * 86_400), goalTime: 12_000)
+        let prediction = try XCTUnwrap(RunAnalytics.predict(race: race, runs: [half]))
+        XCTAssertEqual(prediction.basisLabel, "Half")
+        XCTAssertFalse(prediction.isOverRaceDistance)
+        XCTAssertGreaterThan(prediction.time, 5_400 * 2)
+    }
+
+    // MARK: - CUR-32 · drift has a window
+
+    /// "Than it used to be" has to mean lately. There was no window at all, so
+    /// three years of running compared year one against year three — and once
+    /// the log was long the number stopped moving whatever the runner did.
+    func testDriftIgnoresRunsOlderThanItsWindow() {
+        let ancient = (0..<6).map { easyRun(420, hr: 175, daysAgo: 500 + $0 * 7) }
+        XCTAssertNil(RunAnalytics.hrAtPace(runs: ancient, referencePaceSec: 420),
+                     "a window of years is not a trend about now")
+    }
+
+    /// One run against one is a difference between two mornings.
+    func testDriftNeedsMoreThanTwoRunsNearThePace() {
+        let two = (0..<2).map { easyRun(420, hr: 160 - $0, daysAgo: $0 * 7) }
+        XCTAssertNil(RunAnalytics.hrAtPace(runs: two, referencePaceSec: 420))
+        let four = (0..<4).map { easyRun(420, hr: 160 - $0, daysAgo: $0 * 7) }
+        XCTAssertNotNil(RunAnalytics.hrAtPace(runs: four, referencePaceSec: 420))
     }
 }

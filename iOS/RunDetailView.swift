@@ -213,7 +213,8 @@ struct RunDetailView: View {
                 }
                 GridRow {
                     DetailStat(value: "\(grouped(Int(run.descentMeters ?? 0))) m", label: "DESCENT").gridExpand()
-                    DetailStat(value: "\(maxGradePercent)%", label: "MAX GRADE").gridExpand()
+                    DetailStat(value: steepest.map { "\($0)%" } ?? "–",
+                               label: "STEEPEST 100 M").gridExpand()
                 }
             }
             .padding(.top, 26)
@@ -264,14 +265,22 @@ struct RunDetailView: View {
 
     private var climbRate: Double { (run.climbMeters ?? 0) / max(run.duration / 3600, 0.01) }
 
-    private var maxGradePercent: Int {
-        guard let samples = run.altitudeSamples, samples.count > 1, run.distanceKm > 0 else { return 0 }
-        let step = run.distanceKm * 1000 / Double(samples.count - 1)
-        var maxGrade = 0.0
-        for i in 1..<samples.count {
-            maxGrade = max(maxGrade, abs(samples[i] - samples[i - 1]) / step)
-        }
-        return Int((maxGrade * 100).rounded())
+    /// The steepest hundred metres of the run, in per cent, from its track.
+    ///
+    /// This used to read the altitude series and divide the run's distance by
+    /// the number of samples — but those samples are spaced in *time* (every
+    /// 10 s, 20 or 40 after decimation), not in distance. On a trail, where
+    /// uphill is walked and downhill is run, two samples are 10 m apart in one
+    /// place and 80 m in another, so the "gradient" was whatever the sampling
+    /// happened to do. The series also holds raw altitudes with none of the
+    /// 1.5 m noise floor applied, and a *maximum* seeks out exactly that noise:
+    /// 2 m of jitter across 15 m of ground reads as 13 %.
+    ///
+    /// The route knows where the height was gained, so it is asked instead —
+    /// and a run without one says "–" rather than a number it cannot support.
+    private var steepest: Int? {
+        RunAnalytics.steepestGradient(route: run.route ?? [])
+            .map { Int(($0 * 100).rounded()) }
     }
 
     private func grouped(_ n: Int) -> String {

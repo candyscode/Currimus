@@ -39,12 +39,20 @@ enum RunAnalytics {
         var time: TimeInterval
         var weeklyKm: Double
         var meanPaceSecPerKm: TimeInterval
+        /// How many weeks the block actually spans, up to `trainingWindowWeeks`.
+        /// Carried so the sentence on screen can name the period it read rather
+        /// than claiming eight weeks of a log that is four weeks old.
+        var weeksCovered: Int
         /// True when the inputs sit outside the range the model was fitted on,
         /// and the number is an extrapolation rather than a reading.
         var isExtrapolated: Bool
     }
 
     static let trainingWindowWeeks = 8
+    /// How much of that window the log has to actually reach back over. Eight
+    /// runs crammed into a fortnight are not a training block, whatever the
+    /// arithmetic says about them.
+    static let minimumTrainingWeeks = 4
     /// The study covered 22 runners finishing between 2:47 and 3:36, training
     /// at the volumes that go with that. Outside it the curve still returns a
     /// number; it just stops being evidence.
@@ -61,15 +69,33 @@ enum RunAnalytics {
         let km = window.reduce(0) { $0 + $1.distanceKm }
         let seconds = window.reduce(0) { $0 + $1.duration }
         // Enough of a block to describe one.
-        guard window.count >= 8, km > 0, seconds > 0 else { return nil }
+        guard window.count >= 8, km > 0, seconds > 0,
+              let earliest = window.map(\.date).min() else { return nil }
 
-        let weekly = km / Double(trainingWindowWeeks)
+        // Over the weeks the log actually covers, not over eight regardless.
+        //
+        // The guard above counts *runs*, so eight runs in three weeks used to
+        // be divided by eight anyway — a third of the real weekly volume, which
+        // this curve turns into about a quarter of an hour of extra marathon.
+        // And because the screen leads with the slower of its two models, that
+        // wrong number became the headline.
+        //
+        // Whole weeks, and by ceiling: a block of four runs a week for eight
+        // weeks has 7.7 weeks between its first run and its last, and dividing
+        // by that would overstate the volume by a week's worth every time.
+        // Counting the weeks the block spans is the fencepost-free reading, and
+        // it keeps a taper honest — resting the last fortnight of a long block
+        // still divides by eight, because the block is still eight weeks old.
+        let weeksCovered = (now.timeIntervalSince(earliest) / (7 * 86_400)).rounded(.up)
+        guard weeksCovered >= Double(minimumTrainingWeeks) else { return nil }
+        let weekly = km / min(weeksCovered, Double(trainingWindowWeeks))
         let meanPace = seconds / km
         let pace = 17.1 + 140.0 * exp(-0.0053 * weekly) + 0.55 * meanPace
         return TrainingPrediction(
             time: pace * RaceDistance.marathon.km,
             weeklyKm: weekly,
             meanPaceSecPerKm: meanPace,
+            weeksCovered: Int(min(weeksCovered, Double(trainingWindowWeeks))),
             isExtrapolated: !(fittedWeeklyKm.contains(weekly) && fittedTrainingPace.contains(meanPace))
         )
     }
@@ -90,6 +116,10 @@ enum RunAnalytics {
         /// are kept apart rather than blended: they measure different things,
         /// and where they disagree that disagreement is the information.
         var fromTraining: TrainingPrediction?
+        /// The basis is the race's own distance, so `time` is a reading and not
+        /// a scaling. The screen says so rather than crediting Riegel with an
+        /// identity.
+        var isOverRaceDistance: Bool = false
 
         /// What to lead with. The slower of the two — a prediction that is too
         /// optimistic costs a runner far more on the day than one that is too
@@ -103,13 +133,21 @@ enum RunAnalytics {
     /// Predict a race finish from the best evidence the log holds: the closest
     /// benchmark below the race, run recently if anything recent qualifies.
     static func predict(race: Race, runs: [Run], now: Date = .now) -> Prediction? {
-        // The closest benchmark *below* the race, not the shortest one
+        // The closest benchmark at or below the race, not the shortest one
         // available: a half says far more about a marathon than a 5 K does,
         // and it used to be asked last. Riegel's error grows with the gap it
-        // has to bridge, so the gap is made as small as the log allows.
+        // has to bridge, so the gap is made as small as the log allows — and
+        // the smallest gap of all is none.
+        //
+        // The race's own distance used to be excluded (`< km * 0.95`), which
+        // meant a 5 K race could *never* be predicted: nothing shorter is on
+        // the list. The screen said "run a 5 K and the prediction appears", and
+        // it never did, however many the runner ran. Riegel over the identity
+        // returns the effort itself, which is exactly the right answer: your
+        // best 5 K is the honest forecast for a 5 K.
         let candidates: [(km: Double, label: String)] = [
-            (21.0975, "Half"), (10, "10K"), (5, "5K"),
-        ].filter { $0.km < race.distance.km * 0.95 }
+            (42.195, "Marathon"), (21.0975, "Half"), (10, "10K"), (5, "5K"),
+        ].filter { $0.km <= race.distance.km }
 
         // Recent form first. A personal best from a year ago is a fact about
         // last year; if anything in the last few months reaches the distance,
@@ -135,7 +173,8 @@ enum RunAnalytics {
             // Tanda's model is fitted on the marathon; it says nothing about a
             // 10 K and is not asked.
             fromTraining: race.distance == .marathon
-                ? trainingPrediction(runs: runs, now: now) : nil
+                ? trainingPrediction(runs: runs, now: now) : nil,
+            isOverRaceDistance: basis.km == race.distance.km
         )
     }
 
@@ -276,6 +315,38 @@ enum RunAnalytics {
         flatKm += pendingKm
         guard flatKm > 0.05 else { return nil }
         return duration / flatKm
+    }
+
+    /// Over how much ground the *steepest* stretch of a run is measured.
+    ///
+    /// Deliberately five times `gradeSegmentKm`, and the reason is the word
+    /// "steepest". A grade-adjusted pace sums hundreds of segments, so the noise
+    /// in them cancels; a maximum does the opposite — it goes looking for the
+    /// noisiest one it can find. GPS elevation wanders a metre or two, which
+    /// over 20 m is a 10 % ramp that was never there and over 100 m is 2 %.
+    static let steepestSegmentKm = 0.1
+
+    /// The steepest `steepestSegmentKm` of a route, as a gradient (0.12 = 12 %).
+    ///
+    /// Uphill or down — a runner asking how steep it got means either. nil
+    /// without a track: this needs to know where the height was gained, and a
+    /// total cannot say.
+    static func steepestGradient(route: [Coordinate]) -> Double? {
+        guard route.count >= 2 else { return nil }
+        var steepest: Double?
+        var pendingKm = 0.0
+        var pendingClimb = 0.0
+        for (from, to) in zip(route, route.dropFirst()) {
+            let km = haversineKm(from, to)
+            guard km > 0, km <= maxSegmentKm else { continue }
+            pendingKm += km
+            pendingClimb += to.elevation - from.elevation
+            guard pendingKm >= steepestSegmentKm else { continue }
+            steepest = max(steepest ?? 0, abs(pendingClimb) / (pendingKm * 1000))
+            pendingKm = 0
+            pendingClimb = 0
+        }
+        return steepest
     }
 
     /// The coarse fallback for a run with no track: about 0.4 s of the run's
@@ -616,15 +687,31 @@ enum RunAnalytics {
         return (steady[steady.count / 2] / 5).rounded() * 5
     }
 
+    /// How far back "than it used to be" reaches.
+    ///
+    /// There was no window at all: the split into "older" and "more recent" ran
+    /// over the whole log, so three years of running compared year one against
+    /// year three — and once the log was long, the number stopped moving no
+    /// matter what the runner did. Half a year is long enough for the adaptation
+    /// this measures and short enough that the answer still describes now.
+    static let driftWindowDays = 180
+    /// How many runs near the pace before the comparison means anything. Two
+    /// made the claim on one run against one, which is a difference between two
+    /// mornings, not a trend.
+    static let driftSample = 4
+
     /// Cardiac drift: average HR near a reference pace, and the change between
     /// the older and the more recent half of those runs. Heuristic — needs a
     /// handful of runs near the pace to be meaningful.
     static func hrAtPace(runs: [Run], referencePaceSec: TimeInterval,
-                         tolerance: TimeInterval = 20) -> (avg: Int, delta: Int)? {
+                         tolerance: TimeInterval = 20,
+                         now: Date = .now) -> (avg: Int, delta: Int)? {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -driftWindowDays, to: now) ?? .distantPast
         let matches = runs
-            .filter { !$0.isTrail && $0.avgHR > 0 && abs($0.paceSecPerKm - referencePaceSec) <= tolerance }
+            .filter { !$0.isTrail && $0.avgHR > 0 && $0.date >= cutoff
+                && abs($0.paceSecPerKm - referencePaceSec) <= tolerance }
             .sorted { $0.date < $1.date }
-        guard matches.count >= 2 else { return nil }
+        guard matches.count >= driftSample else { return nil }
         let recent = matches.suffix(max(matches.count / 2, 1))
         let older = matches.prefix(max(matches.count / 2, 1))
         let recentAvg = recent.reduce(0) { $0 + $1.avgHR } / recent.count

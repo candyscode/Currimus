@@ -936,8 +936,8 @@ Ein Test hält beide Richtungen fest. 191 Tests grün (vorher 190).
 
 [ ] In Specification
 [ ] Open
-[X] WIP
-[ ] Done
+[ ] WIP
+[X] Done
 
 Aus dem Audit vom 30.07.2026.
 
@@ -947,6 +947,26 @@ Aus dem Audit vom 30.07.2026.
 4. **„LAST 4 WEEKS ±x %" vergleicht ungleiche Fenster.** Aktuell sind es vier Kalenderwochen (am 30.07. = 25 Tage), das Vergleichsfenster ist ein glattes 28-Tage-Intervall, und zwischen beiden liegt eine Lücke von vier Tagen, die in keinem zählt. Am Montag: −21 % systematischer Fehler und sieben Tage Lücke.
 5. **Herzfrequenz-Drift ohne Zeitfenster.** `hrAtPace` teilt das *gesamte* Log in „älter" und „neuer"; bei drei Jahren Historie vergleicht „than it used to be" Jahr 1 mit Jahr 3 und bewegt sich nie mehr. Zwei passende Läufe genügen für die Aussage.
 6. **`HealthImport.distanceTrace` fragt ohne Quellenfilter ab.** `HKSampleQuery` dedupliziert nicht; schreiben Uhr und iPhone parallel `distanceWalkingRunning`, wird die Distanz addiert — rekonstruierte Splits wären doppelt so schnell und würden falsche Rekorde erzeugen. Plausibel, nicht bewiesen (der Pfad greift nur ohne Route). Ein Prädikat auf das Workout kostet nichts.
+
+#### Agent Comments
+
+**1 · „MAX GRADE" heißt jetzt „STEEPEST 100 M" und kommt aus der Route.** Die Höhenreihe konnte die Frage nicht beantworten — sie ist zeitgetaktet, nicht distanzgetaktet, und enthält Rohhöhen ohne Rauschgrenze. Die Route weiß, wo die Höhe gewonnen wurde, also wird sie gefragt (`RunAnalytics.steepestGradient`).
+
+Das Fenster ist mit 100 m absichtlich fünfmal so lang wie `gradeSegmentKm`, und der Grund steckt im Wort „steilste": eine Steigungskorrektur summiert hunderte Segmente, das Rauschen darin hebt sich auf — ein Maximum tut das Gegenteil und sucht sich das rauschigste. Zwei Meter Wackeln über 20 m sind 10 %, über 100 m sind es 2 %. Ein Test legt genau das fest (`testElevationJitterIsNotAWall`). Läufe ohne Track zeigen „–" statt einer Zahl, die sie nicht belegen können.
+
+**2 · Tanda rechnet über die Wochen, die das Log wirklich abdeckt** — und zwar in ganzen Wochen, aufgerundet. Der Zaunpfahl war die Falle: vier Läufe pro Woche über acht Wochen liegen 7,7 Wochen zwischen erstem und letztem Lauf, und durch 7,7 zu teilen hätte das Volumen jedes Mal um eine Wochenportion überschätzt. Die abgedeckten Wochen zu zählen ist die pfahlfreie Lesart und hält einen Taper korrekt: wer die letzten zwei Wochen eines langen Blocks ruht, teilt weiter durch acht, weil der Block acht Wochen alt ist. Dazu ein Minimum von vier Wochen — acht Läufe in einem Fortnight sind kein Trainingsblock, was die Arithmetik auch sagt. `weeksCovered` steckt jetzt im Ergebnis, damit der Satz auf dem Screen die Periode nennt, die er gelesen hat, statt acht Wochen zu behaupten.
+
+**3 · Die Kandidatenliste enthält die Renndistanz selbst** (`<=` statt `< 0.95`), und Marathon ist dazugekommen — es fehlte aus demselben Grund. Riegel über die Identität gibt die Leistung zurück, was genau richtig ist: die beste 5 km ist die ehrliche Prognose für 5 km. Der Text sagt in diesem Fall „ist deine beste 5K-Leistung — die Distanz selbst, nichts zu skalieren", statt Riegel eine Identität zuzuschreiben.
+
+**4 · Beide Vier-Wochen-Fenster liegen jetzt auf demselben Raster**: vier rollende 7-Tage-Eimer, direkt aneinander, ohne Loch und ohne Teilwoche auf einer Seite. Die Balken tragen seit immer die Labels W1…now und haben nie Kalenderwochen behauptet, also passen rollende Eimer dort besser als vorher. Am Simulator vorher/nachher: die „now"-Säule war ein angebrochener Donnerstag, jetzt eine ganze Woche (59/61/53/60 = 235 km), und die Prozentzahl steht auf **+13 %** statt auf einem Rückgang, den es nicht gab.
+
+**5 · Der Drift hat ein Fenster** (180 Tage) und braucht vier Läufe statt zwei. Ohne Fenster verglich „than it used to be" bei langer Historie Jahr 1 mit Jahr 3 und bewegte sich nie mehr.
+
+**6 · Ein Quellenfilter für die Distanzproben**, zweistufig, damit die bisherige Reichweite erhalten bleibt: erst die Proben, die am Workout hängen; wenn keine da sind — viele Apps hängen nichts an —, dieselbe *Quelle* im Zeitfenster des Workouts. Nicht mehr alles von jedem Gerät, was sich bei parallel schreibender Uhr und Telefon addierte.
+
+12 neue Tests, 203 grün (vorher 191). Ein Test musste angepasst werden: keiner.
+
+#### Link to completed work
 
 ### CUR-33: Konsistenz — was die App über denselben Lauf zweimal verschieden sagt
 

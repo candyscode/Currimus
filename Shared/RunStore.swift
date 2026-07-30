@@ -815,15 +815,44 @@ final class RunStore: ObservableObject {
     }
 
     /// (week label, km) for the last 4 weeks (race readiness), oldest first.
+    ///
+    /// Rolling seven-day buckets ending now, not calendar weeks — and unlike
+    /// every other weekly total in the app, that is the right grid here. Race
+    /// readiness is "how much have I run lately", and a calendar week makes the
+    /// newest bucket however many days old today happens to be: on a Monday the
+    /// four bars covered 22 days, three full and one nearly empty, and the
+    /// percentage beside them compared that against a full 28. The bars have
+    /// always been labelled W1…now rather than by date, so they were never
+    /// claiming calendar weeks in the first place.
+    ///
+    /// `offset` counts buckets back from now, so `windows(4).last` is the most
+    /// recent seven days.
     func last4Weeks() -> [(label: String, km: Double)] {
-        (0..<4).reversed().compactMap { offset in
-            guard let weekDate = weekCalendar.date(byAdding: .weekOfYear, value: -offset, to: .now) else { return nil }
-            let km = runs(inWeekOf: weekDate).reduce(0) { $0 + $1.distanceKm }
-            return (offset == 0 ? "now" : "W\(4 - offset)", km)
+        rolling7DayKm(buckets: 4).enumerated().map { index, km in
+            (index == 3 ? "now" : "W\(index + 1)", km)
         }
     }
 
     var last4WeeksKm: Double { last4Weeks().reduce(0) { $0 + $1.km } }
+
+    /// The four seven-day buckets before the four `last4Weeks` shows, summed.
+    /// The same grid and directly adjacent, so the comparison has neither a
+    /// hole in it nor a part-week on one side.
+    var previous4WeeksKm: Double {
+        rolling7DayKm(buckets: 8).prefix(4).reduce(0, +)
+    }
+
+    /// Kilometres per rolling seven-day bucket, oldest first.
+    private func rolling7DayKm(buckets: Int) -> [Double] {
+        let day: TimeInterval = 86_400
+        let now = Date.now
+        return (0..<buckets).reversed().map { offset in
+            let end = now.addingTimeInterval(-Double(offset) * 7 * day)
+            let start = end.addingTimeInterval(-7 * day)
+            return allRuns.filter { $0.date > start && $0.date <= end }
+                .reduce(0) { $0 + $1.distanceKm }
+        }
+    }
 
     // MARK: - Records & prediction
 

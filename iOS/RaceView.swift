@@ -99,15 +99,17 @@ struct RaceView: View {
     /// counted everything, so anyone whose runs come from another app was
     /// comparing their whole log against a fraction of it and reading a
     /// triple-digit increase that had not happened.
+    ///
+    /// Both sides now also read the *same grid*, which they did not. The current
+    /// window was a set of calendar weeks and the previous one a raw 28-day
+    /// span, so on a Monday this compared 22 days against 28 — a −21 % bias
+    /// before a single kilometre was counted — with a seven-day hole between
+    /// them that belonged to neither. Both are four rolling seven-day buckets
+    /// now, adjacent, and the bars above are the same four.
     private var last4Delta: (text: String, isUp: Bool)? {
-        let cal = Calendar.current
-        guard let start = cal.date(byAdding: .weekOfYear, value: -8, to: .now),
-              let end = cal.date(byAdding: .weekOfYear, value: -4, to: .now) else { return nil }
-        let prev = store.allRuns
-            .filter { $0.date >= start && $0.date < end }
-            .reduce(0) { $0 + $1.distanceKm }
-        guard prev > 0 else { return nil }
-        let pct = Int(((store.last4WeeksKm - prev) / prev * 100).rounded())
+        let previous = store.previous4WeeksKm
+        guard previous > 0 else { return nil }
+        let pct = Int(((store.last4WeeksKm - previous) / previous * 100).rounded())
         return ("\(pct >= 0 ? "+" : "")\(pct)%", pct >= 0)
     }
 
@@ -123,10 +125,15 @@ struct RaceView: View {
             return String(localized: "Run a 5 K, 10 K or half — or anything longer — and the prediction appears.")
         }
         let when = p.basisDate.formatted(.dateTime.month(.wide).year())
-        var note = String(localized: "**\(Format.clock(p.time))** from your best \(p.basisLabel) effort (\(when)), scaled to the distance after \(Source.riegel.link).")
+        // Over the race's own distance there is nothing to scale, and saying
+        // "scaled to the distance after Riegel" about an identity would be
+        // dressing up a plain reading as a model.
+        var note = p.isOverRaceDistance
+            ? String(localized: "**\(Format.clock(p.time))** is your best \(p.basisLabel) effort (\(when)) — the distance itself, no scaling needed.")
+            : String(localized: "**\(Format.clock(p.time))** from your best \(p.basisLabel) effort (\(when)), scaled to the distance after \(Source.riegel.link).")
 
         if let training = p.fromTraining {
-            note += String(localized: " **\(Format.clock(training.time))** from your training — \(Int(training.weeklyKm)) km a week at \(Format.pace(training.meanPaceSecPerKm)) /km over the last eight weeks, after \(Source.tanda.link).")
+            note += String(localized: " **\(Format.clock(training.time))** from your training — \(Int(training.weeklyKm)) km a week at \(Format.pace(training.meanPaceSecPerKm)) /km over the last \(Format.plural(training.weeksCovered, "week", "weeks")), after \(Source.tanda.link).")
             if abs(training.time - p.time) > 8 * 60 {
                 // The gap is the finding. Naming which side is which is what
                 // tells the runner what to do about it.
