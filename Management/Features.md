@@ -778,5 +778,5 @@ Geprüft und in Ordnung: die `distanceTrace`-Umstellung verhält sich identisch 
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/CUR-27
+https://github.com/candyscode/Currimus/commit/7910676
 
