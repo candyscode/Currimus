@@ -370,6 +370,9 @@
     "CURRIMUS" : {
 
     },
+    "Currimus estimates a finish from your training, and that model is fitted on the marathon — over a shorter race it would be a number without evidence. Your goal time and required pace above are yours, and they stand." : {
+
+    },
     "Currimus measures what it can and models the rest. Where it models, it says whose work it is using — here and on the screen that shows the number." : {
 
     },
@@ -857,9 +860,6 @@
     "RECENT" : {
 
     },
-    "Recorded by %@" : {
-
-    },
     "Recorded outside Currimus" : {
 
     },
@@ -982,6 +982,9 @@
 
     },
     "The energy a runner spends per metre at every gradient from −45 % to +45 %, measured. It is what turns a climb into the flat pace that cost the same." : {
+
+    },
+    "The estimate reads your last eight weeks of training. It appears once there are eight road runs behind you, spread over at least %@." : {
 
     },
     "The watch starts every Pacer setup with these values — change either with the crown before you run. Syncs instantly." : {
