@@ -363,6 +363,90 @@ final class RunStore: ObservableObject {
         rebuildTask = nil
     }
 
+    // MARK: - The first import
+
+    /// What the first launch is doing, for the sheet that shows it.
+    ///
+    /// One state for what is really three steps — the permission sheet, the
+    /// list of workouts, and then the traces behind each of them. The runner
+    /// asked for one thing ("bring my runs in") and should watch one thing.
+    struct FirstImport: Equatable {
+        enum Stage: Equatable { case reading, filling, finished }
+        var stage: Stage = .reading
+        var done = 0
+        var total = 0
+        /// How many runs the log holds now. Zero at the end means Health
+        /// answered with nothing — declined, or genuinely empty. It never says
+        /// which, so the screen has to cover both.
+        var imported = 0
+
+        var isFinished: Bool { stage == .finished }
+        var fraction: Double {
+            switch stage {
+            case .reading: return 0
+            case .filling: return total > 0 ? Double(done) / Double(total) : 0
+            case .finished: return 1
+            }
+        }
+    }
+
+    @Published private(set) var firstImport: FirstImport?
+    private var firstImportTask: Task<Void, Never>?
+
+    /// The whole of setting Currimus up: raise the Health prompt, read every
+    /// running workout on the device, then fill in the heart-rate traces and
+    /// GPS tracks the summaries do not carry.
+    ///
+    /// Deliberately the default on a fresh install rather than an offer. A
+    /// runner arriving with years in Health wants their log, not an empty app
+    /// and a button admitting one could be filled.
+    func startFirstImport() {
+        guard firstImportTask == nil else { return }
+        firstImport = FirstImport()
+        firstImportTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            // No backfill: the full fill follows immediately with its progress
+            // on screen, and doing the first dozen twice is a dozen runs of
+            // Health queries spent behind a bar that has not started moving.
+            await self.refreshImportedRuns(requestingAccess: true, backfilling: false)
+            guard !Task.isCancelled else { return }
+
+            let pending = self.rebuildQueue.outstanding(in: self.allRuns).sorted { $0.date > $1.date }
+            self.firstImport = FirstImport(stage: .filling, done: 0, total: pending.count,
+                                           imported: self.allRuns.count)
+            for (index, run) in pending.enumerated() {
+                if Task.isCancelled { break }
+                await self.hydrate(run, force: true)
+                guard !Task.isCancelled else { break }
+                self.firstImport?.done = index + 1
+            }
+            guard !Task.isCancelled else { return }
+            self.firstImport = FirstImport(stage: .finished, done: pending.count,
+                                           total: pending.count, imported: self.allRuns.count)
+            self.firstImportTask = nil
+        }
+    }
+
+    /// Stops the fill where it is. What is already read stays read — this is
+    /// not an undo, it is "that is enough for now".
+    func stopFirstImport() {
+        firstImportTask?.cancel()
+        firstImportTask = nil
+        firstImport = FirstImport(stage: .finished, done: firstImport?.done ?? 0,
+                                  total: firstImport?.total ?? 0, imported: allRuns.count)
+    }
+
+    /// Dismisses the sheet. With runs in the log this is the way into the app.
+    func clearFirstImport() {
+        guard firstImportTask == nil else { return }
+        firstImport = nil
+    }
+
+    /// Debug seam for `-import reading|filling|done|nothing`: the simulator's
+    /// Health has nothing to hand over, so every real import there is finished
+    /// before the sheet can be looked at.
+    func setFirstImportForDebug(_ state: FirstImport?) { firstImport = state }
+
     /// Cleared when the sheet is dismissed, so the row goes back to offering
     /// the rebuild rather than reporting the last one forever.
     func clearRebuild() {
@@ -456,14 +540,16 @@ final class RunStore: ObservableObject {
     /// the sheet is expected. The watch never asks here: it would cover a live
     /// run screen at launch. Its own prompt comes when a run starts, and this
     /// query simply returns nothing until then.
-    func refreshImportedRuns(requestingAccess: Bool = false) async {
+    /// `backfilling` is only turned off by the first import, which does the
+    /// whole log with a progress bar of its own straight afterwards.
+    func refreshImportedRuns(requestingAccess: Bool = false, backfilling: Bool = true) async {
         guard !isDemo else { return }
         if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
         let fetched = await HealthImport.fetchRuns(healthStore)
         let merged = HealthImport.merging(fetched, with: runs).map(carryingHydratedZones)
         if merged != importedRuns { importedRuns = merged }
         await refreshHeartRateZones()
-        await backfillImported()
+        if backfilling { await backfillImported() }
     }
 
     /// A refresh re-reads each workout's *summary*, which carries no zone

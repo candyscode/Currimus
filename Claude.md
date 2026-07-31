@@ -14,9 +14,9 @@ You work on the main branch of the app and commit directly to main. To avoid cha
 
 ### Ticket System
 
-The source of tickets mainly is /Management/Features.md.
+The source of tickets mainly is /Management/Features.md. It holds only what is still ahead — tickets in In Specification, Open or WIP. Finished tickets live in /Management/Features-completed.md.
 
-When you are started or receive a prompt, always read through Features.md and get the current state. Whatever you do, make sure, that the Features.md is up to date, so the status of the tickets are correct, the links to certain commits are there and so on. 
+When you are started or receive a prompt, always read through Features.md and get the current state. That file is short by design; read Features-completed.md only when you need the history of a specific ticket (before touching the same area again, or to find a commit). Whatever you do, make sure, that the Features.md is up to date, so the status of the tickets are correct, the links to certain commits are there and so on. 
 
 When you receive a prompt to continue working without a specific other task, always refer to the Features.md. You are also sometimes invoked by the /loop command of Claude Code. This will also be simply an instruction to continue working.
 
@@ -24,7 +24,9 @@ Check if you previously worked on a task (check your history and align with tick
 
 Only when you are fully done with one task, mark it as done in the MD and start the next task. Set it to WIP right away. To save tokens, consider to run /compact in Claude Code before you start working.
 
-Whenever you commit, commit the Features.md file as well, if changes are made.
+**Marking a ticket Done means moving it**: cut the whole section — description, agent comments, Andi's review, commit links — out of Features.md and append it to Features-completed.md in numeric order. Nothing is summarised or dropped on the way; the point of the split is a short working file, not a shorter record. New ticket IDs continue from the highest ID in *either* file.
+
+Whenever you commit, commit the Features.md and Features-completed.md files as well, if changes are made.
 
 ## Constant learning
 

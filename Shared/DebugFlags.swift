@@ -53,4 +53,12 @@ enum DebugFlags {
     /// iOS: open the first log row's swipe action. A drag cannot be injected
     /// into a screenshot, so this is the only way to look at the open state.
     static var opensFirstSwipe: Bool { isSet("swipe") }
+    /// iOS: the first-launch screen after an import that found nothing. Health
+    /// always answers in the simulator's own terms, so this state cannot be
+    /// produced there by pressing the button.
+    static var showsEmptyImportNotice: Bool { isSet("noimport") }
+    /// iOS: open the first-import sheet in one of its states
+    /// (`-import reading|filling|done|nothing`). The simulator's Health holds
+    /// nothing, so a real import there finishes before it can be looked at.
+    static var firstImport: String? { string("import") }
 }

@@ -97,13 +97,37 @@ build_comparator() {
 
 FAILS=0; PASSES=0; FAILED_NAMES=()
 
+# One throwaway launch after installing: the first launch after an install is a
+# cold start and the slowest of the run, and `simctl io screenshot` refuses to
+# capture while the simulator is that busy.
+warm_up() {
+  local udid="$1" bid="$2"
+  xcrun simctl launch "$udid" "$bid" >/dev/null 2>&1
+  sleep 4
+  xcrun simctl terminate "$udid" "$bid" >/dev/null 2>&1
+}
+
 # capture <udid> <bid> <name> <args...>  → screenshot into $CAND
+#
+# The old candidate is deleted first and the screenshot is retried, because a
+# silent failure here is the worst thing this harness can do: it used to leave
+# the *previous run's* candidate in place, `cp` it over the reference, and
+# report `rec` — which is how the first-launch reference survived a session
+# that had rewritten that very screen (CUR-37). It always hit the first route
+# of the list, so it read like a stale build rather than a missing screenshot.
 capture() {
   local udid="$1" bid="$2" name="$3"; shift 3
+  rm -f "$CAND/$name.png"
   xcrun simctl terminate "$udid" "$bid" >/dev/null 2>&1
   xcrun simctl launch "$udid" "$bid" "$@" >/dev/null 2>&1
   sleep "$RENDER_WAIT"
-  xcrun simctl io "$udid" screenshot "$CAND/$name.png" >/dev/null 2>&1
+  local try=0
+  while [ $try -lt 3 ]; do
+    xcrun simctl io "$udid" screenshot "$CAND/$name.png" >/dev/null 2>&1
+    [ -s "$CAND/$name.png" ] && return 0
+    try=$((try+1)); sleep 2
+  done
+  return 1
 }
 
 # run_platform <ios|watch> <udid> <bid> <routes-file> <extra-mask...>
@@ -125,7 +149,10 @@ run_platform() {
     # shellcheck disable=SC2206
     local args=( $rawargs )   # intentional word-split into launch tokens
 
-    capture "$udid" "$bid" "$name" "${args[@]}"
+    if ! capture "$udid" "$bid" "$name" "${args[@]}"; then
+      printf '  \033[31mFAIL\033[0m %-18s no screenshot came back\n' "$name"
+      FAILS=$((FAILS+1)); FAILED_NAMES+=("$plat/$name (no screenshot)"); continue
+    fi
 
     if [ "$MODE" = record ]; then
       cp "$CAND/$name.png" "$ref/$name.png"
@@ -184,6 +211,7 @@ if [ "$TARGET" = ios ] || [ "$TARGET" = all ]; then
   # Pin the status bar so the clock/battery never move under the comparison.
   xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged \
     --batteryLevel 100 --wifiBars 3 --cellularBars 4 --operatorName " " >/dev/null 2>&1
+  warm_up "$UDID" "$IOS_BID"
   run_platform ios "$UDID" "$IOS_BID" "$UISNAP/ios-routes.txt"
 fi
 
@@ -193,6 +221,7 @@ if [ "$TARGET" = watch ] || [ "$TARGET" = all ]; then
   boot "$UDID"
   APP=$(find "$ROOT/build/Build/Products/Debug-watchsimulator" -maxdepth 1 -name "CurrimusWatch.app" | head -1)
   [ -n "$APP" ] && xcrun simctl install "$UDID" "$APP" >/dev/null 2>&1
+  warm_up "$UDID" "$WATCH_BID"
   run_platform watch "$UDID" "$WATCH_BID" "$UISNAP/watch-routes.txt" $WATCH_CLOCK_MASK
 fi
 

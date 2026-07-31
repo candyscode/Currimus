@@ -46,7 +46,12 @@ struct RootView: View {
             // Apple Health has a log to show from the first launch. Gating on
             // the runs Currimus recorded itself kept them on the welcome
             // screen until they happened to run with this app once.
-            if store.allRuns.isEmpty || forceEmpty {
+            //
+            // Held in place while the first import runs, whatever the log does
+            // meanwhile: the very first runs land halfway through it, and
+            // swapping the hierarchy under a modal takes the progress sheet
+            // down with it.
+            if store.allRuns.isEmpty || store.firstImport != nil || forceEmpty {
                 // In its own stack, so the first-launch screen can reach
                 // Settings — a fresh install has no tab bar to get there with.
                 TabRoot { FirstLaunchView() }
@@ -126,6 +131,18 @@ struct RootView: View {
                 from: HRZones(maxHR: 182, restingHR: 52),
                 to: store.zones
             )
+        }
+        // The first-import sheet, in a state a simulator cannot produce: its
+        // Health holds no workouts, so a real import there is over before the
+        // bar has drawn once.
+        switch DebugFlags.firstImport {
+        case "reading": store.setFirstImportForDebug(.init(stage: .reading))
+        case "filling": store.setFirstImportForDebug(
+            .init(stage: .filling, done: 34, total: 128, imported: 128))
+        case "done": store.setFirstImportForDebug(
+            .init(stage: .finished, done: 128, total: 128, imported: 128))
+        case "nothing": store.setFirstImportForDebug(.init(stage: .finished))
+        default: break
         }
         // Zone coaching is off until someone switches it on, so its screen has
         // no configured state to screenshot without this.

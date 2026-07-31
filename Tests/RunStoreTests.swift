@@ -526,6 +526,85 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(store.runsAwaitingRebuild, 0)
     }
 
+    // MARK: - The first import (CUR-37)
+
+    /// The state machine, without Health. A demo store answers every Health
+    /// call with "nothing, immediately", which is precisely the shape of the
+    /// path under test: the first launch has to end somewhere the runner can
+    /// act on, whatever comes back.
+    private func firstImportStore(seeded: Bool) -> RunStore {
+        RunStore(seeded: seeded, defaults: defaults, isDemo: true)
+    }
+
+    private func waitForFirstImport(_ store: RunStore) async {
+        for _ in 0..<300 {
+            if store.firstImport?.isFinished == true { return }
+            try? await Task.sleep(nanoseconds: 5_000_000)
+        }
+        XCTFail("the first import never finished")
+    }
+
+    func testTheFirstImportEndsFinishedAndCountsWhatItFound() async {
+        let store = firstImportStore(seeded: true)
+        store.startFirstImport()
+        await waitForFirstImport(store)
+
+        XCTAssertEqual(store.firstImport?.stage, .finished)
+        XCTAssertEqual(store.firstImport?.imported, store.allRuns.count)
+        XCTAssertGreaterThan(store.firstImport?.imported ?? 0, 0)
+    }
+
+    /// The whole point of the screen's second state: a declined prompt and an
+    /// empty Health log are indistinguishable, so both have to arrive as a
+    /// finished import with nothing in it rather than as a spinner that stops.
+    func testAnImportThatFindsNothingStillFinishes() async {
+        let store = firstImportStore(seeded: false)
+        store.startFirstImport()
+        await waitForFirstImport(store)
+
+        XCTAssertEqual(store.firstImport?.imported, 0)
+        XCTAssertTrue(store.firstImport?.isFinished == true)
+    }
+
+    func testStartingTheFirstImportTwiceDoesNotRestartIt() async {
+        let store = firstImportStore(seeded: true)
+        store.startFirstImport()
+        store.startFirstImport()
+        await waitForFirstImport(store)
+        XCTAssertEqual(store.firstImport?.imported, store.allRuns.count)
+    }
+
+    func testStoppingTheFirstImportLeavesItFinishedNotGone() {
+        let store = firstImportStore(seeded: true)
+        store.startFirstImport()
+        store.stopFirstImport()
+
+        // Stopping is "that is enough", not an undo: the sheet has to be able
+        // to show a finished state and let the runner through.
+        XCTAssertEqual(store.firstImport?.stage, .finished)
+        XCTAssertEqual(store.firstImport?.imported, store.allRuns.count)
+    }
+
+    func testClearingTheFirstImportOnlyWorksOnceNothingIsRunning() async {
+        let store = firstImportStore(seeded: true)
+        store.startFirstImport()
+        store.clearFirstImport()
+        XCTAssertNotNil(store.firstImport, "cleared while the import was still running")
+
+        await waitForFirstImport(store)
+        store.clearFirstImport()
+        XCTAssertNil(store.firstImport)
+    }
+
+    func testTheProgressFractionSurvivesAnEmptyLog() {
+        XCTAssertEqual(RunStore.FirstImport(stage: .reading).fraction, 0)
+        // No runs to fill in is not a division by zero and not a full bar
+        // either — the bar only moves once there is something to count.
+        XCTAssertEqual(RunStore.FirstImport(stage: .filling, done: 0, total: 0).fraction, 0)
+        XCTAssertEqual(RunStore.FirstImport(stage: .filling, done: 3, total: 6).fraction, 0.5)
+        XCTAssertEqual(RunStore.FirstImport(stage: .finished, done: 0, total: 0).fraction, 1)
+    }
+
     // MARK: - One place per question
 
     func testAReconstructionOnlyEverFillsGaps() {

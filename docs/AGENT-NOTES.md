@@ -1,7 +1,8 @@
 # Agent notes
 
 Things that cost time to work out once, written down so they cost nothing the
-next time. Process lives in `Claude.md`, tickets in `Management/Features.md`.
+next time. Process lives in `Claude.md`, open tickets in
+`Management/Features.md`, finished ones in `Management/Features-completed.md`.
 
 ## Build, test, run
 
@@ -80,6 +81,15 @@ references do not rot:
 scripts/ui-snapshot.sh record ios       # text output only, no images to read
 ```
 
+If a reference comes back byte-identical after you deliberately changed that
+screen, the screenshot did not happen. `simctl io screenshot` refuses to capture
+while the simulator is busy, and the first route after an install is exactly
+that busy — the harness used to swallow the error and copy the *previous run's*
+candidate over the reference, reporting `rec`. It now deletes the candidate
+first, retries, warms the app up once after installing, and fails loudly. Two
+`record` runs went into a reference that had not moved before this was found
+(CUR-37).
+
 `record` **overwrites the references for whichever simulator it runs on**. The
 baseline is pinned to iPhone 17 Pro / Apple Watch Ultra 3 (49mm) — running it
 with `WATCH_SIM` pointed elsewhere silently replaces the baseline with captures
@@ -131,9 +141,14 @@ own header ends in " km" just like every row does.
 - There is **no API for a person's heart-rate zones before iOS 27**
   (`zoneGroupsByType`, WWDC26 session 207). Until the target moves, "the same
   zones as Apple Fitness" can only mean the same model and the same inputs.
+- Read authorization cannot be *asked about* either, which is why the first
+  launch reports evidence instead of permission: an import that comes back with
+  nothing means "declined **or** empty", and the UI has to say both (CUR-37).
 - The simulator has no Health data whatsoever. Anything derived from Health
   (zones, cadence, imported runs) needs a DEBUG injection to be seen at all —
-  see the `-zones derived|updated|coach` flags.
+  see the `-zones derived|updated|coach` flags, and `-import
+  reading|filling|done|nothing` / `-noimport 1` for the first-launch import,
+  which on a simulator is over before its progress bar has drawn once.
 
 ## Watch haptics
 
