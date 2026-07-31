@@ -14,6 +14,13 @@ struct RaceView: View {
             }
         }
         .explanationSheet($explaining)
+        // The sheet Andi called too big (CUR-38); it sizes itself to its text
+        // now, and a tap on the ⓘ cannot be injected into a screenshot.
+        .onAppear {
+            if DebugFlags.opensExplanation, let race = store.race, !race.isPast {
+                explaining = estimateExplanation(race)
+            }
+        }
     }
 
     private func content(_ race: Race) -> some View {
@@ -59,27 +66,16 @@ struct RaceView: View {
                                       accent: store.raceResult != nil).gx()
                         longestStat(longest, pct: longestPct).gx()
                     }
-                } else if let p = store.prediction {
-                    GridRow {
-                        ExplainedStat(value: Format.clock(p.time),
-                                      label: "FROM RACING",
-                                      explanation: racingExplanation(p),
-                                      onExplain: { explaining = $0 }).gx()
-                        if let training = p.fromTraining {
-                            ExplainedStat(value: Format.clock(training.time),
-                                          label: "FROM TRAINING",
-                                          explanation: trainingExplanation(p, training),
-                                          onExplain: { explaining = $0 }).gx()
-                        } else {
-                            longestStat(longest, pct: longestPct).gx()
-                        }
-                    }
-                    if p.fromTraining != nil {
-                        GridRow { longestStat(longest, pct: longestPct).gx() }
-                    }
                 } else {
+                    // One estimate, from the training. Two used to sit here —
+                    // Riegel's scaling of a past effort beside Tanda's reading
+                    // of the last eight weeks — and two forecasts for the same
+                    // race is a question, not an answer (Andi, CUR-38).
                     GridRow {
-                        ExplainedStat(value: "—", label: "PREDICTED").gx()
+                        ExplainedStat(value: store.raceEstimate.map { Format.clock($0.time) } ?? "—",
+                                      label: "ESTIMATION",
+                                      explanation: estimateExplanation(race),
+                                      onExplain: { explaining = $0 }).gx()
                         longestStat(longest, pct: longestPct).gx()
                     }
                 }
@@ -149,54 +145,37 @@ struct RaceView: View {
     /// What is left is the empty state — where there is no number yet — and the
     /// account of a race that has been run.
     private func predictionNote(_ race: Race) -> String? {
-        if race.isPast { return resultNote(race) }
-        guard store.prediction == nil else { return nil }
-        return String(localized: "Run a 5 K, 10 K or half — or anything longer — and the prediction appears.")
+        race.isPast ? resultNote(race) : nil
     }
 
-    // MARK: - Where each forecast came from
+    // MARK: - Where the estimate came from
     //
-    // Two models, kept apart. Riegel reads one hard effort and knows nothing
-    // about whether the work has been done; Tanda reads the work and nothing
-    // about race sharpness. Where they disagree, that gap is the most useful
-    // thing on this screen — so it is told to whichever of the two the runner
-    // asked about, rather than to neither.
+    // One model now, and it is the one that reads the work: Tanda takes the
+    // weekly volume and the training pace of the last eight weeks. Riegel —
+    // scaling a past 10 K onto the race — is gone from the screen (CUR-38). It
+    // knew nothing about whether the training had been done, and standing next
+    // to a second forecast it left the runner to decide which to believe.
 
-    private func racingExplanation(_ p: RunAnalytics.Prediction) -> Explanation {
-        let when = p.basisDate.formatted(.dateTime.month(.wide).year())
-        // Over the race's own distance there is nothing to scale, and crediting
-        // Riegel with an identity would dress a plain reading up as a model.
-        var body = p.isOverRaceDistance
-            ? String(localized: "Your best \(p.basisLabel) effort, from \(when) — the race distance itself, so nothing had to be scaled.")
-            : String(localized: "Your best \(p.basisLabel) effort was \(when), and this is that time scaled to the race distance after \(Source.riegel.link). It reads one hard day and knows nothing about whether the training behind it has been done.")
-        if p.isStale {
-            body += String(localized: "\n\nNothing in the last four months reached that distance, so this describes the shape you were in then rather than the shape you are in now.")
+    private func estimateExplanation(_ race: Race) -> Explanation {
+        let title = String(localized: "Estimation")
+        guard race.distance == .marathon else {
+            return Explanation(
+                title: title,
+                body: String(localized: "This estimate reads your training — weekly volume and training pace over the last eight weeks — through \(Source.tanda.link), and that model is fitted on the marathon. Over a shorter race it would return a number without evidence behind it, so Currimus does not print one. Set a marathon as your race and the estimate appears."))
         }
-        if p.underTrained {
-            body += String(localized: "\n\nYour longest run is still well short of the race, which neither model can see.")
+        guard let training = store.raceEstimate else {
+            return Explanation(
+                title: title,
+                body: String(localized: "Not enough training to read yet. This estimate needs at least \(Format.plural(RunAnalytics.minimumTrainingWeeks, "week", "weeks")) of running behind it, with eight road runs or more in the last eight weeks — a handful of runs in a fortnight describes a fortnight, not a marathon."))
         }
-        if let training = p.fromTraining {
-            body += disagreement(racing: p.time, training: training.time)
-        }
-        return Explanation(title: String(localized: "From racing"), body: body)
-    }
-
-    private func trainingExplanation(_ p: RunAnalytics.Prediction,
-                                     _ training: RunAnalytics.TrainingPrediction) -> Explanation {
-        var body = String(localized: "\(Int(training.weeklyKm)) km a week at \(Format.pace(training.meanPaceSecPerKm)) /km over the last \(Format.plural(training.weeksCovered, "week", "weeks")), read through \(Source.tanda.link). It reads the work you have put in and knows nothing about race sharpness.")
+        var body = String(localized: "\(Int(training.weeklyKm)) km a week at \(Format.pace(training.meanPaceSecPerKm)) /km over the last \(Format.plural(training.weeksCovered, "week", "weeks")), read through \(Source.tanda.link). It reads the work you have put in — volume and everyday pace, not one hard day — and knows nothing about race sharpness or the weather.")
         if training.isExtrapolated {
             body += String(localized: "\n\nThis one is an extrapolation: your volume and pace sit outside the range that study covered, so read it as a direction rather than as a time.")
         }
-        body += disagreement(racing: p.time, training: training.time)
-        return Explanation(title: String(localized: "From training"), body: body)
-    }
-
-    /// The gap between the two, and what it means — the finding, not a caveat.
-    private func disagreement(racing: TimeInterval, training: TimeInterval) -> String {
-        guard abs(training - racing) > 8 * 60 else { return "" }
-        return training > racing
-            ? String(localized: "\n\nThe two disagree by more than eight minutes, and your speed is ahead of your training: that gap is long runs and weekly volume. Plan around the slower of the two — a forecast that flatters you costs far more on the day than one that is too careful.")
-            : String(localized: "\n\nThe two disagree by more than eight minutes, and your training is ahead of your racing: the endurance is there, the sharpness is not. Plan around the slower of the two — a forecast that flatters you costs far more on the day than one that is too careful.")
+        if (store.longestRun?.distanceKm ?? 0) < race.distance.km * 0.6 {
+            body += String(localized: "\n\nYour longest run is still well short of the race, which the model cannot see: it reads the average week, not whether you have been that far in one go.")
+        }
+        return Explanation(title: title, body: body)
     }
 
 

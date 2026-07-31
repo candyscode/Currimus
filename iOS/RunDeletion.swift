@@ -55,9 +55,23 @@ struct SwipeToRevealRow<Content: View>: View {
     /// somewhere to go instead of ending against a wall.
     private static var overshoot: CGFloat { 28 }
 
+    /// How far a finger travels before this row takes the drag.
+    ///
+    /// Measured, not chosen (CUR-38). At 14 pt the log did not scroll at all
+    /// when the swipe started on a row — a UI test says 0 pt of movement, ten
+    /// times out of ten, while the same swipe started off a row scrolled fine.
+    /// `simultaneousGesture` is supposed to leave the scroll view its share of
+    /// the touch and does not: whichever recognises first keeps it, and at 14 pt
+    /// that was this one. 30 pt lets the scroll view's own pan start first, so
+    /// a vertical drag is a scroll and a sideways one still reveals the tile.
+    private static var takeover: CGFloat { 30 }
+
     @State private var offset: CGFloat = 0
     /// Where the row sat when this drag began.
     @State private var base: CGFloat = 0
+    /// How far the finger had already travelled when this row took over, so the
+    /// row follows the finger instead of jumping the threshold's worth.
+    @State private var grabbed: CGFloat = 0
     @State private var isDragging = false
 
     var body: some View {
@@ -68,7 +82,13 @@ struct SwipeToRevealRow<Content: View>: View {
             .offset(x: offset)
             // Applied outside the offset: `offset` moves what is drawn, not
             // the layout, so this background stays put while the row slides.
-            .background(alignment: .trailing) { actionTile }
+            //
+            // Only while the row is off zero. Drawn permanently it sat behind
+            // every closed row, hidden by nothing but the row's own opaque
+            // fill — so switching the filter chips faded the rows out and
+            // showed a column of delete tiles through them mid-transition
+            // (Andi, CUR-38).
+            .background(alignment: .trailing) { if offset != 0 { actionTile } }
             // Masked rather than clipped, and widened to the screen edge: a
             // mask has no say in layout, so the row keeps its place in the
             // list while its content is free to slide off the display.
@@ -143,7 +163,7 @@ struct SwipeToRevealRow<Content: View>: View {
     }
 
     private var swipe: some Gesture {
-        DragGesture(minimumDistance: 14)
+        DragGesture(minimumDistance: Self.takeover)
             .onChanged { value in
                 // Vertical intent belongs to the scroll view — but only until
                 // this row has taken the drag. Re-checking every frame let a
@@ -153,18 +173,22 @@ struct SwipeToRevealRow<Content: View>: View {
                 if !isDragging {
                     isDragging = true
                     base = offset
+                    // The threshold has already been travelled by the time this
+                    // fires; without discounting it the row would jump 30 pt
+                    // sideways the instant it takes over.
+                    grabbed = value.translation.width
                     // Claiming the slot here closes any other open row at the
                     // start of the swipe rather than at the end of it.
                     openRow = id
                 }
-                offset = clamp(base + value.translation.width)
+                offset = clamp(base + value.translation.width - grabbed)
             }
             .onEnded { value in
                 guard isDragging else { return }
                 isDragging = false
                 // Flicks count: where the row would come to rest decides, not
                 // where the finger happened to leave the glass.
-                let projected = base + value.predictedEndTranslation.width
+                let projected = base + value.predictedEndTranslation.width - grabbed
                 let opens = projected < Self.openOffset / 2
                 withAnimation(.snappy(duration: 0.25)) {
                     offset = opens ? Self.openOffset : 0

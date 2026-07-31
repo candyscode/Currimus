@@ -57,6 +57,10 @@ enum DebugFlags {
     /// always answers in the simulator's own terms, so this state cannot be
     /// produced there by pressing the button.
     static var showsEmptyImportNotice: Bool { isSet("noimport") }
+    /// iOS: open the Records screen with its derivation sheet already up. The
+    /// sheet sizes itself to its text now, and nothing else can screenshot it —
+    /// a tap on the ⓘ cannot be injected.
+    static var opensExplanation: Bool { isSet("explain") }
     /// iOS: open the first-import sheet in one of its states
     /// (`-import reading|filling|done|nothing`). The simulator's Health holds
     /// nothing, so a real import there finishes before it can be looked at.

@@ -175,7 +175,7 @@ struct ProgressScreen: View {
         let average = km > 0 ? seconds / km : 0
         let change = RunAnalytics.trendChange(series)
 
-        Text("IN ZONE 2 · LAST 12 MONTHS").kicker(13, color: Theme.bright, tracking: 0.12)
+        Text("PACE IN ZONE 2 · LAST 12 MONTHS").kicker(13, color: Theme.bright, tracking: 0.12)
         if months.filter({ $0.pace != nil }).count >= 2 {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(Format.pace(average)).font(.stat(40)).kerning(-1.6)
@@ -289,7 +289,7 @@ struct ProgressScreen: View {
         }
         let median = String(localized: "Your own median easy pace, across the runs that sat near it.")
         if drift.delta < 0 {
-            return median + String(localized: " Same pace, \(-drift.delta) bpm lower than it used to be — that is fitness.")
+            return median + String(localized: " Same pace, \(-drift.delta) bpm lower than it used to be.")
         }
         if drift.delta > 0 {
             return median + String(localized: " Same pace, \(drift.delta) bpm higher than it used to be. Heat, fatigue or a hard block will do that.")

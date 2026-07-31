@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RecordsView: View {
     @EnvironmentObject private var store: RunStore
+    @State private var explaining: Explanation?
 
     var body: some View {
         PushedScreen(title: "Records") {
@@ -20,15 +21,45 @@ struct RecordsView: View {
                 }
                 .padding(.top, banner == nil ? 0 : 14)
 
-                // "Why is my 10 K from last autumn, when I have run past ten
-                // kilometres all summer?" — because a record is a time, not a
-                // distance covered, and nothing since has been faster. Said
-                // here rather than left to be worked out.
-                Text("Records come from your runs automatically. No badges, no confetti.\n\nA 5 K or 10 K record is the fastest continuous stretch of that distance inside any run — the run does not have to end there. Runs another app recorded arrive without kilometre splits, so those count at their average pace over the whole run, which is fair evidence but rarely a record. A longer run beats one of these only by being genuinely faster over the distance.")
-                    .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 16)
+                // The four sentences that used to sit here explained the whole
+                // mechanism in one block of grey text and were, in Andi's
+                // words, not understandable at all (CUR-38). One sentence
+                // stays; the mechanism moved behind the ⓘ, like every other
+                // derivation in the app.
+                HStack(spacing: 2) {
+                    Text("HOW A RECORD IS FOUND")
+                        .kicker(13, color: Theme.bright, tracking: 0.12).fixedSize()
+                    InfoButton(label: "a record") { explaining = Self.method }
+                        .padding(.leading, -6)
+                }
+                .padding(.top, 26)
+
+                Text("Records come from your runs automatically. No badges, no confetti.")
+                    .font(.sg(13)).foregroundStyle(Theme.muted).lineSpacing(3).padding(.top, 8)
             }
         }
+        .explanationSheet($explaining)
+        .onAppear { if DebugFlags.opensExplanation { explaining = Self.method } }
     }
+
+    /// What "record" means here, in full.
+    ///
+    /// Two readings, and both are worth knowing about: the one inside a run is
+    /// tied to kilometre markers, and the one from a whole run can only ever
+    /// understate the runner. Neither was said out loud before.
+    private static let method = Explanation(
+        title: String(localized: "How a record is found"),
+        body: String(localized: """
+        A record here is a **time over a distance** — the fastest you have covered it. Not a distance you have run past: a 15 km easy run does not touch your 10 km record unless the fastest ten kilometres of it were quicker than that record.
+
+        There are two ways a run can hold one, and the faster of the two wins, so an estimate never displaces a real effort.
+
+        **The fastest stretch inside a run.** For 1, 5 and 10 km, Currimus looks for the fastest run of that many kilometres *in a row* anywhere inside a run — the run does not have to end there, and the fastest 5 km of a 12 km run counts. It reads the per-kilometre splits, so the stretch begins and ends on a kilometre marker; a genuinely faster stretch that straddles two markers can be a handful of seconds quicker than what is filed here.
+
+        **The whole run, scaled.** Runs another app recorded arrive as one distance and one duration, with no splits to search. All that can be read is the average pace over the whole run, held against the benchmark — a 12 km run at 5:00 /km stands as a 10 km in 50:00. That is deliberately cautious: the fastest 10 km inside that run was quicker than its average, so this reading can only ever understate you. Only runs up to two and a half times the benchmark are read this way, which is why a marathon counts as evidence for a half and never as a 1 km.
+
+        The half marathon and the marathon have no splits reading at all — over those distances the whole run *is* the effort.
+        """))
 
     private func newestBanner(_ b: RunStore.LatestBenchmark) -> some View {
         VStack(alignment: .leading, spacing: 0) {

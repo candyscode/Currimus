@@ -1124,3 +1124,64 @@ Stimmt: das Sheet hatte ein festes Detent von 420 pt, und die beiden Zustände o
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/40dc7aa
+
+### CUR-38: Sechs Befunde aus der Benutzung
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+1) Im Race Mode: Entferne die "From Racing" estimation, behalte "From Training", benenne das aber um in "ESTIMATION", mit dem i-Icon daneben. Riegel-Estimation fällt also weg, nur noch Tanda. Die Erklär-Popups sind aber zu groß (zu viel Whitespace unter dem Text, also selbes Problem wie im letzten Prompt).
+
+2) Im Log geht oft das Scrollen nicht, dann muss man zwei oder dreimal mit dem Finger ansetzen, dass man wirklich scrollt. Bitte fixen.
+
+3) Wenn man im Log in den Filter-Pillen oben zwischen Road und Trail wechselt, sieht man in der Transition kurz den Delete-Button der Items. Das darf nicht sein.
+
+4) Statt "IN ZONE 2..." bei Progress: "PACE IN ZONE 2...". Außerdem bei "Heart rate at" den cringen Anhang "that is fitness" streichen.
+
+5) In Records die Kachel "Your Best 10K" flexibler machen. Sie soll den letzten Record-Run zeigen, unabhängig ob es ein 10K, 5K oder whatever ist. Wenn ich also kürzlich den ersten Marathon gelaufen bin, soll der da angezeigt werden. Wenn ich den Tag drauf einen 10K laufe, der schneller ist als mein letzter 10er, dann soll dieser in der Kachel angezeigt werden.
+
+6) Ich verstehe den Text in Records, der mit "A 5K or 10K record is the..." beginnt, überhaupt nicht. Bitte erklären und hinterfragen, ob das so sinnvoll ist und ob die technische Logik, die er beschreibt, überhaupt sinnvoll ist.
+
+Achte darauf, dass UI-Anpassungen zum Design der App passen.
+
+#### Agent Comments
+
+**1 · Eine Schätzung statt zweier.** „FROM RACING" ist weg, „FROM TRAINING" heißt jetzt `ESTIMATION` und trägt das ⓘ. Dahinter steht unverändert Tanda (2011): Wochenumfang und Trainingspace der letzten acht Wochen. Der Erklärtext hat den Absatz verloren, der die beiden Modelle gegeneinander gestellt hat — es gibt kein zweites mehr —, behält aber die beiden ehrlichen Warnungen (Extrapolation außerhalb der Studienwerte, längster Lauf weit unter Renndistanz).
+
+**Zwei Konsequenzen, die du kennen solltest:**
+
+- **Für 5 K, 10 K und Halbmarathon gibt es jetzt gar keine Schätzung mehr.** Tanda ist auf den Marathon gefittet und sagt über einen 10er nichts; Riegel war das Modell, das kürzere Distanzen bedient hat. Die Kachel steht dort auf „—", und das ⓘ sagt warum. Das ist die wörtliche Umsetzung deiner Ansage — sag Bescheid, wenn du für Nicht-Marathon-Rennen lieber Riegel unter demselben Label „ESTIMATION" zurück hättest (das ⓘ nennt ja ohnehin die Grundlage, es wäre also nicht unehrlich). `RunAnalytics.riegel` und `predict` bleiben inklusive Tests im Code, damit das ein Einzeiler ist.
+- **Home zeigt dieselbe Zahl.** Die Kachel dort hieß „PREDICTED" und zeigte `max(Riegel, Tanda)` — nach der Änderung hätten Home und Race zwei verschiedene Zielzeiten für dasselbe Rennen gezeigt. Home heißt jetzt auch `ESTIMATION` und liest denselben Wert.
+
+**1b · Die Erklär-Sheets messen ihre Höhe.** Sie standen auf `.medium`, also immer halber Bildschirm, egal ob drei Zeilen oder dreißig. Jetzt: Inhalt messen, Detent = gemessene Höhe, gedeckelt bei 560 pt — wer darüber liegt (der Records-Text), scrollt und lässt sich weiterhin auf volle Höhe ziehen. Neue Snapshot-Routen `race-explain` und `records-explain` halten das fest, sonst kann es unbemerkt zurückrutschen.
+
+**2 · Das Log scrollt wieder — und der Fehler war größer, als du ihn beschrieben hast.** Ein neuer UI-Test (`LogScrollUITests`) wischt einmal von einer Zeile aus nach oben und misst, wie weit sich das Log bewegt hat. Vorher: **0,0 pt, zehnmal von zehn.** Der Kontrolltest — derselbe Wisch, nur nicht auf einer Zeile begonnen — scrollte problemlos. Es ist also nicht „geht oft nicht", es ging **nie**, wenn der Finger auf einer Zeile aufsetzte; was du als zweiten und dritten Versuch erlebt hast, war vermutlich das Treffen der schmalen Ränder zwischen den Zeilen.
+
+Ursache: die Wisch-Geste der Zeile stand auf `minimumDistance: 14`. `simultaneousGesture` soll sich die Berührung mit dem ScrollView teilen und tut es nicht — wer zuerst erkennt, behält sie, und bei 14 pt war das immer die Zeile. Bei 30 pt fängt der ScrollView zuerst an, und beide Gesten funktionieren. Der Wert ist gemessen, nicht geraten: 14 → 0 pt, 30 → volle Scrollstrecke, zehn von zehn. Damit die Zeile dabei nicht 30 pt springt, wenn sie die Geste übernimmt, rechnet sie den bereits gelaufenen Weg heraus — sie folgt dem Finger ab dem Punkt, an dem sie ihn bekommt.
+
+Der saubere Weg wäre `UIGestureRecognizerRepresentable` (iOS 18) mit einem Pan-Recognizer, der nur bei horizontaler Bewegung anspringt; das erlaubt eine kleinere Schwelle. Ist notiert, aber ohne Not: die drei Wisch-Tests laufen mit 30 pt unverändert grün.
+
+**3 · Der Delete-Button in der Filter-Transition ist weg.** Die Kachel lag permanent hinter jeder Zeile und war nur von deren eigener deckender Füllung verdeckt — beim Filterwechsel blenden die Zeilen aus und geben sie frei. Sie wird jetzt nur noch gezeichnet, wenn die Zeile überhaupt verschoben ist.
+
+**4 · Beide Texte geändert.** „PACE IN ZONE 2 · LAST 12 MONTHS", und der Halbsatz „— that is fitness" ist gestrichen. Der Rest des Satzes sagt dasselbe, ohne dem Läufer auf die Schulter zu klopfen.
+
+**5 · Der Records-Banner kennt alle Distanzen.** Statt nur 5 und 10 km läuft er über alle fünf Benchmarks und zeigt den zuletzt gesetzten Rekord. Dein Marathon-Beispiel ist genau der Testfall, der dabei einen echten Fehler aufgedeckt hat: **ein Lauf setzt mehrere Rekorde gleichzeitig.** Ein erster Marathon hält auch den schnellsten Halbmarathon und den schnellsten Kilometer im Log — alle mit demselben Datum. Der Banner hätte davon „1 km" gezeigt, weil bei Datumsgleichstand die Reihenfolge der Aufzählung entschied. Jetzt: neuestes Datum zuerst, bei Gleichstand die längste Distanz. Ein Marathon meldet sich als Marathon.
+
+**6 · Der Text, den du nicht verstanden hast — Erklärung, Bewertung und Konsequenz.**
+
+Was er sagen wollte: ein Rekord ist eine **Zeit über eine Distanz**, und es gibt zwei Wege, wie ein Lauf einen hält.
+
+- **Der schnellste Abschnitt im Lauf.** Für 1, 5 und 10 km sucht Currimus die schnellsten so-und-so-viel Kilometer *am Stück* irgendwo innerhalb eines Laufs. Die schnellsten 5 km eines 12-km-Laufs zählen, der Lauf muss dort nicht enden. Das ist Standard (Strava nennt es „best efforts") und sinnvoll.
+- **Der ganze Lauf, skaliert.** Läufe aus anderen Apps kommen ohne Kilometer-Splits an — nur eine Distanz und eine Dauer. Dann wird die Durchschnittspace des ganzen Laufs auf die Benchmark gerechnet: 12 km zu 5:00 /km gelten als 10 km in 50:00. Der Deckel liegt bei 2,5× der Benchmark, weshalb ein Marathon als Beleg für einen Halben zählt und nie als 1-km-Rekord.
+
+**Ist das sinnvoll? Weitgehend ja, und zwar aus einem Grund, der im alten Text nicht stand:** die skalierte Lesart kann einen Läufer nur *unterschätzen*, nie schmeicheln. Die schnellsten 10 km innerhalb eines 12-km-Laufs sind immer mindestens so schnell wie dessen Durchschnitt. Sie ist also eine untere Schranke und kann einen echten Rekord nie verdrängen — es gewinnt ohnehin die schnellere der beiden Lesarten.
+
+**Wo der Text zu viel behauptet hat, und das ist der echte Fund:** „fastest continuous stretch" stimmt nicht ganz. Gerechnet wird über die Kilometer-Splits, der Abschnitt beginnt und endet also auf einem Kilometermarker. Ein tatsächlich schnellerer Abschnitt, der zwischen zwei Markern liegt, ist ein paar Sekunden schneller als das, was hier steht. Feiner geht es mit den vorhandenen Daten nicht — aber die App darf das dann auch nicht verschweigen. Steht jetzt drin.
+
+**Und was ich geändert habe:** der Absatz ist aus der Ansicht raus. Vier Sätze grauer Fließtext unter den Zeilen sind genau das, was du in CUR-36 #7 abgeschafft hast. Übrig bleibt eine Zeile („Records come from your runs automatically. No badges, no confetti.") plus ein Kicker „HOW A RECORD IS FOUND" mit ⓘ; die vollständige Herleitung steht im Sheet — mit beiden Lesarten, dem Kilometermarker-Vorbehalt, der Begründung des 2,5×-Deckels und dem Hinweis, dass Halbmarathon und Marathon gar keine Abschnitts-Lesart haben, weil dort der ganze Lauf der Versuch ist.
+
+**Tests.** Fünf neue (228 iOS gesamt): kein Estimate für ein 10-K-Rennen, Estimate für den Marathon-Aufbau, Banner führt mit einem ersten Marathon, Banner wechselt am Folgetag auf den schnelleren 10er, und die drei Scroll-Tests. 12 UI-Tests, 27 watchOS-Tests, beide Ziele bauen, Referenzbilder neu aufgenommen.
+
+#### Link to completed work

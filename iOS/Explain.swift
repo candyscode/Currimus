@@ -53,6 +53,19 @@ struct InfoButton: View {
 struct ExplanationSheet: View {
     var explanation: Explanation
     @Environment(\.dismiss) private var dismiss
+    /// Measured, not `.medium`: most of these are a paragraph, and a fixed half
+    /// screen left a hand's width of black under every one of them (Andi,
+    /// CUR-38). The long ones still scroll and can still be pulled to full.
+    @State private var height: CGFloat = 260
+
+    /// Past this the sheet stops growing and starts scrolling — a modal that
+    /// covers the screen should be dragged there deliberately, not arrive that
+    /// way.
+    private static let ceiling: CGFloat = 560
+
+    private var detents: Set<PresentationDetent> {
+        height >= Self.ceiling ? [.height(Self.ceiling), .large] : [.height(height)]
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -65,8 +78,9 @@ struct ExplanationSheet: View {
                 }
                 .padding(.horizontal, 26)
                 .padding(.top, 70)
-                .padding(.bottom, 40)
+                .padding(.bottom, 34)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
             }
             .scrollIndicators(.hidden)
             TopScrim {
@@ -76,7 +90,7 @@ struct ExplanationSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(detents)
         .presentationDragIndicator(.visible)
         .presentationBackground(Theme.bg)
     }

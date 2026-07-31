@@ -92,8 +92,12 @@ struct HomeView: View {
         HStack(alignment: .top, spacing: 28) {
             StatBlock(value: Format.clock(race.goalTime), label: "GOAL")
             StatBlock(value: Format.pace(race.requiredPace), label: planLabel ? "PLAN /KM" : "NEEDS /KM", accent: true)
-            if let prediction = store.prediction {
-                StatBlock(value: Format.clock(prediction.headline), label: "PREDICTED")
+            // The same number the Race screen calls ESTIMATION, under the same
+            // word. It used to be `prediction.headline` — the slower of two
+            // models, one of which no longer exists — so Home and Race could
+            // print two different finishes for one race.
+            if let estimate = store.raceEstimate {
+                StatBlock(value: Format.clock(estimate.time), label: "ESTIMATION")
             }
         }
     }

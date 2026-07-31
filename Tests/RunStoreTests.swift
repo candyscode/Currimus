@@ -72,10 +72,19 @@ final class RunStoreTests: XCTestCase {
         XCTAssertEqual(store.record(.marathon)?.isUnset, true)
     }
 
-    func testPredictionExistsForMarathonBuildUp() throws {
+    func testTheRaceEstimateExistsForAMarathonBuildUp() throws {
         let store = makeStore(seeded: true)
-        let prediction = try XCTUnwrap(store.prediction)
-        XCTAssertGreaterThan(prediction.time, 3 * 3600)
+        let estimate = try XCTUnwrap(store.raceEstimate)
+        XCTAssertGreaterThan(estimate.time, 3 * 3600)
+    }
+
+    /// Tanda is fitted on the marathon and says nothing about a 10 K, so the
+    /// screen must have nothing to print rather than a scaled guess (CUR-38).
+    func testNoRaceEstimateForAShorterRace() {
+        let store = makeStore(seeded: true)
+        store.race = Race(name: "Autumn 10K", distance: .tenK,
+                          date: .now.addingTimeInterval(30 * 86_400), goalTime: 45 * 60)
+        XCTAssertNil(store.raceEstimate)
     }
 
     func testSettingsSurviveAWatchSettingsRoundTrip() throws {
@@ -243,7 +252,35 @@ final class RunStoreTests: XCTestCase {
         ]
         // The 5 K window is the faster one, but the 10 K PR is two days old —
         // the banner leads with what just happened.
-        XCTAssertEqual(store.latestBenchmark?.label, "10K")
+        XCTAssertEqual(store.latestBenchmark?.label, RecordEntry.Kind.tenK.label)
+    }
+
+    /// The banner used to look at 5 and 10 km only, so a first marathon — the
+    /// most interesting record a log can gain — could never headline the
+    /// screen (CUR-38).
+    func testTheBannerLeadsWithAFirstMarathon() {
+        let store = makeStore()
+        store.runs = [
+            run("Marathon", km: 42.2, minutes: 225, date: .now.addingTimeInterval(-86_400)),
+            run("10K", km: 10, minutes: 50, date: .now.addingTimeInterval(-60 * 86_400),
+                splits: Array(repeating: 300, count: 10)),
+        ]
+        XCTAssertEqual(store.latestBenchmark?.label, RecordEntry.Kind.marathon.label)
+        XCTAssertNil(store.latestBenchmark?.delta, "a first marathon has nothing to beat")
+    }
+
+    /// …and the day a faster 10 K arrives, that is what it shows.
+    func testAFasterBenchmarkTheNextDayTakesTheBanner() {
+        let store = makeStore()
+        store.runs = [
+            run("Faster 10K", km: 10, minutes: 48, date: .now,
+                splits: Array(repeating: 288, count: 10)),
+            run("Marathon", km: 42.2, minutes: 225, date: .now.addingTimeInterval(-86_400)),
+            run("10K", km: 10, minutes: 50, date: .now.addingTimeInterval(-60 * 86_400),
+                splits: Array(repeating: 300, count: 10)),
+        ]
+        XCTAssertEqual(store.latestBenchmark?.label, RecordEntry.Kind.tenK.label)
+        XCTAssertNotNil(store.latestBenchmark?.delta, "it beat the old 10 K, so say by how much")
     }
 
     func testBenchmarkHoldersTagTheRightRuns() {

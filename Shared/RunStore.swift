@@ -108,11 +108,10 @@ final class RunStore: ObservableObject {
     private var cachedHolders: [UUID: String]?
     private var cachedLatestBenchmark: LatestBenchmark??
     private var cachedFastestPaceOfMonth: Set<UUID>?
-    private var cachedPrediction: RunAnalytics.Prediction??
-    /// The day the cached prediction was worked out on. Its recent-form window
-    /// is counted back from "now", so the answer ages even when the log does
-    /// not.
-    private var predictionDay: Date?
+    private var cachedEstimate: RunAnalytics.TrainingPrediction??
+    /// The day the cached estimate was worked out on. Its training window is
+    /// counted back from "now", so the answer ages even when the log does not.
+    private var estimateDay: Date?
     /// Grouping and sorting the whole log ran on every body pass of the Log
     /// screen — including every tap of a checkbox in its marking mode.
     private var cachedMonths: [LogFilter: [(month: Date, runs: [Run])]] = [:]
@@ -126,8 +125,8 @@ final class RunStore: ObservableObject {
         cachedFastestPaceOfMonth = nil
         cachedMonths = [:]
         cachedLogText = [:]
-        cachedPrediction = nil
-        predictionDay = nil
+        cachedEstimate = nil
+        estimateDay = nil
     }
 
     var lastRun: Run? { allRuns.first }
@@ -955,25 +954,31 @@ final class RunStore: ObservableObject {
         }
     }
 
-    // MARK: - Records & prediction
+    // MARK: - Records & the race estimate
 
-    /// Cached like every other aggregate on this screen's path.
+    /// What the last eight weeks of training say the race will take.
     ///
-    /// It walks the best effort over three distances, twice — once over the
-    /// recent window and once over the whole log — and each of those reads
-    /// every split of every run. That was cheap while imported runs had no
-    /// splits; since they gained them it is the most expensive thing Home
-    /// reads, and Home read it on every body pass.
-    var prediction: RunAnalytics.Prediction? {
+    /// The one estimate the app shows. Riegel's scaling of a past effort used
+    /// to sit beside it under "FROM RACING" and is gone (CUR-38): two forecasts
+    /// for one race left the runner to pick, and the one that reads the work
+    /// done is the one worth planning around. `RunAnalytics.predict` is still
+    /// there, unit-tested, for the day it is wanted back.
+    ///
+    /// Tanda is fitted on the marathon and says nothing about a 10 K, so it is
+    /// only asked for one.
+    ///
+    /// Cached like every other aggregate on this screen's path — it walks every
+    /// road run of the last eight weeks, and Home reads it on every body pass.
+    var raceEstimate: RunAnalytics.TrainingPrediction? {
         // Outside the cache, and deliberately: this one depends on the clock
         // rather than on the log, and a race that passed midnight with the app
         // open would otherwise keep forecasting a finish it had already run.
-        guard let race, !race.isPast else { return nil }
+        guard let race, !race.isPast, race.distance == .marathon else { return nil }
         let today = Calendar.current.startOfDay(for: .now)
-        if let cachedPrediction, predictionDay == today { return cachedPrediction }
-        let built = RunAnalytics.predict(race: race, runs: allRuns)
-        cachedPrediction = .some(built)
-        predictionDay = today
+        if let cachedEstimate, estimateDay == today { return cachedEstimate }
+        let built = RunAnalytics.trainingPrediction(runs: allRuns)
+        cachedEstimate = .some(built)
+        estimateDay = today
         return built
     }
 
@@ -1057,6 +1062,11 @@ final class RunStore: ObservableObject {
         /// How much it beat the previous best, when there was one.
         var delta: String?
         var date: Date
+        /// The benchmark's distance. Not shown — it settles which record leads
+        /// when one run set several on the same day, and one run usually does:
+        /// a marathon also files the fastest half and the fastest kilometre
+        /// inside it. The marathon is what happened that day.
+        var km: Double = 0
 
         /// Whether "NEW" is a fair thing to call it.
         ///
@@ -1077,21 +1087,29 @@ final class RunStore: ObservableObject {
 
     private func buildLatestBenchmark() -> LatestBenchmark? {
         let runs = allRuns
-        let candidates: [(km: Int, label: String)] = [(5, "5K"), (10, "10K")]
-        // Freshest first: a 10K PR set last week leads over a 5K PR from May.
-        let held = candidates.compactMap { candidate -> LatestBenchmark? in
-            let km = Double(candidate.km)
-            guard let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) else { return nil }
+        // Every benchmark, not just 5 and 10 km. Someone who has just run their
+        // first marathon has set the most interesting record in the log, and
+        // the banner used to headline their 10 K from March instead — the tile
+        // was "your best 10K" wearing a general name (Andi, CUR-38).
+        let held = RecordEntry.Kind.allCases.compactMap { kind -> LatestBenchmark? in
+            guard let km = kind.km,
+                  let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) else { return nil }
             let previous = RunAnalytics.bestEffortHolder(
                 km: km, runs: runs.filter { $0.id != holder.run.id })?.seconds
             return LatestBenchmark(
-                label: candidate.label,
+                label: kind.label,
                 value: Format.clock(holder.seconds),
                 delta: previous.map { "\(Format.paceDelta(holder.seconds - $0)) vs previous" },
-                date: holder.run.date
+                date: holder.run.date,
+                km: km
             )
         }
-        return held.max { $0.date < $1.date }
+        // Freshest first: a 10 K set last week leads over a marathon from May,
+        // and the marathon leads the day it is run. Then the longest, because
+        // one run sets several records at once — a first marathon also holds
+        // the fastest half and the fastest kilometre in the log, and announcing
+        // the kilometre would be true and absurd.
+        return held.max { ($0.date, $0.km) < ($1.date, $1.km) }
     }
 
     /// Which runs currently hold a benchmark, for the log's inline PR tag.

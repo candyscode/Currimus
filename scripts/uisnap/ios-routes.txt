@@ -31,6 +31,8 @@ log-swipe        | loose  | -demo 1 -tab log -swipe 1
 progress-road    | loose  | -demo 1 -tab progress
 race             | loose  | -demo 1 -push race
 race-setup       | loose  | -demo 1 -push raceSetup
+race-explain     | loose  | -demo 1 -push race -explain 1
+records-explain  | loose  | -demo 1 -push records -explain 1
 records          | loose  | -demo 1 -push records
 detail-road      | loose  | -demo 1 -push detailRoad
 detail-trail     | loose  | -demo 1 -push detailTrail

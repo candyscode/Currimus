@@ -108,6 +108,7 @@
 		7A4D0531B73FC9BE52C022D1 /* Explain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658F13D75F9E096514FC4EF3 /* Explain.swift */; };
 		7AD9130B00B05C276391D01E /* RunNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225DF9B1EA413677BA231AD9 /* RunNaming.swift */; };
 		7AFE4AE13B28435351D8BA3A /* TabBarUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4DD83E66B5BBFC2107DA52 /* TabBarUITests.swift */; };
+		7BB07B266D00325B1703AD6A /* LogScrollUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2A5A48DAA517C074256B8D /* LogScrollUITests.swift */; };
 		7BCB1A4A803954AE36866C9E /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
 		7C9A20D6BCA70E89A9FBC0B7 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3515C4DD609F7375C055AA /* Models.swift */; };
 		7D7DDAD960A42C75E9FB606E /* RunPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60332871CFEA2AFE9925CDAE /* RunPalette.swift */; };
@@ -277,6 +278,7 @@
 		093CE780E88BBF9DB0F19E1D /* TrailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailViews.swift; sourceTree = "<group>"; };
 		0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAnalyticsTests.swift; sourceTree = "<group>"; };
 		13D61C620B2F41C1B8C0B5B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1C2A5A48DAA517C074256B8D /* LogScrollUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogScrollUITests.swift; sourceTree = "<group>"; };
 		1EC5D9A0957780EACF963837 /* RecordingIssue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingIssue.swift; sourceTree = "<group>"; };
 		2093769E1832392AF743C8EC /* ProgressTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressTabView.swift; sourceTree = "<group>"; };
 		225DF9B1EA413677BA231AD9 /* RunNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunNaming.swift; sourceTree = "<group>"; };
@@ -517,6 +519,7 @@
 		CE66F348D0344E2AD30FBC01 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
+				1C2A5A48DAA517C074256B8D /* LogScrollUITests.swift */,
 				2896414722F0534F76F64E00 /* SwipeToDeleteUITests.swift */,
 				6A4DD83E66B5BBFC2107DA52 /* TabBarUITests.swift */,
 			);
@@ -771,6 +774,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7BB07B266D00325B1703AD6A /* LogScrollUITests.swift in Sources */,
 				3BF77CAB3DF7E39F5F5C0F62 /* SwipeToDeleteUITests.swift in Sources */,
 				7AFE4AE13B28435351D8BA3A /* TabBarUITests.swift in Sources */,
 			);
