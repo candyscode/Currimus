@@ -89,7 +89,7 @@ struct LogView: View {
         } message: { pending in
             Text(DeletePrompt.message(pending.runs))
         }
-        .alert("Recorded by \(notDeletable?.name ?? "another app")",
+        .alert(DeletePrompt.notDeletableTitle,
                isPresented: Binding(get: { notDeletable != nil },
                                     set: { if !$0 { notDeletable = nil } }),
                presenting: notDeletable) { _ in

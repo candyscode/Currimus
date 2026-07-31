@@ -1110,6 +1110,20 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertTrue(text.contains("Fitness"), "and it still says where to go")
     }
 
+    /// Neither does its heading — which it did, for a while, in the worst
+    /// possible way (CUR-39).
+    ///
+    /// It read "Recorded by \(run.name)". That was the source app's name until
+    /// CUR-36 renamed imported runs after the time of day, and from then on it
+    /// announced "Recorded by Evening Run". The heading is a constant now, so
+    /// there is nothing left for a rename to leak into it.
+    func testTheNotDeletableHeadingNamesNothing() {
+        let run = Run(date: .now, name: "Evening Run", distanceKm: 10,
+                      duration: 2400, avgHR: 168, imported: true)
+        XCTAssertFalse(DeletePrompt.notDeletableTitle.contains(run.name))
+        XCTAssertFalse(DeletePrompt.notDeletableTitle.contains("Recorded by"))
+    }
+
     // MARK: - CUR-36 · what a log row says, and what a run is called
 
     /// The second line is the time and the zone, one shape for every row.

@@ -17,6 +17,16 @@ enum DeletePrompt {
             : String(localized: "Delete \(runs.count) runs?")
     }
 
+    /// The heading over that explanation.
+    ///
+    /// It read "Recorded by \(run.name)" — which was the source app's name back
+    /// when imported runs kept it, and has been the run's own name since
+    /// CUR-36 renamed them by time of day. So it announced "Recorded by Evening
+    /// Run" (Andi, CUR-39). Nothing here names a source now, for the reason
+    /// below, and the wording matches the line the edit screen already shows on
+    /// the same runs.
+    static let notDeletableTitle = String(localized: "Recorded outside Currimus")
+
     /// Why a run another app recorded cannot be deleted here. Named plainly,
     /// because "not possible" without a reason reads as a bug in Currimus.
     ///

@@ -1205,3 +1205,25 @@ Der Review hat außerdem zu Recht gemeldet, dass `Resources/Localizable.xcstring
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/051579e
+
+### CUR-39: „Recorded by Evening Run"
+
+[ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Wenn man einen fremden Lauf löschen will, steht da jetzt "Recorded by Evening Run". Das ist scheinbar bei unseren Umbauten heute und gestern vergessen worden — in der Variable, die dafür herangezogen wird, steht ja nicht mehr die Quelle drin, sondern der Name des Laufes.
+
+#### Agent Comments
+
+Genau so war es. Die Überschrift des Hinweis-Dialogs lautete `"Recorded by \(run.name)"`. `run.name` trug bei importierten Läufen bis CUR-36 den Namen der Quell-App — seit CUR-36 #2 heißen sie nach der Tageszeit, und damit wurde aus „Recorded by Strava" ein „Recorded by Evening Run".
+
+Die Überschrift ist jetzt eine Konstante in `DeletePrompt` und heißt „Recorded outside Currimus" — derselbe Wortlaut, den der Edit-Screen für dieselben Läufe schon verwendet. Sie nennt bewusst keine Quelle, aus demselben Grund wie der Erklärtext darunter, der das seit CUR-1 nicht tut: `sourceRevision.source.name` ist nur bei Dritt-Apps ein App-Name; bei einem Workout aus Apples eigener Workout-App ist es der *Gerätename*, und „lösch es in Andis Apple Watch" schickt jemanden auf die Uhr, wenn die Antwort die Fitness-App auf dem iPhone ist.
+
+Ein Test hält das jetzt fest — der Text darunter hatte längst einen, die Überschrift nicht, und genau deshalb konnte sie unbemerkt kaputtgehen. Beide prüfen dasselbe: dass kein Name aus dem Lauf in der Behauptung landet.
+
+Der Rest der App wurde auf denselben Fehler durchgesehen: keine weitere Stelle zieht `run.name` heran, um über die Herkunft eines Laufs zu sprechen.
+
+#### Link to completed work
+
