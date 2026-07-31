@@ -1185,3 +1185,5 @@ Was er sagen wollte: ein Rekord ist eine **Zeit über eine Distanz**, und es gib
 **Tests.** Fünf neue (228 iOS gesamt): kein Estimate für ein 10-K-Rennen, Estimate für den Marathon-Aufbau, Banner führt mit einem ersten Marathon, Banner wechselt am Folgetag auf den schnelleren 10er, und die drei Scroll-Tests. 12 UI-Tests, 27 watchOS-Tests, beide Ziele bauen, Referenzbilder neu aufgenommen.
 
 #### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/051579e
