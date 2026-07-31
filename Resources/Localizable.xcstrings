@@ -4,18 +4,26 @@
     "" : {
 
     },
-    " · TRAIL" : {
+    "\n\nNothing in the last four months reached that distance, so this describes the shape you were in then rather than the shape you are in now." : {
 
     },
-    " **%@** from your training — %lld km a week at %@ /km over the last %@, after %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : " **%1$@** from your training — %2$lld km a week at %3$@ /km over the last %4$@, after %5$@."
-          }
-        }
-      }
+    "\n\nThe two disagree by more than eight minutes, and your speed is ahead of your training: that gap is long runs and weekly volume. Plan around the slower of the two — a forecast that flatters you costs far more on the day than one that is too careful." : {
+
+    },
+    "\n\nThe two disagree by more than eight minutes, and your training is ahead of your racing: the endurance is there, the sharpness is not. Plan around the slower of the two — a forecast that flatters you costs far more on the day than one that is too careful." : {
+
+    },
+    "\n\nThis one is an extrapolation: your volume and pace sit outside the range that study covered, so read it as a direction rather than as a time." : {
+
+    },
+    "\n\nYour longest run is still well short of the race, which neither model can see." : {
+
+    },
+    " · %lld not measured" : {
+
+    },
+    " · TRAIL" : {
+
     },
     " %@ here has no GPS track, so it falls back to Currimus' own rule of thumb — roughly 0.4 s per metre climbed. Rebuild from Health in Settings to replace it." : {
 
@@ -29,9 +37,6 @@
     " None of your trail runs carries a GPS track yet, so these use Currimus' own rule of thumb instead — roughly 0.4 s of the run's time attributed to each metre climbed, and less than half of that given back on the way down. Rebuild from Health in Settings to replace it with the real thing." : {
 
     },
-    " Nothing in the last four months reached that distance, so the first number describes the shape you were in then." : {
-
-    },
     " Same pace, %lld bpm higher than it used to be. Heat, fatigue or a hard block will do that." : {
 
     },
@@ -41,19 +46,7 @@
     " Same pace, same heart rate." : {
 
     },
-    " The second number is an extrapolation — your volume and pace sit outside the range that study covered, so read it as a direction rather than a time." : {
-
-    },
     " These are yours right now — you changed them by hand, so the automatic update leaves them alone until you tap Recalculate." : {
-
-    },
-    " Your longest run is still well short of the race, which neither model can see." : {
-
-    },
-    " Your speed is ahead of your training: that gap is long runs and weekly volume." : {
-
-    },
-    " Your training is ahead of your racing: the endurance is there, the sharpness is not." : {
 
     },
     "–" : {
@@ -61,29 +54,6 @@
     },
     "—" : {
 
-    },
-    ". %@ spent in zone 2 could not be measured exactly — no heart-rate trace, or nothing in Health saying how the distance came — and are left out rather than estimated." : {
-
-    },
-    "**%@** from your best %@ effort (%@), scaled to the distance after %@." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@** from your best %2$@ effort (%3$@), scaled to the distance after %4$@."
-          }
-        }
-      }
-    },
-    "**%@** is your best %@ effort (%@) — the distance itself, no scaling needed." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@** is your best %2$@ effort (%3$@) — the distance itself, no scaling needed."
-          }
-        }
-      }
     },
     "/km" : {
 
@@ -186,6 +156,9 @@
     "%@ read back out of Apple Health." : {
 
     },
+    "%@ read out of Apple Health, with their heart-rate traces and GPS tracks." : {
+
+    },
     "%@ since %@" : {
       "localizations" : {
         "en" : {
@@ -205,6 +178,9 @@
           }
         }
       }
+    },
+    "%@ spent time in zone 2 but could not be measured exactly — no heart-rate trace, or nothing in Health saying how the distance came. They are left out of the line rather than estimated onto it, and counted here instead, so the chart cannot quietly shrink without saying why." : {
+
     },
     "%@ vs avg" : {
 
@@ -248,8 +224,21 @@
     "%lld bpm" : {
 
     },
+    "%lld kilometres" : {
+
+    },
     "%lld km" : {
 
+    },
+    "%lld km a week at %@ /km over the last %@, read through %@. It reads the work you have put in and knows nothing about race sharpness." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld km a week at %2$@ /km over the last %3$@, read through %4$@. It reads the work you have put in and knows nothing about race sharpness."
+          }
+        }
+      }
     },
     "%lld of 5, %@" : {
       "localizations" : {
@@ -318,16 +307,22 @@
     "10 km" : {
 
     },
+    "Afternoon Run" : {
+
+    },
     "All done" : {
 
     },
-    "Already have runs? Bring them in" : {
+    "Allow access when Health asks, and Currimus reads every running workout on this iPhone. Nothing leaves the device." : {
 
     },
     "Appears after a trail run that recorded elevation" : {
 
     },
     "Appears once a couple of months carry runs spent in zone 2. Runs from other apps count too." : {
+
+    },
+    "Apple Health returned no running workouts. Either there are none yet, or access was declined — Health does not say which. Currimus needs that access to be of any use, so it is worth checking." : {
 
     },
     "at %@ → finish " : {
@@ -348,6 +343,9 @@
     "back up to zone %lld" : {
 
     },
+    "Bringing your runs in" : {
+
+    },
     "Calculate from Apple Health" : {
 
     },
@@ -361,6 +359,12 @@
 
     },
     "CLIMBED" : {
+
+    },
+    "Close" : {
+
+    },
+    "Continue" : {
 
     },
     "Countdown before run" : {
@@ -491,6 +495,12 @@
     "finish ~%@" : {
 
     },
+    "From racing" : {
+
+    },
+    "From training" : {
+
+    },
     "GET READY" : {
 
     },
@@ -568,10 +578,16 @@
     "Home goes back to your weekly volume. Your runs and records are untouched." : {
 
     },
-    "HOW THESE ARE KEPT CURRENT" : {
+    "How %@ is worked out" : {
+
+    },
+    "If you have runs on this iPhone, access was most likely declined — Health never says, it simply returns nothing. Without it Currimus has no log, no records and no progress. Allow it under Settings → Privacy & Security → Health → Currimus, then try again." : {
 
     },
     "IN ZONE 2 · LAST 12 MONTHS" : {
+
+    },
+    "Indoor Run" : {
 
     },
     "Indoor run — nowhere to draw" : {
@@ -602,6 +618,9 @@
 
     },
     "LAST 4 WEEKS" : {
+
+    },
+    "Let's get started" : {
 
     },
     "Licensed under the SIL Open Font License 1.1." : {
@@ -643,6 +662,9 @@
     "Max %lld" : {
 
     },
+    "Max heart rate" : {
+
+    },
     "MAX HEART RATE" : {
 
     },
@@ -668,6 +690,9 @@
 
     },
     "Next" : {
+
+    },
+    "Night Run" : {
 
     },
     "no 1 km effort yet" : {
@@ -715,6 +740,9 @@
     "no reading yet" : {
 
     },
+    "No runs came out of Apple Health" : {
+
+    },
     "no runs yet" : {
 
     },
@@ -728,6 +756,9 @@
 
     },
     "Nothing set yet" : {
+
+    },
+    "Nothing to bring in" : {
 
     },
     "of %lld" : {
@@ -802,7 +833,10 @@
     "Raise bound" : {
 
     },
-    "Reading Apple Health…" : {
+    "Reading Apple Health" : {
+
+    },
+    "Reading the heart-rate trace and GPS track of each run, so zones, records and splits are measured rather than guessed. You can stop — what is done stays done." : {
 
     },
     "Reading the heart-rate trace and GPS track of each run. You can leave this running or stop it — what is done stays done." : {
@@ -824,6 +858,9 @@
 
     },
     "Recorded by %@" : {
+
+    },
+    "Recorded outside Currimus" : {
 
     },
     "Recording problem: %@. %@" : {
@@ -860,7 +897,7 @@
     "Route map" : {
 
     },
-    "Run" : {
+    "run" : {
 
     },
     "Run a 5 K, 10 K or half — or anything longer — and the prediction appears." : {
@@ -869,10 +906,16 @@
     "Run name" : {
 
     },
+    "runs" : {
+
+    },
     "Runs" : {
 
     },
     "Runs from Apple Health belong to the app that recorded them — delete those there." : {
+
+    },
+    "Runs left out" : {
 
     },
     "Save" : {
@@ -896,7 +939,13 @@
     "Set up race, zones and pacer" : {
 
     },
+    "Settings" : {
+
+    },
     "Shorter steps than usual" : {
+
+    },
+    "Show me my runs" : {
 
     },
     "Shows every kilometre" : {
@@ -944,7 +993,7 @@
     "The workout session did not start. Another app may be recording a workout already." : {
 
     },
-    "This run came from Apple Health. Currimus counts it towards every total, but the run itself belongs to the app that recorded it — edit or delete it there." : {
+    "This run came from Apple Health. Currimus counts it towards every total, but the run itself belongs to the app that recorded it — edit or delete it there, or in the Fitness app." : {
 
     },
     "This run was recorded outside Currimus, and Apple Health only lets the app that recorded a run delete it. Remove it there, or in the Fitness app, and it will disappear from Currimus on the next refresh." : {
@@ -983,6 +1032,9 @@
     "Training toward a race? Set it up" : {
 
     },
+    "Try Apple Health again" : {
+
+    },
     "Try shorter, quicker steps" : {
 
     },
@@ -996,6 +1048,9 @@
 
     },
     "waiting for pace" : {
+
+    },
+    "Weekly goal" : {
 
     },
     "Weekly volume, last four weeks" : {
@@ -1032,10 +1087,36 @@
     "YOUR BEST · %@" : {
 
     },
+    "Your best %@ effort was %@, and this is that time scaled to the race distance after %@. It reads one hard day and knows nothing about whether the training behind it has been done." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your best %1$@ effort was %2$@, and this is that time scaled to the race distance after %3$@. It reads one hard day and knows nothing about whether the training behind it has been done."
+          }
+        }
+      }
+    },
+    "Your best %@ effort, from %@ — the race distance itself, so nothing had to be scaled." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your best %1$@ effort, from %2$@ — the race distance itself, so nothing had to be scaled."
+          }
+        }
+      }
+    },
     "Your own median easy pace, across the runs that sat near it." : {
 
     },
     "Your own median easy pace. Appears once a few easy runs sit near it." : {
+
+    },
+    "Your runs are in" : {
+
+    },
+    "Your zones" : {
 
     },
     "Yours." : {

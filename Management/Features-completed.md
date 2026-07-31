@@ -1113,6 +1113,14 @@ Der Balken hat zwei Modi, weil der Vorgang zwei hat: solange Health gefragt wird
 
 **Nebenbefund, und kein kleiner: die Snapshot-Harness hat zweimal gelogen.** Nach dem Umbau kam `first-launch.png` byteidentisch aus `record` zurück — also mit dem *alten* Startscreen, obwohl genau der geändert worden war. Ursache ist nicht der Build: `simctl io screenshot` verweigert die Aufnahme, solange der Simulator beschäftigt ist, und die erste Route nach einem Install ist genau dieser Moment. Der Fehler ging nach `/dev/null`, das Kandidatenbild vom *letzten Lauf* blieb liegen, wurde über die Referenz kopiert, und die Zeile meldete `rec`. Jede Referenz, die auf Platz eins der Routenliste stand, konnte damit beliebig alt sein, ohne dass es jemand sieht. Behoben: Kandidat vorher löschen, Screenshot bis zu dreimal versuchen, nach dem Install einmal warmlaufen lassen, und bei ausbleibendem Bild laut scheitern statt still zu kopieren.
 
+#### Andis Review
+
+Sieht gut aus, aber das Import-Overlay wirkt zu groß — unter dem Ladebalken ist sehr viel leerer Raum bis zum Button.
+
+#### Agent Response
+
+Stimmt: das Sheet hatte ein festes Detent von 420 pt, und die beiden Zustände ohne große Zahl (Reading, „Nothing to bring in") füllten das nie aus. Die Höhe wird jetzt am Inhalt gemessen (`onGeometryChange` → `presentationDetents([.height(gemessen)])`), plus dem Streifen für den Home-Indicator. Feste Werte pro Zustand wären das Naheliegende gewesen, taugen hier aber nicht: die Zustände wechseln unter dem geöffneten Sheet, und der Text wächst mit der Schriftgröße. Das Sheet wächst und schrumpft jetzt animiert mit dem, was es sagt.
+
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/40dc7aa

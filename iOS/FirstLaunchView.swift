@@ -153,6 +153,11 @@ struct FirstImportSheet: View {
     /// Drives the indeterminate sweep while Health is being asked — there is no
     /// count to show until the workout list comes back.
     @State private var sweeping = false
+    /// The sheet is exactly as tall as what it says. A fixed detent left a
+    /// hand's width of nothing under the bar in the two states that have no
+    /// big number to show, and the states change under the runner while it is
+    /// open — so the height is measured rather than picked.
+    @State private var height: CGFloat = 300
 
     private var foundNothing: Bool { progress.isFinished && progress.imported == 0 }
 
@@ -186,8 +191,6 @@ struct FirstImportSheet: View {
                 // success, which is the opposite of what this state means.
                 if !foundNothing { bar.padding(.top, 16) }
 
-                Spacer()
-
                 Button {
                     if progress.isFinished { onDone() } else { onStop() }
                     dismiss()
@@ -201,10 +204,16 @@ struct FirstImportSheet: View {
                                     in: Capsule())
                 }
                 .buttonStyle(.plain)
+                .padding(.top, 30)
             }
-            .padding(EdgeInsets(top: 44, leading: 26, bottom: 24, trailing: 26))
+            .padding(EdgeInsets(top: 36, leading: 26, bottom: 20, trailing: 26))
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+            .frame(maxHeight: .infinity, alignment: .top)
         }
-        .presentationDetents([.height(420)])
+        // Plus the home indicator's own strip, which the content never draws
+        // into.
+        .presentationDetents([.height(height + 24)])
+        .animation(.snappy(duration: 0.28), value: height)
         .interactiveDismissDisabled(!progress.isFinished)
     }
 
