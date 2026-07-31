@@ -57,14 +57,22 @@ struct ExplanationSheet: View {
     /// screen left a hand's width of black under every one of them (Andi,
     /// CUR-38). The long ones still scroll and can still be pulled to full.
     @State private var height: CGFloat = 260
+    /// The home indicator's strip. The scroll view is inset by it, so a detent
+    /// of exactly the content height leaves the sheet permanently a few points
+    /// short of its own text.
+    @State private var bottomInset: CGFloat = 0
 
     /// Past this the sheet stops growing and starts scrolling — a modal that
     /// covers the screen should be dragged there deliberately, not arrive that
     /// way.
     private static let ceiling: CGFloat = 560
 
+    /// `.large` is always offered, not only past the ceiling: an explanation
+    /// that measures just under it fills most of a small phone, and a single
+    /// fixed detent there can be neither expanded nor put away short of
+    /// closing it.
     private var detents: Set<PresentationDetent> {
-        height >= Self.ceiling ? [.height(Self.ceiling), .large] : [.height(height)]
+        [.height(min(height + bottomInset, Self.ceiling)), .large]
     }
 
     var body: some View {
@@ -90,6 +98,7 @@ struct ExplanationSheet: View {
                 }
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { bottomInset = $0 }
         .presentationDetents(detents)
         .presentationDragIndicator(.visible)
         .presentationBackground(Theme.bg)

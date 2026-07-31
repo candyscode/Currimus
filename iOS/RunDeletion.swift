@@ -189,7 +189,12 @@ struct SwipeToRevealRow<Content: View>: View {
                 // Flicks count: where the row would come to rest decides, not
                 // where the finger happened to leave the glass.
                 let projected = base + value.predictedEndTranslation.width - grabbed
-                let opens = projected < Self.openOffset / 2
+                // A third of the way, not half. The comparison is in row space
+                // — where the tile would come to rest — and the row now starts
+                // moving 30 pt into the drag, so half would have asked a
+                // deliberate slow swipe for 81 pt of travel where it used to
+                // need 51. A flick still opens on its projection alone.
+                let opens = projected < Self.openOffset / 3
                 withAnimation(.snappy(duration: 0.25)) {
                     offset = opens ? Self.openOffset : 0
                 }

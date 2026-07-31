@@ -269,6 +269,19 @@ final class RunStoreTests: XCTestCase {
         XCTAssertNil(store.latestBenchmark?.delta, "a first marathon has nothing to beat")
     }
 
+    /// A kilometre set on its own day is news and leads — the length rule only
+    /// settles which of several benchmarks *one run* announces.
+    func testAKilometreRecordOfItsOwnStillLeads() {
+        let store = makeStore()
+        store.runs = [
+            run("Track session", km: 3, minutes: 12, date: .now,
+                splits: [212, 240, 268]),
+            run("10K", km: 10, minutes: 50, date: .now.addingTimeInterval(-60 * 86_400),
+                splits: Array(repeating: 300, count: 10)),
+        ]
+        XCTAssertEqual(store.latestBenchmark?.label, RecordEntry.Kind.oneK.label)
+    }
+
     /// …and the day a faster 10 K arrives, that is what it shows.
     func testAFasterBenchmarkTheNextDayTakesTheBanner() {
         let store = makeStore()

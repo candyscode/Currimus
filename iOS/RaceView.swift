@@ -18,7 +18,7 @@ struct RaceView: View {
         // now, and a tap on the ⓘ cannot be injected into a screenshot.
         .onAppear {
             if DebugFlags.opensExplanation, let race = store.race, !race.isPast {
-                explaining = estimateExplanation(race)
+                explaining = estimateExplanation(race, longest: store.longestRun?.distanceKm ?? 0)
             }
         }
     }
@@ -74,7 +74,7 @@ struct RaceView: View {
                     GridRow {
                         ExplainedStat(value: store.raceEstimate.map { Format.clock($0.time) } ?? "—",
                                       label: "ESTIMATION",
-                                      explanation: estimateExplanation(race),
+                                      explanation: estimateExplanation(race, longest: longest),
                                       onExplain: { explaining = $0 }).gx()
                         longestStat(longest, pct: longestPct).gx()
                     }
@@ -144,8 +144,16 @@ struct RaceView: View {
     /// Everything that explains a *number* moved into that number's own sheet.
     /// What is left is the empty state — where there is no number yet — and the
     /// account of a race that has been run.
+    /// An em dash on its own reads as a fault rather than as an absence — the
+    /// Records screen has said so since CUR-19, and dropping this line left a
+    /// 10 K runner with a dead "ESTIMATION —" and no way to learn why but
+    /// finding the ⓘ.
     private func predictionNote(_ race: Race) -> String? {
-        race.isPast ? resultNote(race) : nil
+        if race.isPast { return resultNote(race) }
+        guard store.raceEstimate == nil else { return nil }
+        return race.distance == .marathon
+            ? String(localized: "The estimate reads your last eight weeks of training. It appears once there are eight road runs behind you, spread over at least \(Format.plural(RunAnalytics.minimumTrainingWeeks, "week", "weeks")).")
+            : String(localized: "Currimus estimates a finish from your training, and that model is fitted on the marathon — over a shorter race it would be a number without evidence. Your goal time and required pace above are yours, and they stand.")
     }
 
     // MARK: - Where the estimate came from
@@ -156,7 +164,10 @@ struct RaceView: View {
     // knew nothing about whether the training had been done, and standing next
     // to a second forecast it left the runner to decide which to believe.
 
-    private func estimateExplanation(_ race: Race) -> Explanation {
+    /// `longest` is passed in rather than read again: this is built on every
+    /// body pass, whether the sheet is open or not, and `store.longestRun`
+    /// walks the whole log.
+    private func estimateExplanation(_ race: Race, longest: Double) -> Explanation {
         let title = String(localized: "Estimation")
         guard race.distance == .marathon else {
             return Explanation(
@@ -172,7 +183,7 @@ struct RaceView: View {
         if training.isExtrapolated {
             body += String(localized: "\n\nThis one is an extrapolation: your volume and pace sit outside the range that study covered, so read it as a direction rather than as a time.")
         }
-        if (store.longestRun?.distanceKm ?? 0) < race.distance.km * 0.6 {
+        if longest < race.distance.km * 0.6 {
             body += String(localized: "\n\nYour longest run is still well short of the race, which the model cannot see: it reads the average week, not whether you have been that far in one go.")
         }
         return Explanation(title: title, body: body)

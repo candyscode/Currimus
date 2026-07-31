@@ -1091,25 +1091,32 @@ final class RunStore: ObservableObject {
         // first marathon has set the most interesting record in the log, and
         // the banner used to headline their 10 K from March instead — the tile
         // was "your best 10K" wearing a general name (Andi, CUR-38).
-        let held = RecordEntry.Kind.allCases.compactMap { kind -> LatestBenchmark? in
+        let held = RecordEntry.Kind.allCases.compactMap { kind -> (kind: RecordEntry.Kind, km: Double, holder: (run: Run, seconds: TimeInterval))? in
             guard let km = kind.km,
                   let holder = RunAnalytics.bestEffortHolder(km: km, runs: runs) else { return nil }
-            let previous = RunAnalytics.bestEffortHolder(
-                km: km, runs: runs.filter { $0.id != holder.run.id })?.seconds
-            return LatestBenchmark(
-                label: kind.label,
-                value: Format.clock(holder.seconds),
-                delta: previous.map { "\(Format.paceDelta(holder.seconds - $0)) vs previous" },
-                date: holder.run.date,
-                km: km
-            )
+            return (kind, km, holder)
         }
         // Freshest first: a 10 K set last week leads over a marathon from May,
         // and the marathon leads the day it is run. Then the longest, because
-        // one run sets several records at once — a first marathon also holds
-        // the fastest half and the fastest kilometre in the log, and announcing
-        // the kilometre would be true and absurd.
-        return held.max { ($0.date, $0.km) < ($1.date, $1.km) }
+        // one run holds several benchmarks at once — a first marathon also
+        // holds the fastest half and the fastest kilometre *of that same run*,
+        // and announcing the kilometre would be true and absurd. A 1 km record
+        // set on its own day is still news and still leads.
+        guard let best = held.max(by: { ($0.holder.run.date, $0.km) < ($1.holder.run.date, $1.km) })
+        else { return nil }
+
+        // Only the winner is asked what it beat: that question costs a copy of
+        // the whole log and another walk of every split, and four of the five
+        // answers were thrown away.
+        let previous = RunAnalytics.bestEffortHolder(
+            km: best.km, runs: runs.filter { $0.id != best.holder.run.id })?.seconds
+        return LatestBenchmark(
+            label: best.kind.label,
+            value: Format.clock(best.holder.seconds),
+            delta: previous.map { "\(Format.paceDelta(best.holder.seconds - $0)) vs previous" },
+            date: best.holder.run.date,
+            km: best.km
+        )
     }
 
     /// Which runs currently hold a benchmark, for the log's inline PR tag.

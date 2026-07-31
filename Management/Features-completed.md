@@ -1184,6 +1184,24 @@ Was er sagen wollte: ein Rekord ist eine **Zeit über eine Distanz**, und es gib
 
 **Tests.** Fünf neue (228 iOS gesamt): kein Estimate für ein 10-K-Rennen, Estimate für den Marathon-Aufbau, Banner führt mit einem ersten Marathon, Banner wechselt am Folgetag auf den schnelleren 10er, und die drei Scroll-Tests. 12 UI-Tests, 27 watchOS-Tests, beide Ziele bauen, Referenzbilder neu aufgenommen.
 
+#### Code-Review-Nachlauf
+
+Ein `/code-review` über den Commit fand neun Punkte, sechs davon berechtigt und behoben:
+
+- **Ein 10-K-Rennen stand auf „ESTIMATION —" ohne ein Wort dazu.** Ich hatte den Leerzustands-Satz mit dem Riegel-Pfad gelöscht. Er ist zurück und sagt jetzt, was Sache ist: bei kürzeren Rennen, dass das Modell auf den Marathon gefittet ist und Zielzeit und Required Pace davon unberührt bleiben; beim Marathon, wie viel Training es braucht, bis die Zahl erscheint. Ein Gedankenstrich allein liest sich als Defekt, nicht als Abwesenheit — dieselbe Regel, die auf dem Records-Screen seit CUR-19 gilt.
+- **Die Wisch-Schwelle hätte einen langsamen Wisch teurer gemacht.** Weil die Zeile erst nach 30 pt anfängt zu folgen, hätte die alte Öffnen-Grenze (halber Weg) 81 pt Fingerweg verlangt statt vorher 51. Jetzt ein Drittel, also wieder ~64 pt. Die Wisch-UI-Tests benutzen einen schnellen Flick und hätten das nie gemerkt.
+- **„NEW · Half marathon" in einer Versalienzeile.** Das Banner-Label kommt jetzt aus den Zeilen-Namen (Satzschreibung), die Zeile ist gesperrt und großgeschrieben — Label wird uppercased.
+- **Die gemessene Sheet-Höhe ignorierte den Home-Indicator-Streifen** (~34 pt), wodurch jedes „passgenaue" Sheet minimal scrollbar blieb. Wird jetzt mitgemessen. Außerdem gibt es `.large` immer als zweites Detent, nicht erst über der Deckelung — ein 550-pt-Text füllte auf einem kleinen iPhone sonst 82 % des Bildschirms ohne jede Ausweichmöglichkeit.
+- **Der Records-Banner rechnete viermal umsonst.** „Was hat es geschlagen?" kostet eine Kopie des ganzen Logs plus einen Durchlauf aller Splits, und wurde für alle fünf Distanzen berechnet, obwohl vier Antworten weggeworfen werden. Jetzt nur noch für den Sieger.
+- **Der Erklärtext der Schätzung wurde bei jedem Render gebaut** und las den längsten Lauf ein zweites Mal aus dem ganzen Log. Der Wert wird durchgereicht.
+
+Nicht geändert, mit Begründung:
+
+- **„Ein 1-km-Rekord kann das Banner anführen."** Stimmt, und das ist richtig so: wer heute seinen schnellsten Kilometer läuft, hat heute einen Rekord gesetzt — „unabhängig ob 10K, 5K oder whatever". Die Längenregel entscheidet nur, welchen von mehreren Rekorden *ein und derselbe Lauf* meldet. Ein Test hält das jetzt fest.
+- **Home versteckt die Kachel, Race zeigt „—".** Home ist die Übersicht und lässt Leeres weg; der Race-Screen ist die Detailseite und schuldet eine Erklärung. Mit dem wiederhergestellten Satz oben steht sie da auch.
+
+Der Review hat außerdem zu Recht gemeldet, dass `Resources/Localizable.xcstrings` unversioniert war — der Build hatte den Katalog neu geschrieben, nachdem ich committet hatte. Ist mit drin.
+
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/051579e

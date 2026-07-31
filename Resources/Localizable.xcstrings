@@ -4,19 +4,10 @@
     "" : {
 
     },
-    "\n\nNothing in the last four months reached that distance, so this describes the shape you were in then rather than the shape you are in now." : {
-
-    },
-    "\n\nThe two disagree by more than eight minutes, and your speed is ahead of your training: that gap is long runs and weekly volume. Plan around the slower of the two — a forecast that flatters you costs far more on the day than one that is too careful." : {
-
-    },
-    "\n\nThe two disagree by more than eight minutes, and your training is ahead of your racing: the endurance is there, the sharpness is not. Plan around the slower of the two — a forecast that flatters you costs far more on the day than one that is too careful." : {
-
-    },
     "\n\nThis one is an extrapolation: your volume and pace sit outside the range that study covered, so read it as a direction rather than as a time." : {
 
     },
-    "\n\nYour longest run is still well short of the race, which neither model can see." : {
+    "\n\nYour longest run is still well short of the race, which the model cannot see: it reads the average week, not whether you have been that far in one go." : {
 
     },
     " · %lld not measured" : {
@@ -40,7 +31,7 @@
     " Same pace, %lld bpm higher than it used to be. Heat, fatigue or a hard block will do that." : {
 
     },
-    " Same pace, %lld bpm lower than it used to be — that is fitness." : {
+    " Same pace, %lld bpm lower than it used to be." : {
 
     },
     " Same pace, same heart rate." : {
@@ -230,12 +221,12 @@
     "%lld km" : {
 
     },
-    "%lld km a week at %@ /km over the last %@, read through %@. It reads the work you have put in and knows nothing about race sharpness." : {
+    "%lld km a week at %@ /km over the last %@, read through %@. It reads the work you have put in — volume and everyday pace, not one hard day — and knows nothing about race sharpness or the weather." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$lld km a week at %2$@ /km over the last %3$@, read through %4$@. It reads the work you have put in and knows nothing about race sharpness."
+            "value" : "%1$lld km a week at %2$@ /km over the last %3$@, read through %4$@. It reads the work you have put in — volume and everyday pace, not one hard day — and knows nothing about race sharpness or the weather."
           }
         }
       }
@@ -305,6 +296,9 @@
 
     },
     "10 km" : {
+
+    },
+    "A record here is a **time over a distance** — the fastest you have covered it. Not a distance you have run past: a 15 km easy run does not touch your 10 km record unless the fastest ten kilometres of it were quicker than that record.\n\nThere are two ways a run can hold one, and the faster of the two wins, so an estimate never displaces a real effort.\n\n**The fastest stretch inside a run.** For 1, 5 and 10 km, Currimus looks for the fastest run of that many kilometres *in a row* anywhere inside a run — the run does not have to end there, and the fastest 5 km of a 12 km run counts. It reads the per-kilometre splits, so the stretch begins and ends on a kilometre marker; a genuinely faster stretch that straddles two markers can be a handful of seconds quicker than what is filed here.\n\n**The whole run, scaled.** Runs another app recorded arrive as one distance and one duration, with no splits to search. All that can be read is the average pace over the whole run, held against the benchmark — a 12 km run at 5:00 /km stands as a 10 km in 50:00. That is deliberately cautious: the fastest 10 km inside that run was quicker than its average, so this reading can only ever understate you. Only runs up to two and a half times the benchmark are read this way, which is why a marathon counts as evidence for a half and never as a 1 km.\n\nThe half marathon and the marathon have no splits reading at all — over those distances the whole run *is* the effort." : {
 
     },
     "Afternoon Run" : {
@@ -467,6 +461,9 @@
     "Estimating maximum heart rate from age, when Apple Health has never seen a hard effort to measure it from." : {
 
     },
+    "Estimation" : {
+
+    },
     "Evening Run" : {
 
     },
@@ -493,12 +490,6 @@
       }
     },
     "finish ~%@" : {
-
-    },
-    "From racing" : {
-
-    },
-    "From training" : {
 
     },
     "GET READY" : {
@@ -581,10 +572,13 @@
     "How %@ is worked out" : {
 
     },
-    "If you have runs on this iPhone, access was most likely declined — Health never says, it simply returns nothing. Without it Currimus has no log, no records and no progress. Allow it under Settings → Privacy & Security → Health → Currimus, then try again." : {
+    "How a record is found" : {
 
     },
-    "IN ZONE 2 · LAST 12 MONTHS" : {
+    "HOW A RECORD IS FOUND" : {
+
+    },
+    "If you have runs on this iPhone, access was most likely declined — Health never says, it simply returns nothing. Without it Currimus has no log, no records and no progress. Allow it under Settings → Privacy & Security → Health → Currimus, then try again." : {
 
     },
     "Indoor Run" : {
@@ -749,6 +743,9 @@
     "no trail runs yet" : {
 
     },
+    "Not enough training to read yet. This estimate needs at least %@ of running behind it, with eight road runs or more in the last eight weeks — a handful of runs in a fortnight describes a fortnight, not a marathon." : {
+
+    },
     "Not yet" : {
 
     },
@@ -786,6 +783,9 @@
 
     },
     "overall %@ behind" : {
+
+    },
+    "PACE IN ZONE 2 · LAST 12 MONTHS" : {
 
     },
     "Pacer" : {
@@ -873,7 +873,7 @@
         }
       }
     },
-    "Records come from your runs automatically. No badges, no confetti.\n\nA 5 K or 10 K record is the fastest continuous stretch of that distance inside any run — the run does not have to end there. Runs another app recorded arrive without kilometre splits, so those count at their average pace over the whole run, which is fair evidence but rarely a record. A longer run beats one of these only by being genuinely faster over the distance." : {
+    "Records come from your runs automatically. No badges, no confetti." : {
 
     },
     "Recovery" : {
@@ -898,9 +898,6 @@
 
     },
     "run" : {
-
-    },
-    "Run a 5 K, 10 K or half — or anything longer — and the prediction appears." : {
 
     },
     "Run name" : {
@@ -991,6 +988,9 @@
 
     },
     "The workout session did not start. Another app may be recording a workout already." : {
+
+    },
+    "This estimate reads your training — weekly volume and training pace over the last eight weeks — through %@, and that model is fitted on the marathon. Over a shorter race it would return a number without evidence behind it, so Currimus does not print one. Set a marathon as your race and the estimate appears." : {
 
     },
     "This run came from Apple Health. Currimus counts it towards every total, but the run itself belongs to the app that recorded it — edit or delete it there, or in the Fitness app." : {
@@ -1086,26 +1086,6 @@
     },
     "YOUR BEST · %@" : {
 
-    },
-    "Your best %@ effort was %@, and this is that time scaled to the race distance after %@. It reads one hard day and knows nothing about whether the training behind it has been done." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Your best %1$@ effort was %2$@, and this is that time scaled to the race distance after %3$@. It reads one hard day and knows nothing about whether the training behind it has been done."
-          }
-        }
-      }
-    },
-    "Your best %@ effort, from %@ — the race distance itself, so nothing had to be scaled." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Your best %1$@ effort, from %2$@ — the race distance itself, so nothing had to be scaled."
-          }
-        }
-      }
     },
     "Your own median easy pace, across the runs that sat near it." : {
 

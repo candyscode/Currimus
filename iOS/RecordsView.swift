@@ -64,7 +64,10 @@ struct RecordsView: View {
     private func newestBanner(_ b: RunStore.LatestBenchmark) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text(b.isRecent ? "NEW · \(b.label)" : "YOUR BEST · \(b.label)")
+                // Uppercased here: the label is now the row's own sentence-case
+                // name ("Half marathon"), and this is a letterspaced caps row.
+                Text(b.isRecent ? "NEW · \(b.label.uppercased())"
+                                : "YOUR BEST · \(b.label.uppercased())")
                     .kicker(13, color: b.isRecent ? Theme.signal : Theme.bright, tracking: 0.14)
                     .fontWeight(.semibold)
                 Spacer()
