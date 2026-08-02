@@ -237,6 +237,30 @@ struct RunMetrics: Equatable {
         sampleAltitude(altitude, at: elapsed)
     }
 
+    /// Forgets where the altitude currently is, keeping what has been climbed.
+    ///
+    /// For the one moment a run changes altitude source: the next reading is
+    /// then the start of a fresh series rather than a step of tens of metres
+    /// away from the last one, which the leg tracker would otherwise bank as
+    /// climb.
+    ///
+    /// The leg under way is banked rather than dropped. It was measured on one
+    /// consistent series, so it is real ground — only the *gap* to the next
+    /// series is not, and that is what forgetting the position removes.
+    mutating func resetAltitudeTracking() {
+        if let leg {
+            if leg.isClimb {
+                committedClimb += leg.extreme - leg.start
+            } else {
+                committedDescent += leg.start - leg.extreme
+            }
+        }
+        smoothedAltitude = nil
+        lastAltitudeAt = nil
+        leg = nil
+        legPivot = nil
+    }
+
     /// Walks one filtered altitude through the leg state machine above.
     private mutating func accumulate(_ altitude: Double) {
         guard var current = leg else {

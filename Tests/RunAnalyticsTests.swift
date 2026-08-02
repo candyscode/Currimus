@@ -398,6 +398,19 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertEqual(RunAnalytics.gradeAdjustedPace(run), run.paceSecPerKm, accuracy: 60)
     }
 
+    /// And the rule of thumb is held to the same band. It is linear in the
+    /// climb, so a corrupt climb figure drives it to zero — and "0:00 /KM" is
+    /// the one thing a pace field must never say.
+    func testTheRuleOfThumbCannotBeDrivenToZeroByABadClimb() {
+        var run = Run(date: .now, type: .trail, name: "Trail run", distanceKm: 5,
+                      duration: 1_800, avgHR: 150)
+        run.climbMeters = 20_000          // nonsense left by an older build
+        let gap = RunAnalytics.gradeAdjustedPace(run)
+        XCTAssertGreaterThan(gap, 0)
+        XCTAssertEqual(gap, run.paceSecPerKm * RunAnalytics.gradeAdjustmentBand.lowerBound,
+                       accuracy: 1)
+    }
+
     // MARK: Cardiac drift
 
     private func easyRun(_ pace: TimeInterval, hr: Int, daysAgo: Int) -> Run {

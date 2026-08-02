@@ -385,6 +385,35 @@ final class RunSessionTests: XCTestCase {
         XCTAssertEqual(session.paceDelta, 0, "not −300")
     }
 
+    // MARK: - The live clock's seconds (CUR-40)
+
+    /// The normal case: the frame's scheduled date wins, so the drawn second is
+    /// a whole number however late the frame actually is.
+    func testTheDrawnSecondComesFromTheSchedule() {
+        let anchor = Date(timeIntervalSince1970: 1_000_000)
+        // The frame for second 83, arriving 40 ms late — which is what used to
+        // decide whether 1:23 was drawn twice or skipped.
+        let drawn = RunSession.elapsed(forFrameAt: anchor.addingTimeInterval(83),
+                                       anchor: anchor, clock: 82.96)
+        XCTAssertEqual(drawn, 83, accuracy: 0.0001)
+        // …and the frame before it is exactly one second earlier. No repeats,
+        // no skips, whichever side of the boundary the reading lands on.
+        let previous = RunSession.elapsed(forFrameAt: anchor.addingTimeInterval(82),
+                                          anchor: anchor, clock: 82.04)
+        XCTAssertEqual(drawn - previous, 1, accuracy: 0.0001)
+    }
+
+    /// The moment a pause ends: the anchor still points at where the clock read
+    /// zero before it, so it would report the whole pause as elapsed time. The
+    /// clock wins until the next tick moves the anchor.
+    func testAFramedrawnRightAfterAPauseDoesNotJumpByThePause() {
+        let anchor = Date(timeIntervalSince1970: 1_000_000)
+        // Ten minutes of run, then a five-minute pause, then a frame.
+        let frame = anchor.addingTimeInterval(600 + 300)
+        let drawn = RunSession.elapsed(forFrameAt: frame, anchor: anchor, clock: 600)
+        XCTAssertEqual(drawn, 600, "the pause is not running time")
+    }
+
     // MARK: - Phase steps for the pacer setup
 
     func testThePacerIsSetUpInTwoSteps() {

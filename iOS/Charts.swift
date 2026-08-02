@@ -460,13 +460,16 @@ private struct RouteMap: UIViewRepresentable {
         view.isPitchEnabled = false
         view.isScrollEnabled = interactive
         view.isZoomEnabled = interactive
-        let line = MKPolyline(coordinates: route, count: route.count)
-        view.addOverlay(line)
-        view.track = line.boundingMapRect
+        view.show(route)
         return view
     }
 
-    func updateUIView(_ view: FittedMapView, context: Context) {}
+    /// A representable is a description, not an instance: SwiftUI is free to
+    /// hand the same view a different run. `makeUIView` alone would then draw
+    /// the first run's track forever.
+    func updateUIView(_ view: FittedMapView, context: Context) {
+        view.show(route)
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -486,19 +489,45 @@ private struct RouteMap: UIViewRepresentable {
     /// subclass and not two lines in `makeUIView`: at that point the frame is
     /// still zero.
     final class FittedMapView: MKMapView {
-        var track: MKMapRect = .null {
-            didSet { fittedFor = .zero; setNeedsLayout() }
-        }
+        private var track: MKMapRect = .null
+        private var drawn: [CLLocationCoordinate2D] = []
         private var fittedFor: CGSize = .zero
+
+        /// Draws a track, and asks for it to be fitted at the next layout.
+        func show(_ route: [CLLocationCoordinate2D]) {
+            guard route.count > 1,
+                  route.map(\.latitude) != drawn.map(\.latitude)
+                    || route.map(\.longitude) != drawn.map(\.longitude) else { return }
+            removeOverlays(overlays)
+            let line = MKPolyline(coordinates: route, count: route.count)
+            addOverlay(line)
+            drawn = route
+            track = line.boundingMapRect
+            fittedFor = .zero
+            setNeedsLayout()
+        }
 
         override func layoutSubviews() {
             super.layoutSubviews()
             guard !track.isNull, bounds.size != fittedFor,
                   bounds.width > 0, bounds.height > 0 else { return }
             fittedFor = bounds.size
-            // A lap of one block would otherwise be drawn as a street plan; a
-            // hundred metres is the closest the map is allowed to come.
-            let floor = 100.0 * MKMapPointsPerMeterAtLatitude(centerCoordinate.latitude)
+            setVisibleMapRect(Self.floored(track),
+                              edgePadding: UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16),
+                              animated: false)
+        }
+
+        /// The track's rect, never smaller than `minimumSpanMeters` across.
+        ///
+        /// A lap of one block would otherwise be drawn as a street plan. The
+        /// scale is taken from the *track's* own latitude and not from the
+        /// map's centre: a map that has not been positioned yet still reports
+        /// its default centre, and a metre is a different number of map points
+        /// at the equator than it is in the Alps.
+        static func floored(_ track: MKMapRect) -> MKMapRect {
+            let floor = minimumSpanMeters
+                * MKMapPointsPerMeterAtLatitude(MKMapPoint(x: track.midX, y: track.midY)
+                    .coordinate.latitude)
             var rect = track
             if rect.size.width < floor {
                 rect = rect.insetBy(dx: -(floor - rect.size.width) / 2, dy: 0)
@@ -506,10 +535,10 @@ private struct RouteMap: UIViewRepresentable {
             if rect.size.height < floor {
                 rect = rect.insetBy(dx: 0, dy: -(floor - rect.size.height) / 2)
             }
-            setVisibleMapRect(rect, edgePadding: UIEdgeInsets(top: 16, left: 16,
-                                                              bottom: 16, right: 16),
-                              animated: false)
+            return rect
         }
+
+        static let minimumSpanMeters = 100.0
     }
 
     final class Coordinator: NSObject, MKMapViewDelegate {

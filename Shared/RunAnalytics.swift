@@ -416,7 +416,14 @@ enum RunAnalytics {
         let climb = run.climbMeters ?? 0
         let descent = run.descentMeters ?? 0
         let flatTime = run.duration - climb * climbCostPerMeter + descent * descentGainPerMeter
-        return max(flatTime, 0) / run.distanceKm
+        // Held inside the same band the measured answers are held to. The rule
+        // of thumb is linear in the climb, so it has no idea when the climb it
+        // was handed is nonsense: an old entry claiming a kilometre of ascent
+        // over five flat ones drives it straight to zero, and "0:00 /KM" is the
+        // one thing a pace field must never say.
+        let raw = run.paceSecPerKm
+        return min(max(max(flatTime, 0) / run.distanceKm, raw * gradeAdjustmentBand.lowerBound),
+                   raw * gradeAdjustmentBand.upperBound)
     }
 
     /// Whether a flat-equivalent pace is one this run could have produced.

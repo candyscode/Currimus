@@ -146,6 +146,33 @@ final class RunMetricsTests: XCTestCase {
         XCTAssertEqual(metrics.descentMeters, 160, accuracy: 40)
     }
 
+    /// Changing altitude source mid-run must not bank the gap between them.
+    ///
+    /// Barometric and GPS altitude disagree by tens of metres — they are not
+    /// measured against the same reference — so a run that starts on one and
+    /// switches to the other has a step in its series, and a step is exactly
+    /// what the leg tracker counts as climb. `RunSession` waits for the
+    /// barometer rather than switching, and drops the tracking state if it has
+    /// to fall back anyway. This is that drop.
+    func testChangingAltitudeSourceDoesNotCountTheGapAsClimb() {
+        var metrics = RunMetrics()
+        // Half a minute on one source, climbing gently.
+        for second in 0..<30 {
+            metrics.ingestAltitude(600 + Double(second) * 0.25, verticalAccuracy: 5, at: Double(second))
+        }
+        let climbed = metrics.climbMeters
+
+        // The other source reads the same hillside 40 m lower.
+        metrics.resetAltitudeTracking()
+        for second in 30..<120 {
+            metrics.ingestAltitude(567 + Double(second) * 0.25, verticalAccuracy: 5, at: Double(second))
+        }
+        // The 40 m step is neither climb nor descent; the climbing on either
+        // side of it still counts.
+        XCTAssertEqual(metrics.descentMeters, 0, accuracy: 1, "the step is not a descent")
+        XCTAssertEqual(metrics.climbMeters, climbed + 22.5, accuracy: 4)
+    }
+
     /// Standing still for half an hour is not a climb, however noisy the sensor.
     func testStandingStillClimbsNothing() {
         var metrics = RunMetrics()

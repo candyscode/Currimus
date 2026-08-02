@@ -115,6 +115,9 @@ final class RunSession: NSObject, ObservableObject {
     /// feed that has gone quiet can be noticed and restarted. -1 = none yet.
     private var lastFixElapsed: TimeInterval = -1
     private var lastLocationRestart: TimeInterval = 0
+    /// Which altitude this run is being measured with; see
+    /// `sampleBarometricAltitude`.
+    private var altitudeSource: AltitudeSource = .waitingForBarometer
 
     private var timer: AnyCancellable?
     /// Seconds between ticks: 1 for a real or fast-forwarded run, smaller for
@@ -150,7 +153,30 @@ final class RunSession: NSObject, ObservableObject {
         // Simulated runs drive `elapsed` themselves, and scenario playback runs
         // it at up to thirty times the wall clock — no anchor can describe that.
         guard phase == .running, !isSimulated else { return displayElapsed }
-        return max(frame.timeIntervalSince(clockAnchor), 0)
+        return Self.elapsed(forFrameAt: frame, anchor: clockAnchor, clock: displayElapsed)
+    }
+
+    /// How far the anchor and the run's own clock may disagree before the clock
+    /// wins. A frame arrives a little after the instant it was scheduled for,
+    /// so they never agree exactly; a second and a half is past anything that
+    /// latency explains.
+    static let clockAnchorDisagreement: TimeInterval = 1.5
+
+    /// The decision itself, so it can be put under test without a workout.
+    ///
+    /// `anchor` normally wins — it is what makes the seconds even. The
+    /// exception is the moment a pause ends: the anchor still points at where
+    /// the clock read zero *before* the pause, so every frame drawn between the
+    /// resume and the next tick would read the whole pause as elapsed time. The
+    /// clock never has that problem, and it is right to a second, so it takes
+    /// over for exactly as long as the two disagree. `resume` realigns straight
+    /// away — this catches the paths that do not go through it, the
+    /// both-buttons gesture among them.
+    static func elapsed(forFrameAt frame: Date, anchor: Date,
+                        clock: TimeInterval) -> TimeInterval {
+        let anchored = max(frame.timeIntervalSince(anchor), 0)
+        guard abs(anchored - clock) < clockAnchorDisagreement else { return clock }
+        return anchored
     }
 
     /// How far the anchor may drift before it is moved. Below this it is noise
@@ -266,6 +292,10 @@ final class RunSession: NSObject, ObservableObject {
     func resume() {
         guard phase == .paused else { return }
         phase = .running
+        // Before the first tick of the resumed run: the anchor still points at
+        // where the clock read zero *before* the pause, and every frame drawn
+        // between here and that tick would read the pause as elapsed time.
+        alignClockAnchor()
         workoutSession?.resume()
         haptic(.start)
     }
@@ -337,6 +367,7 @@ final class RunSession: NSObject, ObservableObject {
         zoneWarning = nil
         lastFixElapsed = -1
         lastLocationRestart = 0
+        altitudeSource = BarometricAltimeter.isAvailable ? .waitingForBarometer : .gps
         // A coach carried over from the last run carries its clock with it —
         // `lastFired` sits on the previous run's elapsed time, which suppressed
         // every cue for the first half hour of the next one.
@@ -583,14 +614,45 @@ final class RunSession: NSObject, ObservableObject {
         checkLocationIsArriving()
     }
 
+    /// Where a run's altitude comes from. Decided once and then left alone —
+    /// see `sampleBarometricAltitude`.
+    enum AltitudeSource { case waitingForBarometer, barometer, gps }
+    /// How long a run waits for the barometer's first reading before giving up
+    /// on it and taking the GPS altitude instead. A denied motion permission
+    /// looks exactly like a slow sensor, and neither may cost a run its climb.
+    static let barometerGracePeriod: TimeInterval = 30
+
     /// Feeds the barometer into the metrics once a second.
     ///
     /// On the clock rather than on the fix, because that is the whole gain: the
     /// altitude series then has a steady sample rate that no GPS dropout can
     /// interrupt, and `RunMetrics`' filter is tuned against a rate it can rely
-    /// on. When there is no barometer nothing happens here and the GPS altitude
-    /// in `integrate` remains the source, exactly as before.
+    /// on.
+    ///
+    /// **One source per run, decided here.** Barometric and GPS altitude
+    /// disagree by tens of metres — they are not even measured against the same
+    /// reference — so a series with both in it has a step in the middle, and a
+    /// step is exactly what the leg tracker counts as climb. Waiting for the
+    /// barometer rather than starting on GPS and switching is what avoids that;
+    /// the wait costs at most half a minute of profile at the very start, and
+    /// if it runs out the switch drops whatever partial leg was under way so
+    /// the handover still cannot be counted.
     private func sampleBarometricAltitude() {
+        switch altitudeSource {
+        case .gps:
+            return
+        case .waitingForBarometer:
+            guard altimeter.altitude != nil else {
+                guard elapsed > Self.barometerGracePeriod else { return }
+                Log.session.notice("no barometric altitude — falling back to GPS")
+                altitudeSource = .gps
+                metrics.resetAltitudeTracking()
+                return
+            }
+            altitudeSource = .barometer
+        case .barometer:
+            break
+        }
         guard let altitude = altimeter.altitude else { return }
         // Not the sensor's own accuracy figure: that describes how well it
         // knows its height above sea level, and climb is made of *differences*
@@ -619,7 +681,11 @@ final class RunSession: NSObject, ObservableObject {
         lastLocationRestart = elapsed
         Log.session.error("no GPS fix for \(Int(since)) s — restarting updates")
         locationManager.stopUpdatingLocation()
-        locationManager.startUpdatingLocation()
+        // The whole configuration again, not just start/stop: the background
+        // assertion is the part most likely to have been dropped under us, and
+        // it is the one that decides whether fixes arrive at all with the wrist
+        // down — which is most of a run.
+        startLocationUpdates()
         if since > Self.locationSilenceBeforeNotice { note(.locationLost) }
     }
 
@@ -724,10 +790,11 @@ final class RunSession: NSObject, ObservableObject {
         let offset = max(location.timestamp.timeIntervalSince(startDate ?? .now), 0)
         lastFixElapsed = elapsed
 
-        // Only when there is no barometer to do it better, and never both: two
-        // altitude sources folded into one series would put a step between them
-        // at every handover and count it as climb.
-        if altimeter.altitude == nil {
+        // Only when this run is measuring altitude with GPS. Never both: the
+        // two sources disagree by tens of metres, and a step between them in one
+        // series is counted as climb. `sampleBarometricAltitude` owns the
+        // decision, once per run.
+        if altitudeSource == .gps {
             metrics.ingestAltitude(location.altitude,
                                    verticalAccuracy: location.verticalAccuracy,
                                    at: offset)
@@ -982,7 +1049,9 @@ extension RunSession: HKWorkoutSessionDelegate {
         Task { @MainActor in
             switch toState {
             case .paused where self.phase == .running: self.phase = .paused
-            case .running where self.phase == .paused: self.phase = .running
+            case .running where self.phase == .paused:
+                self.phase = .running
+                self.alignClockAnchor()
             default: break
             }
         }
