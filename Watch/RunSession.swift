@@ -508,6 +508,19 @@ final class RunSession: NSObject, ObservableObject {
         locationManager.allowsBackgroundLocationUpdates = false
         guard let session = workoutSession, let builder = workoutBuilder else { return }
         session.end()
+        // What the phone needs to put this run back together if it never
+        // arrives over WatchConnectivity. The workout reaches Health before the
+        // sync is even attempted, so this is the copy that cannot be lost —
+        // see `RunStore.recoverOwnRuns`. Without the type, a recovered trail
+        // run would come back as a road run with no climb to its name.
+        builder.addMetadata([
+            HealthImport.runTypeKey: type.rawValue,
+            HealthImport.runNameKey: defaultName,
+        ]) { added, error in
+            if !added {
+                Log.session.error("run metadata not added: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+            }
+        }
         builder.endCollection(withEnd: .now) { [routeBuilder] ended, error in
             if !ended {
                 Log.session.error("collection did not end: \(error?.localizedDescription ?? "unknown", privacy: .public)")

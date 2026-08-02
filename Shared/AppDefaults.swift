@@ -12,6 +12,9 @@ enum AppDefaults {
     /// Runs Health has already answered in full and still could not complete.
     /// Persisted so the Settings row does not offer them again on every launch.
     static let settledRebuildsKey = "settledRebuilds.v1"
+    /// When runs the user deleted began. Read by the Health recovery sweep so
+    /// a deliberate delete is not undone by it — see `RunStore.recoverOwnRuns`.
+    static let deletedOutingsKey = "deletedOutings.v1"
     static let goalKey = "weeklyGoal"
     static let gpsAccuracyKey = "gpsAccuracy"
 

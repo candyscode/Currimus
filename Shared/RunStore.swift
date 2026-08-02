@@ -142,6 +142,18 @@ final class RunStore: ObservableObject {
             Log.store.notice("run without distance not filed")
             return
         }
+        // The recovery net may have got here first — same outing, different id,
+        // because a run read back out of Health is identified by its workout.
+        // What the watch sends is the better record of the two: it has the
+        // per-kilometre splits, the live zone seconds and the climb as it was
+        // measured, none of which survive in a workout summary. So it replaces
+        // the recovered stand-in rather than sitting beside it.
+        if let recovered = runs.firstIndex(where: { $0.recovered == true && overlaps($0, run) }) {
+            Log.store.notice("watch run replaces the copy recovered from Health")
+            // `remove` is local only — it does not touch Health, and it must
+            // not: the workout it was recovered from is this same outing.
+            remove([runs[recovered]])
+        }
         storeSamples(of: run)
         // The log keeps metadata; the track and profile went to their sidecar.
         runs.insert(run.strippingSamples, at: 0)
@@ -149,6 +161,71 @@ final class RunStore: ObservableObject {
         // Health may already hold the same outing from another app.
         importedRuns = HealthImport.merging(importedRuns, with: runs)
     }
+
+    /// Two records of the same outing — the only way to pair a run that came
+    /// over from the watch with the same run read back out of Health, since
+    /// the two carry different identities.
+    private func overlaps(_ a: Run, _ b: Run) -> Bool {
+        (a.date...(a.date + a.duration)).overlaps(b.date...(b.date + b.duration))
+    }
+
+    // MARK: - Runs deleted on purpose
+
+    /// When runs the user deleted began, so the recovery sweep does not put
+    /// them back. Trimmed to the sweep's own window — past that, Health has
+    /// nothing to recover them from either.
+    private var deletedOutings: [Date] {
+        get { (defaults.array(forKey: AppDefaults.deletedOutingsKey) as? [Date]) ?? [] }
+        set { if !isDemo { defaults.set(newValue, forKey: AppDefaults.deletedOutingsKey) } }
+    }
+
+    private func remember(deleted runs: [Run]) {
+        #if canImport(HealthKit)
+        let cutoff = Calendar.current.date(byAdding: .day,
+                                           value: -HealthImport.recoveryWindowDays,
+                                           to: .now) ?? .distantPast
+        deletedOutings = (deletedOutings + runs.map(\.date)).filter { $0 >= cutoff }
+        #endif
+    }
+
+    private func wasDeletedOnPurpose(_ run: Run) -> Bool {
+        deletedOutings.contains { HealthImport.isSameOuting(start: $0, as: run) }
+    }
+
+    /// Test seam — the recovery sweep itself needs a HealthKit store with data
+    /// in it, which no simulator has; this is the decision it turns on.
+    func wasDeletedOnPurposeForTesting(_ run: Run) -> Bool { wasDeletedOnPurpose(run) }
+
+    #if canImport(HealthKit) && os(iOS)
+    /// Files any run of ours that Apple Health holds and the log does not.
+    ///
+    /// The safety net under the whole watch→phone crossing (CUR-40). The watch
+    /// saves the workout to Health before it attempts the transfer, so that
+    /// copy exists even when nothing arrives — which is exactly what happened:
+    /// a two-hour trail run sat in Apple Fitness while Currimus showed nothing.
+    ///
+    /// Runs on every foreground, costs one workout query, and adds nothing when
+    /// the transfer worked — which is almost always.
+    func recoverOwnRuns() async {
+        guard !isDemo, HealthImport.isAvailable else { return }
+        let since = Calendar.current.date(byAdding: .day,
+                                          value: -HealthImport.recoveryWindowDays,
+                                          to: .now) ?? .distantPast
+        let candidates = await HealthImport.fetchOwnRuns(healthStore, since: since)
+        let missing = candidates.filter { candidate in
+            !runs.contains { overlaps($0, candidate) } && !wasDeletedOnPurpose(candidate)
+        }
+        guard !missing.isEmpty else { return }
+        Log.store.notice("recovering \(missing.count) run(s) from Health that never arrived")
+        for var run in missing {
+            run.recovered = true
+            add(run)
+        }
+        // What a workout summary does not carry — the route, the splits, the
+        // zones — is still in Health beside it.
+        for run in missing { await hydrate(run, force: true) }
+    }
+    #endif
 
     func deleteRuns(at offsets: IndexSet, in subset: [Run]) {
         delete(offsets.map { subset[$0] })
@@ -168,6 +245,11 @@ final class RunStore: ObservableObject {
         let mine = runs.filter { !$0.isImported }
         guard !mine.isEmpty else { return }
         healthNotice = nil
+        // Written down before anything else: the recovery sweep reads Health,
+        // and Health's copy is deleted asynchronously and can refuse. Without
+        // this, a run deleted on purpose would reappear on the next foreground
+        // — the safety net catching something nobody dropped.
+        remember(deleted: mine)
         remove(mine)
         #if canImport(HealthKit)
         guard !isDemo else { return }
@@ -544,6 +626,13 @@ final class RunStore: ObservableObject {
     func refreshImportedRuns(requestingAccess: Bool = false, backfilling: Bool = true) async {
         guard !isDemo else { return }
         if requestingAccess { await HealthImport.requestAuthorization(healthStore) }
+        // Ours first. A run of ours that never made the crossing has to be back
+        // in the log before the imported list is merged against it, or the same
+        // outing appears twice — once as a recovery and once as "some other
+        // app's run" — for the rest of that foreground.
+        #if os(iOS)
+        await recoverOwnRuns()
+        #endif
         let fetched = await HealthImport.fetchRuns(healthStore)
         let merged = HealthImport.merging(fetched, with: runs).map(carryingHydratedZones)
         if merged != importedRuns { importedRuns = merged }

@@ -149,6 +149,12 @@ struct Run: Identifiable, Codable, Equatable, Hashable {
     /// later — and genuinely absent for runs recorded before Currimus counted
     /// steps, and for those another app recorded without them.
     var cadenceSpm: Int?
+    /// Set when this run was read back out of Apple Health because it never
+    /// made the crossing from the watch (CUR-40). A stand-in: it has the
+    /// summary, the route and the trace, but no per-kilometre splits and no
+    /// live zone seconds. If the watch's own copy turns up later it replaces
+    /// this one. Optional for the same reason as every field added later.
+    var recovered: Bool?
     /// Set when the runner disagrees with the auto-classification, which is a
     /// heuristic over splits and zones and is wrong often enough to be worth
     /// correcting — it is the label every log row leads with. Optional for the

@@ -91,20 +91,34 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     /// at the exact moment the watch was drawing the summary.
     private let queue = DispatchQueue(label: "com.currimus.app.sync", qos: .utility)
 
-    /// How large a run's payload may be before its track is thinned.
+    /// How large a payload may be before it goes as a file instead.
     ///
-    /// WatchConnectivity refuses a `transferUserInfo` dictionary past a limit it
-    /// does not publish, and it refuses it *asynchronously* — the call returns a
-    /// transfer object either way and the failure arrives, if anyone is
-    /// listening, in `didFinish`. Nobody was listening (CUR-40), so a run that
-    /// was too big to send simply never appeared on the phone while its workout
-    /// sat in Apple Health, saved.
+    /// `transferUserInfo` refuses a dictionary past a limit Apple does not
+    /// publish, and it refuses it *asynchronously* — the call returns a transfer
+    /// object either way and the failure arrives, if anyone is listening, in
+    /// `didFinish`. Nobody was listening (CUR-40), so a run that was too big
+    /// simply never appeared on the phone while its workout sat in Apple
+    /// Health, saved.
     ///
-    /// A four-hour trail run carries two thousand GPS points; at full `Double`
-    /// precision that is comfortably six figures of JSON. Sixty kilobytes is far
-    /// under any limit anyone has measured, and a track thinned to fit it still
-    /// draws the same map.
+    /// A four-hour trail run carries two thousand GPS points, which at full
+    /// `Double` precision is six figures of JSON. Sixty kilobytes is far under
+    /// any limit anyone has measured; past it, `transferFile` carries the same
+    /// bytes with the same delivery guarantee and no size limit at all.
     static let maxPayloadBytes = 60_000
+
+    /// How a run's bytes should travel.
+    enum Delivery: Equatable {
+        /// Small enough for the dictionary queue.
+        case userInfo(Data)
+        /// Too big for it — the same JSON, sent as a file.
+        case file(Data)
+
+        var data: Data {
+            switch self {
+            case .userInfo(let data), .file(let data): return data
+            }
+        }
+    }
 
     /// Hands a finished run to the phone, and keeps hold of it until the system
     /// confirms it arrived.
@@ -116,26 +130,22 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     func send(_ run: Run) {
         guard WCSession.isSupported() else { return }
         queue.async {
-            guard let data = Self.payload(for: run) else { return }
-            self.remember(data, id: run.id.uuidString)
+            guard let delivery = Self.delivery(for: run) else { return }
+            self.remember(delivery.data, id: run.id.uuidString)
             self.flush()
         }
     }
 
-    /// Encodes a run, thinning its track until the result will fit.
-    static func payload(for run: Run) -> Data? {
-        var run = run.roundedForTransfer
-        let encoder = JSONEncoder()
+    /// Encodes a run and says how it has to travel.
+    ///
+    /// Nothing is thinned. An earlier version of this fix decimated the track
+    /// until it fitted the dictionary limit, which trades one silent failure
+    /// for another: a marathon would have arrived with half its GPS points and
+    /// nobody would have been told. A file has no such limit.
+    static func delivery(for run: Run) -> Delivery? {
         do {
-            var data = try encoder.encode(run)
-            while data.count > Self.maxPayloadBytes, (run.route?.count ?? 0) > 2 {
-                run.route = run.route.map { RunMetrics.decimated($0) }
-                data = try encoder.encode(run)
-            }
-            if data.count > Self.maxPayloadBytes {
-                Log.sync.error("run payload still \(data.count) bytes with nothing left to thin")
-            }
-            return data
+            let data = try JSONEncoder().encode(run.roundedForTransfer)
+            return data.count <= maxPayloadBytes ? .userInfo(data) : .file(data)
         } catch {
             Log.sync.error("run not encoded: \(error.localizedDescription, privacy: .public)")
             return nil
@@ -210,10 +220,34 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     /// already holds by id.
     func flush() {
         guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
-        let inFlight = Set(WCSession.default.outstandingUserInfoTransfers
-            .compactMap { $0.userInfo["id"] as? String })
+        let session = WCSession.default
+        let inFlight = Set(
+            session.outstandingUserInfoTransfers.compactMap { $0.userInfo["id"] as? String }
+            + session.outstandingFileTransfers.compactMap { $0.file.metadata?["id"] as? String })
         for entry in outbox where !inFlight.contains(entry.id) {
-            WCSession.default.transferUserInfo(["id": entry.id, "run": entry.run])
+            if entry.run.count <= Self.maxPayloadBytes {
+                session.transferUserInfo(["id": entry.id, "run": entry.run])
+            } else if let url = spool(entry) {
+                session.transferFile(url, metadata: ["id": entry.id])
+            }
+        }
+    }
+
+    /// Writes a too-big run out for `transferFile`.
+    ///
+    /// The system copies the file when the transfer completes and leaves the
+    /// original to us; `didFinish(fileTransfer:)` removes it. The name carries
+    /// the run id so a re-offer overwrites its own previous attempt rather than
+    /// filling the container with copies of the same marathon.
+    private func spool(_ entry: Pending) -> URL? {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("run-\(entry.id).json")
+        do {
+            try entry.run.write(to: url, options: .atomic)
+            return url
+        } catch {
+            Log.sync.error("run not spooled: \(error.localizedDescription, privacy: .public)")
+            return nil
         }
     }
 
@@ -257,6 +291,19 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
         forget(id)
     }
 
+    /// The same receipt for the runs that travelled as files.
+    func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer,
+                 error: Error?) {
+        let url = fileTransfer.file.fileURL
+        guard let id = fileTransfer.file.metadata?["id"] as? String else { return }
+        if let error {
+            Log.sync.error("run \(id, privacy: .public) not delivered: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        forget(id)
+        try? FileManager.default.removeItem(at: url)
+    }
+
     /// The phone coming back into range is the moment a queued run can move.
     func sessionReachabilityDidChange(_ session: WCSession) {
         if session.isReachable { flush() }
@@ -264,8 +311,23 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
         guard let data = userInfo["run"] as? Data else { return }
-        // A run may arrive more than once — the watch re-offers anything the
-        // system has not confirmed. `RunStore.add` drops one it already holds.
+        ingest(data)
+    }
+
+    /// A run big enough to have travelled as a file — a long trail day, an
+    /// ultra. Read here and now: the system deletes the file the moment this
+    /// returns.
+    func session(_ session: WCSession, didReceive file: WCSessionFile) {
+        do {
+            ingest(try Data(contentsOf: file.fileURL))
+        } catch {
+            Log.sync.error("arriving run file unreadable: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// A run may arrive more than once — the watch re-offers anything the
+    /// system has not confirmed. `RunStore.add` drops one it already holds.
+    private func ingest(_ data: Data) {
         do {
             let run = try JSONDecoder().decode(Run.self, from: data)
             Task { @MainActor in self.onReceive?(run) }

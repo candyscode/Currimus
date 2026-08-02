@@ -39,6 +39,67 @@ final class RunStoreTests: XCTestCase {
             avgHR: 150, splits: splits, imported: imported)
     }
 
+    // MARK: - A run recovered from Health when the sync never happened
+
+    /// The safety net behind CUR-40 finding 4, and the one thing it must not
+    /// do: file the same outing twice. The watch's own copy is the better
+    /// record — it has the splits and the live zone seconds — so when it turns
+    /// up, however late, it replaces the stand-in instead of joining it.
+    func testAWatchRunReplacesTheCopyRecoveredFromHealth() {
+        let store = makeStore()
+        let start = Date.now.addingTimeInterval(-7_200)
+
+        // The recovery net got there first: summary only, no splits.
+        var stand_in = run("Trail run", km: 18.1, minutes: 131, date: start)
+        stand_in.recovered = true
+        store.add(stand_in)
+        XCTAssertEqual(store.runs.count, 1)
+        XCTAssertTrue(store.runs[0].splits.isEmpty)
+
+        // The watch's own copy arrives a day later — different identity, same
+        // outing, and it knows its kilometres.
+        let real = run("Trail run", km: 18.1, minutes: 131, date: start,
+                       splits: Array(repeating: 435, count: 18))
+        store.add(real)
+
+        XCTAssertEqual(store.runs.count, 1, "the same outing must not be filed twice")
+        XCTAssertEqual(store.runs[0].id, real.id)
+        XCTAssertEqual(store.runs[0].splits.count, 18)
+        XCTAssertNil(store.runs[0].recovered)
+    }
+
+    /// And it only ever replaces the *same* outing. Two runs on the same day
+    /// are two runs — which is exactly the case that produced this ticket.
+    func testASecondRunThatDayIsNotMistakenForTheFirst() {
+        let store = makeStore()
+        let morning = Date.now.addingTimeInterval(-14_400)
+
+        var recovered = run("Trail run", km: 18.1, minutes: 131, date: morning)
+        recovered.recovered = true
+        store.add(recovered)
+        store.add(run("Trail run", km: 5.8, minutes: 60,
+                      date: morning.addingTimeInterval(9_000)))
+
+        XCTAssertEqual(store.runs.count, 2)
+    }
+
+    /// A run deleted on purpose stays deleted. The recovery sweep reads Health,
+    /// and Health's own copy goes asynchronously and can refuse — without a
+    /// record of the deletion the net would put the run straight back.
+    func testADeletedRunIsNotRecoveredAgain() {
+        let store = makeStore()
+        let start = Date.now.addingTimeInterval(-3_600)
+        let mistake = run("Evening run", km: 8.2, minutes: 44, date: start)
+        store.add(mistake)
+        store.delete([mistake])
+        XCTAssertTrue(store.runs.isEmpty)
+
+        // The same outing, offered by the recovery net.
+        var recovered = run("Evening run", km: 8.2, minutes: 44, date: start)
+        recovered.recovered = true
+        XCTAssertTrue(store.wasDeletedOnPurposeForTesting(recovered))
+    }
+
     // MARK: - Demo log
 
     func testDemoStoreHasRaceAndRuns() {

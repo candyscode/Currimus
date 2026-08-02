@@ -194,11 +194,30 @@ Implement `didFinish(userInfoTransfer:error:)` or the failure is silent, which
 is how a two-hour trail run disappeared between the watch and the phone
 (CUR-40).
 
-`RunSync` now keeps an outbox in the app group and only drops a run when the
-system confirms delivery; `flush()` is called on activation, on reachability
-and on the watch app becoming active. A run's payload is capped at 60 KB —
-coordinates are rounded to a metre and the track decimated until it fits.
-`RunStore.add` drops a run whose id it already holds, so re-offering is free.
+There are **two** independent paths home, on purpose:
+
+1. `RunSync` keeps an outbox in the app group and only drops a run when the
+   system confirms delivery; `flush()` runs on activation, on reachability and
+   on the watch app becoming active. Under 60 KB a run goes as `transferUserInfo`,
+   over it as `transferFile` — never thinned, because a marathon arriving with
+   half its GPS points is the same silent failure in a different hat.
+2. `RunStore.recoverOwnRuns()` reads Currimus' **own** workouts back out of
+   Apple Health on every foreground and files anything the log is missing. The
+   watch saves the workout *before* it attempts the sync, so this copy exists
+   even when the crossing fails entirely — which is how the CUR-40 run was
+   sitting in Apple Fitness while Currimus showed nothing.
+
+Three rules keep the two from fighting:
+
+- A recovered run carries `recovered = true` and a different identity (the
+  workout's UUID). Pairing is therefore by **outing overlap**, never by id.
+- When the watch's own copy arrives later it *replaces* the recovered
+  stand-in — it has the splits, the live zone seconds and the measured climb.
+- A run deleted on purpose is written to `AppDefaults.deletedOutingsKey` before
+  Health is even asked, or the sweep would put it straight back.
+
+The watch stamps `HealthImport.runTypeKey` / `runNameKey` on the workout so a
+recovered trail run comes back as a trail run.
 
 ## Watch haptics
 

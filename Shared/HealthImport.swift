@@ -13,6 +13,72 @@ enum HealthImport {
     /// Our own writers — the watch app saves workouts, the phone may later.
     private static let ownBundlePrefix = "com.currimus.app"
 
+    /// What the watch stamps its own workouts with, so a run recovered from
+    /// Health comes back as the run it was rather than as a generic road
+    /// outing. See `fetchOwnRuns` and `RunSession.finishWorkout`.
+    static let runTypeKey = "com.currimus.app.runType"
+    static let runNameKey = "com.currimus.app.runName"
+
+    /// How far back a recovery sweep looks.
+    ///
+    /// This is a safety net for a run that did not make the crossing, not a
+    /// second importer: everything older than this has had a hundred chances
+    /// to arrive, and re-reading eighteen months of our own workouts on every
+    /// foreground would cost far more than it could ever find.
+    static let recoveryWindowDays = 90
+
+    /// Runs **Currimus itself** recorded, read back out of Apple Health.
+    ///
+    /// The guarantee behind CUR-40 finding 4. The watch saves the workout to
+    /// Health *before* it tries to send anything, and the field test proved
+    /// that half works even when the sync does not: the missing run was sitting
+    /// in Apple Fitness the whole time. So WatchConnectivity stops being the
+    /// only way home — anything the log is missing can be read back from the
+    /// copy that was already safe.
+    ///
+    /// What comes back is thinner than what the watch would have sent: Health
+    /// keeps the summary, the route and the heart-rate trace, but not the
+    /// per-kilometre splits or the live zone seconds. `RunStore.hydrate`
+    /// rebuilds those from the trace, and a later arrival over
+    /// WatchConnectivity replaces the recovered run outright.
+    static func fetchOwnRuns(_ store: HKHealthStore, since: Date) async -> [Run] {
+        guard isAvailable else { return [] }
+        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            HKQuery.predicateForWorkouts(with: .running),
+            HKQuery.predicateForSamples(withStart: since, end: nil),
+        ])
+        let workouts: [HKWorkout] = await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: .workoutType(),
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]
+            ) { _, samples, _ in
+                continuation.resume(returning: samples as? [HKWorkout] ?? [])
+            }
+            store.execute(query)
+        }
+        return workouts
+            .filter { $0.sourceRevision.source.bundleIdentifier.hasPrefix(ownBundlePrefix) }
+            .map(ownRun(from:))
+            .filter { $0.hasUsableDistance && $0.duration > 60 }
+    }
+
+    /// One of our own workouts, as the run it was recorded as.
+    private static func ownRun(from workout: HKWorkout) -> Run {
+        var run = run(from: workout)
+        // Ours, not another app's: it can be deleted, and it does not belong in
+        // the imported list.
+        run.imported = nil
+        if let raw = workout.metadata?[runTypeKey] as? String, let type = RunType(rawValue: raw) {
+            run.type = type
+        }
+        if let name = workout.metadata?[runNameKey] as? String, !name.isEmpty {
+            run.name = name
+        }
+        return run
+    }
+
     /// Types we need to read to build an imported run and to personalise the
     /// heart-rate zones.
     static var readTypes: Set<HKObjectType> {

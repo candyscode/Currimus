@@ -22,34 +22,35 @@ final class RunSyncTests: XCTestCase {
         return run
     }
 
-    /// The size ceiling, and the whole of finding 4's most likely cause: a
-    /// four-hour run's track at full precision is six figures of JSON, and
-    /// WatchConnectivity refuses a payload past a limit it does not publish.
-    func testALongRunsPayloadIsBroughtUnderTheCeiling() throws {
+    /// Finding 4's most likely cause: a four-hour run's track at full precision
+    /// is six figures of JSON, and `transferUserInfo` refuses a payload past a
+    /// limit it does not publish. Such a run goes as a file — **whole**. It is
+    /// not thinned to fit, because a marathon arriving with half its GPS points
+    /// would be the same silent failure wearing a different hat.
+    func testAMarathonsTrackTravelsWholeAsAFile() throws {
         let big = trailRun(points: 2_000)
         XCTAssertGreaterThan(try JSONEncoder().encode(big).count, RunSync.maxPayloadBytes,
                              "the fixture is not big enough to exercise this")
 
-        let payload = try XCTUnwrap(RunSync.payload(for: big))
-        XCTAssertLessThanOrEqual(payload.count, RunSync.maxPayloadBytes)
-
-        // And what comes out is still the same run, with a track that still
-        // spans it — decimation keeps both ends.
-        let decoded = try JSONDecoder().decode(Run.self, from: payload)
+        let delivery = try XCTUnwrap(RunSync.delivery(for: big))
+        guard case .file(let data) = delivery else {
+            return XCTFail("a run over the dictionary limit has to go as a file")
+        }
+        let decoded = try JSONDecoder().decode(Run.self, from: data)
         XCTAssertEqual(decoded.id, big.id)
         XCTAssertEqual(decoded.distanceKm, big.distanceKm)
-        XCTAssertGreaterThan(decoded.route?.count ?? 0, 200)
-        XCTAssertEqual(decoded.route?.first?.t ?? -1, big.route?.first?.t ?? -2, accuracy: 1)
-        XCTAssertEqual(decoded.route?.last?.t ?? -1, big.route?.last?.t ?? -2, accuracy: 1)
+        XCTAssertEqual(decoded.route?.count, 2_000, "every point of the track has to survive")
     }
 
-    /// A run small enough to send is sent whole — nothing is thinned for the
-    /// sake of it.
-    func testAnOrdinaryRunKeepsEveryPointOfItsTrack() throws {
+    /// A run small enough for the dictionary queue takes it — the file path is
+    /// for the ones that need it, not for everything.
+    func testAnOrdinaryRunGoesThroughTheDictionaryQueue() throws {
         let ordinary = trailRun(points: 300)
-        let payload = try XCTUnwrap(RunSync.payload(for: ordinary))
-        let decoded = try JSONDecoder().decode(Run.self, from: payload)
-        XCTAssertEqual(decoded.route?.count, 300)
+        let delivery = try XCTUnwrap(RunSync.delivery(for: ordinary))
+        guard case .userInfo(let data) = delivery else {
+            return XCTFail("an ordinary run does not need a file")
+        }
+        XCTAssertEqual(try JSONDecoder().decode(Run.self, from: data).route?.count, 300)
     }
 
     /// Rounding to the precision the fix was actually measured at is most of
