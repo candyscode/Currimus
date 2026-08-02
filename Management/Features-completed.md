@@ -1266,8 +1266,18 @@ Belegt durch neue Tests in `RunMetricsTests`: 1.000 hm mit ±3 m Rauschen kommen
 
 - Ein **Outbox** in der App-Group: der Lauf liegt dort, bevor irgendetwas versucht wird, und geht erst raus, wenn das System die Zustellung bestätigt. Session noch nicht aktiviert, Watch-App beim Handgelenk-Senken gekillt, iPhone zu Hause — überall wird der Lauf beim nächsten Start / bei der nächsten Erreichbarkeit erneut angeboten.
 - `didFinish` ist implementiert: ein abgelehnter Transfer wird geloggt und wiederholt.
-- **Payload-Deckel 60 KB** — der wahrscheinlichste Kandidat. Ein Vier-Stunden-Lauf trägt 2.000 GPS-Punkte, in voller `Double`-Präzision sechsstellig viel JSON, über einem Limit, das WatchConnectivity nicht veröffentlicht und asynchron durchsetzt. Koordinaten gehen jetzt in der Präzision raus, in der sie gemessen wurden (ein Meter), und eine immer noch zu große Spur wird ausgedünnt statt fallengelassen.
+- **Größe** — der wahrscheinlichste Kandidat. Ein Vier-Stunden-Lauf trägt 2.000 GPS-Punkte, in voller `Double`-Präzision sechsstellig viel JSON, über einem Limit, das WatchConnectivity nicht veröffentlicht und asynchron durchsetzt. Unter 60 KB geht ein Lauf als `transferUserInfo`, darüber als **`transferFile`** — gleiche Zustellgarantie, kein Größenlimit, jeder GPS-Punkt bleibt drin.
 - Outbox läuft nach 14 Tagen ab, max. 50 Läufe.
+
+**4b · Der zweite Weg nach Hause** (nachgeschoben auf Andis „das darf nicht passieren"). Die Outbox allein war noch *ein* Weg: jeder Fehler, den WatchConnectivity hat und an den niemand gedacht hat, ist weiterhin ein verlorener Lauf. Es gibt aber eine zweite Kopie, die nie gefährdet war — die Uhr schreibt den Workout nach Health, *bevor* sie überhaupt zu senden versucht. Dein Feldtest hat das bewiesen: der fehlende Lauf lag die ganze Zeit in Apple Fitness. Das iPhone liest jetzt bei jedem Foreground seine *eigenen* Workouts aus Health zurück und legt alles ab, was im Log fehlt.
+
+Drei Regeln halten die beiden Wege auseinander, alle unter Test:
+
+- Ein wiederhergestellter Lauf trägt die Identität des Workouts, nicht die der Uhr — gepaart wird deshalb über die Überlappung der Trainingszeit, nie über die ID.
+- Kommt die Kopie der Uhr später doch noch an, *ersetzt* sie den Platzhalter: sie hat die Kilometer-Splits, die live gemessenen Zonensekunden und die gemessenen Höhenmeter.
+- Ein bewusst gelöschter Lauf wird notiert, *bevor* Health gefragt wird — sonst holt das Netz zurück, was niemand fallen gelassen hat (Health kann das Löschen verweigern, und es passiert asynchron).
+
+Die Uhr stempelt zusätzlich Lauftyp und Namen auf den Workout, damit ein wiederhergestellter Trailrun als Trailrun zurückkommt.
 
 **5 · Zweiter Lauf: 13 hm am Anfang, dann nichts mehr.** Die Höhe hängt gar nicht mehr am Location-Feed, ein GPS-Aussetzer kann sie also nicht mehr stoppen. Der Feed selbst wird zusätzlich überwacht: 90 s Stille starten die Updates neu, 5 min melden es auf der Uhr (neuer `RecordingIssue.locationLost`). Die 13 Phantom-hm am Anfang fallen unter Punkt 1.
 
@@ -1286,3 +1296,5 @@ Belegt durch neue Tests in `RunMetricsTests`: 1.000 hm mit ±3 m Rauschen kommen
 - https://github.com/candyscode/Currimus/commit/700f4ef — Barometer, Hysterese-Band, gleichmäßige Sekunde (1, 2, 3, 5)
 - https://github.com/candyscode/Currimus/commit/d6a6978 — Pace, Karte, Label (6a, 6b, 7)
 - https://github.com/candyscode/Currimus/commit/c644c4e — Outbox (4)
+- https://github.com/candyscode/Currimus/commit/10a9121 — GPS-Gate folgt der Einstellung (6c), Agent-Notes
+- https://github.com/candyscode/Currimus/commit/912f162 — zwei Wege nach Hause: `transferFile` statt Ausdünnen, Health-Wiederherstellung (4b)
