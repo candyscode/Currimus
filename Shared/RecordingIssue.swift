@@ -15,6 +15,12 @@ enum RecordingIssue: Equatable, Hashable {
     case healthDenied
     case workoutFailed
     case locationDenied
+    /// The run started with location, and the fixes then stopped arriving.
+    ///
+    /// Not a permission problem — that is `locationDenied`, and it is known at
+    /// the door. This is the feed going quiet mid-run, which costs the rest of
+    /// the route and, on a watch with no barometer, the rest of the climb.
+    case locationLost
     /// The run started, but distance never moved.
     ///
     /// This is the one failure no check can catch at the door: Health hides
@@ -29,8 +35,8 @@ enum RecordingIssue: Equatable, Hashable {
     var blocksRecording: Bool {
         switch self {
         case .healthUnavailable, .healthDenied, .workoutFailed: return true
-        // Both surface only once a run is already under way.
-        case .locationDenied, .noDistance: return false
+        // These surface only once a run is already under way.
+        case .locationDenied, .locationLost, .noDistance: return false
         }
     }
 
@@ -40,6 +46,7 @@ enum RecordingIssue: Equatable, Hashable {
         case .healthDenied: return String(localized: "Health access needed")
         case .workoutFailed: return String(localized: "Workout not started")
         case .locationDenied: return String(localized: "Location off")
+        case .locationLost: return String(localized: "GPS lost")
         case .noDistance: return String(localized: "No distance")
         }
     }
@@ -56,6 +63,8 @@ enum RecordingIssue: Equatable, Hashable {
             return String(localized: "The workout session did not start. Another app may be recording a workout already.")
         case .locationDenied:
             return String(localized: "Without location there is no route, climb or elevation. Heart rate and distance still record.")
+        case .locationLost:
+            return String(localized: "No GPS fix has arrived for several minutes, so the route has a gap in it. Distance, pace and heart rate are unaffected.")
         case .noDistance:
             return String(localized: "Health is not reporting distance for this run, so it cannot be saved. Check that Distance is allowed for Currimus.")
         }
@@ -73,7 +82,7 @@ enum RecordingIssue: Equatable, Hashable {
             return String(localized: "End the other workout, then try again.")
         case .noDistance:
             return String(localized: "iPhone › Watch › Privacy › Health › Currimus")
-        case .healthUnavailable:
+        case .locationLost, .healthUnavailable:
             return nil
         }
     }

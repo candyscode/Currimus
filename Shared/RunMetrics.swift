@@ -29,19 +29,49 @@ struct RunMetrics: Equatable {
     static let routeCapacity = 2_000
     static let initialRouteInterval: TimeInterval = 5
 
-    /// GPS altitude wanders by a metre or two while standing still; only
-    /// movement beyond this counts as climb or descent.
-    static let altitudeNoiseFloor = 1.5
+    /// How far the altitude has to turn around before the leg it was on counts
+    /// as finished — the hysteresis band, in metres.
+    ///
+    /// This is the number that decides how close the climb comes to Apple
+    /// Fitness's, and it only works together with `altitudeTimeConstant` and a
+    /// barometric source. See `ingestAltitude` for why a *band* rather than a
+    /// per-sample floor. Three metres is deliberately on the conservative side:
+    /// the failure this replaces was a 20–25 % over-count, and undulations
+    /// smaller than a house are not what a runner means by "climbed".
+    static let climbHysteresis = 3.0
+    /// Time constant (s) of the low-pass on the altitude series. Sensor noise
+    /// lives well below it; a runner's actual climb rate is far slower than it,
+    /// so terrain passes through and jitter does not. It costs a lag of about
+    /// `constant × climb rate` — under two metres at a hard 0.3 m/s. That lag is
+    /// paid twice per reversal (a summit reads a little low and a trough a
+    /// little high), which is why it is six seconds and not the twelve that
+    /// would filter better: on rolling terrain the difference is a five per
+    /// cent under-count against a ten.
+    static let altitudeTimeConstant = 6.0
     /// Vertical accuracy worse than this (or negative = invalid) is discarded.
     static let usableVerticalAccuracy = 12.0
     static let usableHorizontalAccuracy = 50.0
+    /// The window the live climb rate is read over. One minute, not ten: on a
+    /// trail the number is there to answer "how hard is *this* climb", and a
+    /// ten-minute mean still carried the descent before it (Andi, CUR-40).
+    static let climbRateWindow: TimeInterval = 60
+    /// How much of that window has to have gone by before the rate is worth
+    /// showing. Below this the divisor is small enough that one noisy metre
+    /// becomes a four-figure m/h.
+    static let climbRateMinimumSpan: TimeInterval = 30
 
     // MARK: - Output
 
     private(set) var splits: [TimeInterval] = []
     private(set) var rollingPace: TimeInterval = 0
-    private(set) var climbMeters: Double = 0
-    private(set) var descentMeters: Double = 0
+    /// Metres climbed, including the leg currently under way.
+    ///
+    /// A leg is only *committed* when the altitude turns around, but a runner
+    /// halfway up a pass must not watch the number sit still — so what is shown
+    /// is the committed total plus the rise of the leg in progress. The two
+    /// agree at the moment of the turn, so the number never jumps backwards.
+    var climbMeters: Double { committedClimb + (leg?.isClimb == true ? legRise : 0) }
+    var descentMeters: Double { committedDescent + (leg?.isClimb == false ? legRise : 0) }
     private(set) var climbRatePerHour: Double = 0
     private(set) var altitudeMeters: Double = 0
     private(set) var altitudeProfile: [Double] = []
@@ -66,9 +96,25 @@ struct RunMetrics: Equatable {
     private var hrSampleCount = 0
     /// (elapsed, distance) ring backing the rolling-pace window.
     private var paceWindow: [(t: TimeInterval, d: Double)] = []
-    /// (elapsed, climb) ring backing the 10-minute climb rate.
+    /// (elapsed, climb) ring backing the climb rate.
     private var climbWindow: [(t: TimeInterval, c: Double)] = []
-    private var lastAltitude: Double?
+    /// Committed climb and descent — everything from legs that have already
+    /// turned around. What the screens read adds the leg in progress; see
+    /// `climbMeters`.
+    private var committedClimb: Double = 0
+    private var committedDescent: Double = 0
+    /// The low-passed altitude every elevation decision is made on, and when it
+    /// was last advanced (so the filter can be time-aware rather than assume a
+    /// sample rate it does not control).
+    private var smoothedAltitude: Double?
+    private var lastAltitudeAt: TimeInterval?
+    /// The monotone stretch of altitude currently under way: where it started,
+    /// how far it has got, and which way it is going. nil until the altitude
+    /// has moved out of the hysteresis band for the first time.
+    private var leg: (start: Double, extreme: Double, isClimb: Bool)?
+    /// The band a first leg would start from while no direction is established.
+    private var legPivot: (low: Double, high: Double)?
+    private var legRise: Double { leg.map { abs($0.extreme - $0.start) } ?? 0 }
     private var altitudeInterval = RunMetrics.initialAltitudeInterval
     private var lastAltitudeSample: TimeInterval = -.greatestFiniteMagnitude
     private var routeInterval = RunMetrics.initialRouteInterval
@@ -127,10 +173,11 @@ struct RunMetrics: Equatable {
 
     private mutating func updateClimbRate(elapsed: TimeInterval) {
         climbWindow.append((elapsed, climbMeters))
-        while let first = climbWindow.first, elapsed - first.t > 600 {
+        while let first = climbWindow.first, elapsed - first.t > Self.climbRateWindow {
             climbWindow.removeFirst()
         }
-        guard let first = climbWindow.first, elapsed - first.t > 60 else { return }
+        guard let first = climbWindow.first,
+              elapsed - first.t >= Self.climbRateMinimumSpan else { return }
         climbRatePerHour = max(0, (climbMeters - first.c) / (elapsed - first.t) * 3600)
     }
 
@@ -148,23 +195,74 @@ struct RunMetrics: Equatable {
     // MARK: - Location
 
     /// Folds one altitude reading into climb, descent and the profile.
+    ///
+    /// Two things happen here, and both exist because the old rule — "any step
+    /// bigger than 1.5 m is climb" — over-counted a thousand-metre day by two
+    /// to three hundred metres against Apple Fitness (CUR-40).
+    ///
+    /// **The low-pass.** Sensor noise that survives a per-sample threshold is
+    /// counted by it, once per wobble, for the whole run. A first-order filter
+    /// with a six-second constant removes it and leaves terrain untouched: no
+    /// runner gains height at a rate that lives that high up the spectrum.
+    ///
+    /// **The hysteresis band, applied to legs and not to steps.** A rise only
+    /// stops being a rise once the altitude has fallen `climbHysteresis` back
+    /// off its highest point; until then the same leg is still going. So a
+    /// three-metre bump repeated forty times adds three metres, not a hundred
+    /// and twenty — which is exactly the arithmetic the old rule was doing.
     mutating func ingestAltitude(_ altitude: Double, verticalAccuracy: Double,
                                  at elapsed: TimeInterval) {
         guard verticalAccuracy >= 0, verticalAccuracy < Self.usableVerticalAccuracy else { return }
         altitudeMeters = altitude
-        if let last = lastAltitude {
-            let delta = altitude - last
-            if delta > Self.altitudeNoiseFloor {
-                climbMeters += delta
-                lastAltitude = altitude
-            } else if delta < -Self.altitudeNoiseFloor {
-                descentMeters += -delta
-                lastAltitude = altitude
-            }
+
+        // Time-aware, because the caller's sample rate is not ours to assume:
+        // a real run feeds this at 1 Hz, a reconstruction every ten seconds.
+        let smoothed: Double
+        if let previous = smoothedAltitude, let last = lastAltitudeAt, elapsed > last {
+            let alpha = 1 - exp(-(elapsed - last) / Self.altitudeTimeConstant)
+            smoothed = previous + alpha * (altitude - previous)
         } else {
-            lastAltitude = altitude
+            smoothed = smoothedAltitude ?? altitude
         }
+        smoothedAltitude = smoothed
+        lastAltitudeAt = elapsed
+        accumulate(smoothed)
         sampleAltitude(altitude, at: elapsed)
+    }
+
+    /// Walks one filtered altitude through the leg state machine above.
+    private mutating func accumulate(_ altitude: Double) {
+        guard var current = leg else {
+            // No direction yet — the opening seconds of a run. Hold the lowest
+            // and highest altitude seen so far and start the first leg from
+            // whichever of them it actually leaves, so an ascent that begins
+            // after a few metres of drop is measured from the trough.
+            let low = min(legPivot?.low ?? altitude, altitude)
+            let high = max(legPivot?.high ?? altitude, altitude)
+            if altitude > low + Self.climbHysteresis {
+                leg = (start: low, extreme: altitude, isClimb: true)
+            } else if altitude < high - Self.climbHysteresis {
+                leg = (start: high, extreme: altitude, isClimb: false)
+            } else {
+                legPivot = (low: low, high: high)
+            }
+            return
+        }
+
+        if current.isClimb ? altitude > current.extreme : altitude < current.extreme {
+            current.extreme = altitude
+            leg = current
+            return
+        }
+        // Turned around far enough to close the leg: bank it whole, and start
+        // the next one from the summit (or the trough) it turned at.
+        guard abs(altitude - current.extreme) > Self.climbHysteresis else { return }
+        if current.isClimb {
+            committedClimb += current.extreme - current.start
+        } else {
+            committedDescent += current.start - current.extreme
+        }
+        leg = (start: current.extreme, extreme: altitude, isClimb: !current.isClimb)
     }
 
     /// Folds one GPS fix into the stored track.

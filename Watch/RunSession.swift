@@ -40,8 +40,12 @@ final class RunSession: NSObject, ObservableObject {
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var type: RunType = .quick
     @Published private(set) var elapsed: TimeInterval = 0
-    /// Anchor for the always-on redraw schedule, so its 1 Hz ticks land on the
-    /// same instants the run's own seconds change.
+    /// The instant this run's clock read zero.
+    ///
+    /// Anchor for the always-on redraw schedule *and* for the elapsed time each
+    /// frame draws — the two have to be the same anchor or the seconds do not
+    /// change at an even rate. See `displayElapsed(at:)`.
+    @Published private(set) var clockAnchor: Date = .now
     var startedAt: Date { startDate ?? .now }
 
     /// Elapsed time read at draw time. HealthKit's builder is the authority
@@ -53,6 +57,38 @@ final class RunSession: NSObject, ObservableObject {
             return builderElapsed
         }
         return elapsed
+    }
+
+    /// Elapsed time for the frame scheduled at `frame`.
+    ///
+    /// Sampling `elapsedTime` at the moment the frame arrives is what made the
+    /// seconds jump unevenly (CUR-40): the frame lands a few tens of
+    /// milliseconds either side of the boundary it was scheduled for, and which
+    /// side decides whether `1:23` is drawn twice or skipped. The wall clock was
+    /// never wrong — 2½ hours came out within seconds of the reference watch —
+    /// only the instants it was read at.
+    ///
+    /// The frame's *scheduled* date carries no jitter, and the schedule below
+    /// runs from `clockAnchor`, so `frame - clockAnchor` is a whole number of
+    /// seconds by construction. A paused run reads the clock directly instead:
+    /// there the anchor is stale on purpose, until the run resumes and the tick
+    /// moves it by however long the pause was.
+    func displayElapsed(at frame: Date) -> TimeInterval {
+        // Simulated runs drive `elapsed` themselves, and scenario playback runs
+        // it at up to thirty times the wall clock — no anchor can describe that.
+        guard phase == .running, !isSimulated else { return displayElapsed }
+        return max(frame.timeIntervalSince(clockAnchor), 0)
+    }
+
+    /// How far the anchor may drift before it is moved. Below this it is noise
+    /// in the reading; above it, a pause or a real correction from HealthKit.
+    private static let clockAnchorTolerance: TimeInterval = 0.4
+
+    /// Keeps the anchor pointing at the instant the run's clock read zero.
+    private func alignClockAnchor() {
+        let candidate = Date.now.addingTimeInterval(-displayElapsed)
+        guard abs(candidate.timeIntervalSince(clockAnchor)) > Self.clockAnchorTolerance else { return }
+        clockAnchor = candidate
     }
     @Published private(set) var distanceKm: Double = 0
     @Published private(set) var heartRate: Int = 0
@@ -102,6 +138,14 @@ final class RunSession: NSObject, ObservableObject {
     private var workoutBuilder: HKLiveWorkoutBuilder?
     private var routeBuilder: HKWorkoutRouteBuilder?
     private let locationManager = CLLocationManager()
+    /// The barometer, and the run's altitude source whenever it has one. See
+    /// `BarometricAltimeter` for why GPS altitude is the fallback and not the
+    /// other way round.
+    private let altimeter = BarometricAltimeter()
+    /// Elapsed time of the last location fix that reached `integrate`, so a
+    /// feed that has gone quiet can be noticed and restarted. -1 = none yet.
+    private var lastFixElapsed: TimeInterval = -1
+    private var lastLocationRestart: TimeInterval = 0
 
     private var timer: AnyCancellable?
     /// Seconds between ticks: 1 for a real or fast-forwarded run, smaller for
@@ -181,6 +225,7 @@ final class RunSession: NSObject, ObservableObject {
 
     private func startRun() {
         startDate = .now
+        clockAnchor = startDate ?? .now
         phase = countdownEnabled ? .countdown(3) : .running
         haptic(.start)
         startTimer()
@@ -194,6 +239,10 @@ final class RunSession: NSObject, ObservableObject {
                 Log.session.error("collection did not begin: \(error?.localizedDescription ?? "unknown", privacy: .public)")
             }
         }
+        // The barometer runs for the whole run and is independent of both
+        // Health and GPS — which is the point: a run that loses its fixes in a
+        // gorge keeps climbing correctly.
+        altimeter.start()
         // Location is independent of Health and only ever degrades a run, so
         // it never blocks: a run without a route still has distance and pace.
         startLocationUpdates()
@@ -280,6 +329,8 @@ final class RunSession: NSObject, ObservableObject {
         metrics = RunMetrics()
         kilometerAlert = nil
         zoneWarning = nil
+        lastFixElapsed = -1
+        lastLocationRestart = 0
         // A coach carried over from the last run carries its clock with it —
         // `lastFired` sits on the previous run's elapsed time, which suppressed
         // every cue for the first half hour of the next one.
@@ -444,6 +495,7 @@ final class RunSession: NSObject, ObservableObject {
     }
 
     private func finishWorkout() {
+        altimeter.stop()
         locationManager.stopUpdatingLocation()
         // Hand the background assertion back — the run is over, and holding it
         // would keep waking the app for fixes nobody reads.
@@ -502,12 +554,58 @@ final class RunSession: NSObject, ObservableObject {
         } else {
             elapsed += 1
         }
+        alignClockAnchor()
+        sampleBarometricAltitude()
         let split = metrics.tick(elapsed: elapsed, distanceKm: distanceKm,
                                  heartRate: heartRate, zone: currentZone)
         if let split { raiseKilometerAlert(split) }
         coachZone()
         checkDistanceIsArriving()
+        checkLocationIsArriving()
     }
+
+    /// Feeds the barometer into the metrics once a second.
+    ///
+    /// On the clock rather than on the fix, because that is the whole gain: the
+    /// altitude series then has a steady sample rate that no GPS dropout can
+    /// interrupt, and `RunMetrics`' filter is tuned against a rate it can rely
+    /// on. When there is no barometer nothing happens here and the GPS altitude
+    /// in `integrate` remains the source, exactly as before.
+    private func sampleBarometricAltitude() {
+        guard let altitude = altimeter.altitude else { return }
+        // Not the sensor's own accuracy figure: that describes how well it
+        // knows its height above sea level, and climb is made of *differences*
+        // between consecutive readings, which a barometer resolves to
+        // centimetres. Gating on the absolute figure would throw away a
+        // perfectly good series on a day with an unusual pressure system.
+        metrics.ingestAltitude(altitude, verticalAccuracy: 1, at: elapsed)
+    }
+
+    /// Restarts a location feed that has gone silent, and says so if it stays
+    /// silent.
+    ///
+    /// A run came back with its track ending after the first few hundred metres
+    /// while the clock and the distance ran on for two hours (CUR-40). Whatever
+    /// stopped the fixes — and CoreLocation does not report it — nothing asked
+    /// for them again, and nothing on the watch said the route had stopped
+    /// being recorded. Ninety seconds without a fix is past any normal gap
+    /// between them, so ask again; five minutes is past anything terrain can
+    /// explain, so tell the runner too.
+    private func checkLocationIsArriving() {
+        guard locationManager.authorizationStatus == .authorizedWhenInUse
+                || locationManager.authorizationStatus == .authorizedAlways else { return }
+        let since = elapsed - max(lastFixElapsed, 0)
+        guard since > Self.locationSilenceBeforeRestart,
+              elapsed - lastLocationRestart > Self.locationSilenceBeforeRestart else { return }
+        lastLocationRestart = elapsed
+        Log.session.error("no GPS fix for \(Int(since)) s — restarting updates")
+        locationManager.stopUpdatingLocation()
+        locationManager.startUpdatingLocation()
+        if since > Self.locationSilenceBeforeNotice { note(.locationLost) }
+    }
+
+    static let locationSilenceBeforeRestart: TimeInterval = 90
+    static let locationSilenceBeforeNotice: TimeInterval = 300
 
     // MARK: - Zone coaching
 
@@ -605,10 +703,16 @@ final class RunSession: NSObject, ObservableObject {
         // one a little late, and occasionally replays a cached fix from
         // before the run, which the clamp catches.
         let offset = max(location.timestamp.timeIntervalSince(startDate ?? .now), 0)
+        lastFixElapsed = elapsed
 
-        metrics.ingestAltitude(location.altitude,
-                               verticalAccuracy: location.verticalAccuracy,
-                               at: offset)
+        // Only when there is no barometer to do it better, and never both: two
+        // altitude sources folded into one series would put a step between them
+        // at every handover and count it as climb.
+        if altimeter.altitude == nil {
+            metrics.ingestAltitude(location.altitude,
+                                   verticalAccuracy: location.verticalAccuracy,
+                                   at: offset)
+        }
 
         if location.horizontalAccuracy >= 0,
            location.horizontalAccuracy < RunMetrics.usableHorizontalAccuracy {

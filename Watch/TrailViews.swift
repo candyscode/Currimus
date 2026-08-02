@@ -106,7 +106,7 @@ struct TrailRunPager: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(
                             value: "\(Int(session.climbRatePerHour))",
-                            label: "M/H · LAST 10 MIN",
+                            label: "M/H · LAST MIN",
                             valueColor: dimmed ? palette.hero : Theme.signal,
                             size: 17, labelGap: 2.5, labelOutsideLayout: true
                         )

@@ -153,3 +153,24 @@ Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 [ ] Done
 
 Maybe based on trail run mode but with different metrics? How to exclude from progress page? How to make this clear in the UI?
+
+### CUR-40: Sieben Befunde aus einem mehrstündigen Trailrun
+
+ [ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Andi hat einen mehrstündigen Trailrun mit zwei Uhren parallel gelaufen (Currimus auf der einen, Apple Fitness als Referenz auf der anderen) und danach einen zweiten, abschüssigen Lauf. Sieben Befunde:
+
+1. **Deutlich zu viele Höhenmeter.** Auf 1.000 hm zeigt Currimus 200–250 hm zu viel gegenüber Apple Fitness. Die Höhenmeter sollen genau so berechnet werden wie in Apple Fitness.
+2. **hm/h im Trail-Mode über die letzte Minute**, nicht über die letzten 10 Minuten.
+3. **Die Sekunden springen ungleichmäßig.** Die Intervalle sind mal kürzer, mal länger; die Zeit selbst stimmt (wenige Sekunden Abweichung zur Referenzuhr auf 2,5 h).
+4. **Der erste Run tauchte nach dem Abschluss nicht in Currimus auf.** In Apple Fitness auf dem gekoppelten iPhone war er da — der Workout wurde also gespeichert, nur die Übertragung zur App fehlte.
+5. **Zweiter Run (bergab):** am Anfang kurz 13 hm gezählt, die nie gelaufen wurden; danach korrekt keine hm bergab; als es wieder ~10 min bergauf ging, wurde bis zum Ende kein einziger Höhenmeter mehr gezählt, hm/h blieb auf 0.
+6. **Zweiter Run in der App:** Grade Adjusted Pace ist nicht im Ansatz korrekt (465:25 /km bei 21:13 /km echt), und die Karte ist viel zu weit herausgezoomt — der Track soll bildfüllend sein. Der gezeichnete Track ist außerdem nicht vollständig, nur die ersten Meter.
+7. **Race View auf iOS:** durch das ⓘ-Icon sitzt das Label „ESTIMATION" tiefer als „LONGEST · 50 %".
+
+#### Agent Comments
+
+#### Link to completed work

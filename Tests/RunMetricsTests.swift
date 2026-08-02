@@ -81,20 +81,121 @@ final class RunMetricsTests: XCTestCase {
 
     // MARK: Altitude
 
-    func testClimbIgnoresGPSJitterButCountsRealAscent() {
+    func testClimbIgnoresJitterButCountsRealAscent() {
         var metrics = RunMetrics()
-        // Standing still, GPS altitude wobbling by a metre.
+        // Standing still, the altitude wobbling by a metre.
         for (index, altitude) in [100.0, 101, 100, 99.5, 100.5, 100].enumerated() {
             metrics.ingestAltitude(altitude, verticalAccuracy: 5, at: Double(index) * 10)
         }
         XCTAssertEqual(metrics.climbMeters, 0)
         XCTAssertEqual(metrics.descentMeters, 0)
 
-        metrics.ingestAltitude(150, verticalAccuracy: 5, at: 100)
-        XCTAssertEqual(metrics.climbMeters, 50, accuracy: 0.001)
+        // Then 50 m up and 30 m back down, at a runnable 0.25 m/s.
+        var altitude = 100.0
+        var second = 60.0
+        for _ in 0..<200 { altitude += 0.25; second += 1
+            metrics.ingestAltitude(altitude, verticalAccuracy: 5, at: second) }
+        XCTAssertEqual(metrics.climbMeters, 50, accuracy: 4)
+        for _ in 0..<120 { altitude -= 0.25; second += 1
+            metrics.ingestAltitude(altitude, verticalAccuracy: 5, at: second) }
+        XCTAssertEqual(metrics.climbMeters, 50, accuracy: 4)
+        XCTAssertEqual(metrics.descentMeters, 30, accuracy: 4)
+    }
 
-        metrics.ingestAltitude(120, verticalAccuracy: 5, at: 200)
-        XCTAssertEqual(metrics.descentMeters, 30, accuracy: 0.001)
+    /// The CUR-40 regression, and the reason the whole algorithm changed.
+    ///
+    /// A thousand metres of climbing, sampled once a second with the ±3 m of
+    /// noise a real altitude signal carries. The old rule — "any step over
+    /// 1.5 m is climb" — read this as 1 200 to 1 250 m, which is exactly what a
+    /// field test against Apple Fitness showed. Five per cent is the budget.
+    func testNoiseDoesNotInflateAThousandMetreDay() {
+        var metrics = RunMetrics()
+        var generator = SystemRandomNumberGenerator()
+        var truth = 400.0
+        // Up 1 000 m at 0.25 m/s, then back down again.
+        for second in 0..<8_000 {
+            truth += second < 4_000 ? 0.25 : -0.25
+            let noisy = truth + Double.random(in: -3...3, using: &generator)
+            metrics.ingestAltitude(noisy, verticalAccuracy: 5, at: Double(second))
+        }
+        XCTAssertEqual(metrics.climbMeters, 1_000, accuracy: 50)
+        XCTAssertEqual(metrics.descentMeters, 1_000, accuracy: 50)
+    }
+
+    /// Rolling terrain, where a filter that rounds off summits loses its money.
+    ///
+    /// Twenty times up 60 m and down 10 m: every reversal is a place where a
+    /// low-pass under-reads the peak and over-reads the trough, and the losses
+    /// add up over a day rather than cancelling. Hence a light filter and a
+    /// hysteresis band doing most of the work.
+    func testRollingTerrainDoesNotBleedHeightAtEveryReversal() {
+        var metrics = RunMetrics()
+        var altitude = 500.0
+        var second = 0.0
+        for _ in 0..<20 {
+            for _ in 0..<240 { altitude += 0.25; second += 1
+                metrics.ingestAltitude(altitude, verticalAccuracy: 5, at: second) }
+            for _ in 0..<40 { altitude -= 0.25; second += 1
+                metrics.ingestAltitude(altitude, verticalAccuracy: 5, at: second) }
+        }
+        XCTAssertEqual(metrics.climbMeters, 1_200, accuracy: 60)   // 5 %
+        // The 10 m drops read short, and that is the trade being made: a leg
+        // only two hysteresis bands tall loses most of a band to the filter's
+        // lag at each end. It costs a fifth of the *small* legs and five per
+        // cent of the day, which is the right way round for a climb figure.
+        XCTAssertEqual(metrics.descentMeters, 160, accuracy: 40)
+    }
+
+    /// Standing still for half an hour is not a climb, however noisy the sensor.
+    func testStandingStillClimbsNothing() {
+        var metrics = RunMetrics()
+        var generator = SystemRandomNumberGenerator()
+        for second in 0..<1_800 {
+            metrics.ingestAltitude(820 + Double.random(in: -3...3, using: &generator),
+                                   verticalAccuracy: 5, at: Double(second))
+        }
+        // A real barometer is an order of magnitude quieter than the ±3 m fed
+        // in here — that is GPS-grade noise, i.e. the fallback path's worst day.
+        XCTAssertLessThan(metrics.climbMeters, 10)
+        XCTAssertLessThan(metrics.descentMeters, 10)
+    }
+
+    /// The number on the wrist must not sit still while the runner is climbing:
+    /// the leg in progress counts, and it does not double-count when it closes.
+    func testClimbInProgressIsAlreadyCounted() {
+        var metrics = RunMetrics()
+        for second in 0..<200 {
+            metrics.ingestAltitude(500 + Double(second) * 0.5, verticalAccuracy: 5, at: Double(second))
+        }
+        let midClimb = metrics.climbMeters
+        XCTAssertEqual(midClimb, 100, accuracy: 4)
+
+        // Crest and descend: the leg closes, and the total does not jump.
+        for second in 200..<320 {
+            metrics.ingestAltitude(600 - Double(second - 200) * 0.5, verticalAccuracy: 5, at: Double(second))
+        }
+        XCTAssertEqual(metrics.climbMeters, midClimb, accuracy: 5)
+        XCTAssertEqual(metrics.descentMeters, 60, accuracy: 6)
+    }
+
+    /// The other half of CUR-40: a descent followed by a genuine ascent has to
+    /// start counting again. On the field-test run it never did.
+    func testAscentAfterADescentCountsAgain() {
+        var metrics = RunMetrics()
+        var altitude = 1_600.0
+        var second = 0.0
+        for _ in 0..<1_200 { altitude -= 0.3; second += 1
+            metrics.ingestAltitude(altitude, verticalAccuracy: 5, at: second) }
+        XCTAssertEqual(metrics.descentMeters, 360, accuracy: 5)
+        XCTAssertLessThan(metrics.climbMeters, 3)
+
+        // Ten minutes back up.
+        for _ in 0..<600 { altitude += 0.3; second += 1
+            metrics.ingestAltitude(altitude, verticalAccuracy: 5, at: second)
+            metrics.tick(elapsed: second, distanceKm: second / 600, heartRate: 150, zone: 3) }
+        XCTAssertEqual(metrics.climbMeters, 180, accuracy: 5)
+        // …and the live rate says so, over the last minute.
+        XCTAssertEqual(metrics.climbRatePerHour, 1_080, accuracy: 60)
     }
 
     func testUnusableAccuracyIsDiscarded() {
@@ -118,6 +219,28 @@ final class RunMetricsTests: XCTestCase {
                          heartRate: 150, zone: 3)
         }
         XCTAssertEqual(metrics.climbRatePerHour, 600, accuracy: 30)
+    }
+
+    /// The window is a minute, not ten (CUR-40): stop climbing and the rate has
+    /// to fall away inside a minute rather than carry the last climb for ten.
+    func testClimbRateForgetsTheLastClimbWithinAMinute() {
+        var metrics = RunMetrics()
+        var second = 0.0
+        // Four minutes of steady 900 m/h.
+        for _ in 0..<240 {
+            metrics.ingestAltitude(500 + second / 4, verticalAccuracy: 5, at: second)
+            metrics.tick(elapsed: second, distanceKm: second / 400, heartRate: 150, zone: 3)
+            second += 1
+        }
+        XCTAssertEqual(metrics.climbRatePerHour, 900, accuracy: 60)
+
+        // Then two minutes of flat.
+        for _ in 0..<120 {
+            metrics.ingestAltitude(560, verticalAccuracy: 5, at: second)
+            metrics.tick(elapsed: second, distanceKm: second / 400, heartRate: 150, zone: 3)
+            second += 1
+        }
+        XCTAssertEqual(metrics.climbRatePerHour, 0, accuracy: 1)
     }
 
     // MARK: Capacity — the regression this file exists for

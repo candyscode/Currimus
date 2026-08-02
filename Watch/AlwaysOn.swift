@@ -28,9 +28,11 @@ struct RunMetricsSchedule: TimelineSchedule {
 /// Drives a live run screen: redraws on the workout cadence and publishes the
 /// matching palette to everything inside.
 ///
-/// `content` receives the elapsed time for the frame being drawn. It is read
-/// at draw time rather than pushed from a timer, so the seconds stay correct
-/// even though the app is only woken once a second with the wrist down.
+/// `content` receives the elapsed time for the frame being drawn — derived from
+/// the frame's *scheduled* date, not from the clock at the moment it arrives.
+/// Both come from the same anchor, `session.clockAnchor`, which is what makes
+/// the seconds change at an even rate however late a frame is. See
+/// `RunSession.displayElapsed(at:)`.
 struct RunTimeline<Content: View>: View {
     @ObservedObject var session: RunSession
     @Environment(\.isLuminanceReduced) private var systemDimmed
@@ -40,8 +42,8 @@ struct RunTimeline<Content: View>: View {
     private var dimmed: Bool { (systemDimmed || AlwaysOn.forcedForDebug) && reducedEnabled }
 
     var body: some View {
-        TimelineView(RunMetricsSchedule(start: session.startedAt)) { _ in
-            content(session.displayElapsed)
+        TimelineView(RunMetricsSchedule(start: session.clockAnchor)) { context in
+            content(session.displayElapsed(at: context.date))
                 .environment(\.runPalette, RunPalette(dimmed: dimmed))
         }
     }

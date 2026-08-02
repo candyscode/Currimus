@@ -156,6 +156,10 @@ targets:
         INFOPLIST_KEY_NSHealthShareUsageDescription: "Currimus reads heart rate and distance to show live pace and zones during your run."
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Currimus saves your runs as workouts to Apple Health."
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Currimus uses GPS to record your route, distance and elevation while you run."
+        # The barometric altimeter (CMAltimeter) is motion hardware, and touching
+        # it without this key is a launch-time crash, not a denial. It is what
+        # elevation is measured with — see Shared/Altimeter.swift.
+        INFOPLIST_KEY_NSMotionUsageDescription: "Currimus reads the watch's barometric altimeter to measure the height you climb."
     # WKBackgroundModes is an array; the INFOPLIST_KEY_ shorthand silently
     # dropped it, so the app was suspended the moment it left the foreground
     # mid-run. A real plist is the only reliable way to declare it.
