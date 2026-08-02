@@ -152,21 +152,33 @@ own header ends in " km" just like every row does.
 
 ## Elevation, and why it is not GPS
 
-Climb comes from the **barometer** (`CMAltimeter.startAbsoluteAltitudeUpdates`),
-not from `CLLocation.altitude`. GPS altitude error is two to three times the
-horizontal one and it wanders while standing still; summing it over a run read
-20–25 % high against Apple Fitness (CUR-40). Apple Fitness uses the barometer,
-and `CMAltimeter`'s absolute altitude is the same sensor fusion.
+Climb comes from the **barometer** (`CMAltimeter`), not from
+`CLLocation.altitude`. GPS altitude error is two to three times the horizontal
+one and it wanders while standing still; summing it over a run read 20–25 %
+high against Apple Fitness (CUR-40). Apple Fitness uses the barometer.
 
 - `NSMotionUsageDescription` is **required**. Without it, touching `CMAltimeter`
   is a crash, not a denial. It lives in `project.yml` as an
   `INFOPLIST_KEY_`.
-- Absolute altitude needs a Series 6 or newer, which is also what watchOS 11
-  needs — so on every watch that can run Currimus it is available.
-  `BarometricAltimeter.isAvailable` is asked anyway; a `false` falls back to
-  the GPS altitude path in `integrate`.
-- **Never feed both sources into one series.** The handover leaves a step, and
-  the step is counted as climb.
+- **Two tiers of barometer, and the difference matters if the target ever
+  moves.** `isAbsoluteAltitudeAvailable()` needs the *always-on* altimeter —
+  Series 6 and later, SE 2, Ultra. Every watchOS 11 device has one. Series 3–5
+  have a plain barometer and report *relative* altitude only, and watchOS 10
+  (which CUR-11 proposes) brings them back. `BarometricAltimeter` handles both:
+  relative readings are ingested from an arbitrary zero and the first usable
+  GPS fix shifts the whole series onto sea level via
+  `RunMetrics.shiftAltitudeBaseline`. A uniform shift changes no difference, so
+  no metre of climb waits on a fix that may never come. The offset then has to
+  be added to every *later* reading too — `RunSession.altitudeBaseline`.
+- No barometer at all (Series 1–2, the simulator) → `isAvailable == false` →
+  the GPS altitude path in `integrate`, as before.
+- **Never feed two sources into one series.** The handover leaves a step of
+  tens of metres, and a step is banked as climb. The source is fixed at
+  `resetMetrics`, and a run *waits* up to `RunSession.barometerGracePeriod`
+  (30 s) for the barometer rather than starting on GPS and switching. If the
+  wait runs out — a denied motion permission looks exactly like a slow sensor —
+  it falls back and calls `resetAltitudeTracking()`, which banks the leg under
+  way and forgets only the position.
 - The simulator has no barometer, so nothing here can be tested there. The
   *arithmetic* is fully covered in `RunMetricsTests` — feed
   `RunMetrics.ingestAltitude` a synthetic profile with noise on it.
