@@ -16,6 +16,7 @@
 		05E5D0CE92E0DECA1C165065 /* Altimeter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9146DE22C418AAFC332CB5FB /* Altimeter.swift */; };
 		07C5CEEF37DA02B813DDA920 /* CurrimusWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA72643E97B3CCB96BF5996B /* CurrimusWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		08C190E4254C7623696F916A /* WeekSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FD02049A6DE3216058C8FA /* WeekSnapshot.swift */; };
+		09B292DF826D01E0F283A9DD /* InfoButtonUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3C75225A035DF717EA74CA9 /* InfoButtonUITests.swift */; };
 		09EBF23F41922D677F296915 /* PromptGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BA66CF16A42E87B54B69AC /* PromptGate.swift */; };
 		0AF2B49944699FB95A35180D /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		0EA2B10143253AB324128562 /* Sources.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9C70AAD130EFB356A706713 /* Sources.swift */; };
@@ -341,6 +342,7 @@
 		9F1A0FA13132AED3D257C31B /* RunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunView.swift; sourceTree = "<group>"; };
 		A2BADCCD49E145AF145AB341 /* RunSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSessionTests.swift; sourceTree = "<group>"; };
 		A2CB59BCA4018F4C3EBBFD25 /* RecordingPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPolicyTests.swift; sourceTree = "<group>"; };
+		A3C75225A035DF717EA74CA9 /* InfoButtonUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoButtonUITests.swift; sourceTree = "<group>"; };
 		A55F4CF421595E439C843775 /* WatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchApp.swift; sourceTree = "<group>"; };
 		A6CFB5CC07067218F2414163 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A7798A4301C39FF833B1EBEF /* CurrimusTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CurrimusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -526,6 +528,7 @@
 		CE66F348D0344E2AD30FBC01 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
+				A3C75225A035DF717EA74CA9 /* InfoButtonUITests.swift */,
 				1C2A5A48DAA517C074256B8D /* LogScrollUITests.swift */,
 				2896414722F0534F76F64E00 /* SwipeToDeleteUITests.swift */,
 				6A4DD83E66B5BBFC2107DA52 /* TabBarUITests.swift */,
@@ -781,6 +784,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				09B292DF826D01E0F283A9DD /* InfoButtonUITests.swift in Sources */,
 				7BB07B266D00325B1703AD6A /* LogScrollUITests.swift in Sources */,
 				3BF77CAB3DF7E39F5F5C0F62 /* SwipeToDeleteUITests.swift in Sources */,
 				7AFE4AE13B28435351D8BA3A /* TabBarUITests.swift in Sources */,

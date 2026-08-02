@@ -287,15 +287,22 @@ enum RunAnalytics {
     /// were never there.
     static let gradeSegmentKm = 0.02
 
-    /// Flat-equivalent pace (s/km) from a route: every stretch is converted to
-    /// the flat distance that would have cost the same, and the run's time is
-    /// spread over that instead.
-    ///
-    /// nil without a track — the gradients are the whole calculation, and
-    /// total climb alone cannot say whether it came as one wall or forty
-    /// rolling metres.
-    static func gradeAdjustedPace(route: [Coordinate], duration: TimeInterval) -> TimeInterval? {
-        guard route.count >= 2, duration > 0 else { return nil }
+    /// What a track says about the ground it covers: how far it actually ran,
+    /// and what that distance would have been on the flat for the same effort.
+    struct RouteGrade: Equatable {
+        var measuredKm: Double
+        var flatKm: Double
+
+        /// Flat-equivalent kilometres per kilometre run. Scale-free, which is
+        /// the whole reason this is a separate value — see `gradeAdjustedPace`.
+        var factor: Double { measuredKm > 0 ? flatKm / measuredKm : 1 }
+    }
+
+    /// Walks a track and converts every stretch to the flat distance that would
+    /// have cost the same.
+    static func routeGrade(_ route: [Coordinate]) -> RouteGrade? {
+        guard route.count >= 2 else { return nil }
+        var measuredKm = 0.0
         var flatKm = 0.0
         var pendingKm = 0.0
         var pendingClimb = 0.0
@@ -303,6 +310,7 @@ enum RunAnalytics {
         for (from, to) in zip(route, route.dropFirst()) {
             let km = haversineKm(from, to)
             guard km > 0, km <= maxSegmentKm else { continue }
+            measuredKm += km
             pendingKm += km
             pendingClimb += to.elevation - from.elevation
             guard pendingKm >= gradeSegmentKm else { continue }
@@ -313,8 +321,35 @@ enum RunAnalytics {
         }
         // Whatever is left of the last stretch counts on the flat.
         flatKm += pendingKm
-        guard flatKm > 0.05 else { return nil }
-        return duration / flatKm
+        guard measuredKm > 0.05 else { return nil }
+        return RouteGrade(measuredKm: measuredKm, flatKm: flatKm)
+    }
+
+    /// How much of a run its track has to describe before that track's
+    /// gradients may stand for the whole of it.
+    static let minimumRouteCoverage = 0.5
+
+    /// Flat-equivalent pace (s/km) from a route.
+    ///
+    /// The gradients say how much harder the ground was than flat ground; the
+    /// run's own distance says how much of it there was. Keeping the two apart
+    /// is what this had wrong (CUR-40): the time was spread over the track's
+    /// flat-equivalent length, so a run whose GPS died after three hundred
+    /// metres spread two hours over three hundred metres and reported
+    /// 465:25 /km beside a real 21:13. The terrain factor is scale-free and
+    /// survives a partial track; the *length* now comes from `distanceKm`,
+    /// which HealthKit measured for the whole run.
+    ///
+    /// Still nil without a track — total climb alone cannot say whether it came
+    /// as one wall or forty rolling metres — and nil when the track covers too
+    /// little of the run to speak for it. The rule of thumb takes over there,
+    /// and the screens already say which of the two they are showing.
+    static func gradeAdjustedPace(route: [Coordinate], duration: TimeInterval,
+                                  distanceKm: Double? = nil) -> TimeInterval? {
+        guard duration > 0, let grade = routeGrade(route) else { return nil }
+        let km = distanceKm ?? grade.measuredKm
+        guard km > 0.05, grade.measuredKm >= km * minimumRouteCoverage else { return nil }
+        return duration / (km * grade.factor)
     }
 
     /// Over how much ground the *steepest* stretch of a run is measured.
@@ -356,12 +391,26 @@ enum RunAnalytics {
     static let climbCostPerMeter = 0.40
     static let descentGainPerMeter = 0.18
 
+    /// How far a flat-equivalent pace may sit from the raw one and still be
+    /// believable. Minetti's fit is clamped to ±45 %, where a metre costs
+    /// between about half and four and a half times what it costs on the flat —
+    /// so a run cannot be more than twice as slow, or a quarter as fast, as it
+    /// was on the ground. Anything outside is a broken measurement, not a hill.
+    static let gradeAdjustmentBand = 0.2...2.0
+
     static func gradeAdjustedPace(_ run: Run) -> TimeInterval {
         guard run.distanceKm > 0.05 else { return 0 }
-        // Measured from the run's own gradients when it has them.
-        if let measured = run.gradeAdjustedSecPerKm { return measured }
+        // Measured from the run's own gradients when it has them — and when the
+        // stored figure is one this run could actually have produced. Runs
+        // recorded before CUR-40 can carry a value taken over a truncated
+        // track, which is off by orders of magnitude rather than by a hill.
+        if let measured = run.gradeAdjustedSecPerKm, plausible(measured, for: run) {
+            return measured
+        }
         if let route = run.route,
-           let fromRoute = gradeAdjustedPace(route: route, duration: run.duration) {
+           let fromRoute = gradeAdjustedPace(route: route, duration: run.duration,
+                                             distanceKm: run.distanceKm),
+           plausible(fromRoute, for: run) {
             return fromRoute
         }
         let climb = run.climbMeters ?? 0
@@ -370,10 +419,26 @@ enum RunAnalytics {
         return max(flatTime, 0) / run.distanceKm
     }
 
+    /// Whether a flat-equivalent pace is one this run could have produced.
+    private static func plausible(_ adjusted: TimeInterval, for run: Run) -> Bool {
+        let raw = run.paceSecPerKm
+        guard raw > 0, adjusted > 0 else { return false }
+        return gradeAdjustmentBand.contains(adjusted / raw)
+    }
+
     /// Whether a run's flat-equivalent pace was worked out from its gradients
     /// rather than from the rule of thumb — the screens say which.
+    ///
+    /// It asks the same questions `gradeAdjustedPace(_:)` does, in the same
+    /// order. It used to only look for a track, so a run whose stored figure
+    /// was rejected, or whose track covers too little of it to speak for it,
+    /// was labelled "measured" over a number that came from the rule of thumb.
     static func hasMeasuredGradeAdjustment(_ run: Run) -> Bool {
-        run.gradeAdjustedSecPerKm != nil || (run.route?.count ?? 0) >= 2
+        if let measured = run.gradeAdjustedSecPerKm, plausible(measured, for: run) { return true }
+        guard let route = run.route,
+              let fromRoute = gradeAdjustedPace(route: route, duration: run.duration,
+                                                distanceKm: run.distanceKm) else { return false }
+        return plausible(fromRoute, for: run)
     }
 
     /// Raw and flat-equivalent pace across a set of runs.

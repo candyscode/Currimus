@@ -35,10 +35,16 @@ struct InfoButton: View {
             Image(systemName: "info.circle")
                 .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(Theme.faint)
-                // A 13 pt glyph is a 13 pt target; this is the 44 pt one
-                // underneath it, without taking 44 pt of layout.
-                .frame(width: 30, height: 30)
+                // The tappable area, and then the same padding handed back to
+                // the layout. The frame version of this took 30 pt of *height*
+                // in the label row, so the label beside it was centred in a
+                // taller box than its neighbour's and sat visibly lower —
+                // "ESTIMATION" under "LONGEST · 50 %" on the race screen
+                // (Andi, CUR-40). Hit testing is not clipped to the frame, so
+                // the target survives the negative padding.
+                .padding(8)
                 .contentShape(Rectangle())
+                .padding(-8)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("How \(label) is worked out")
@@ -133,13 +139,12 @@ struct ExplainedStat: View {
                 .font(.stat(34)).kerning(-0.5)
                 .foregroundStyle(accent ? Theme.signal : Theme.ink)
                 .lineLimit(1).minimumScaleFactor(0.7)
-            HStack(spacing: 2) {
+            // Baselines, so the glyph sits on the label's line rather than in
+            // the middle of whatever height the row ends up with.
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(label).kicker(13, color: Theme.bright, tracking: 0.12).fixedSize()
                 if let explanation {
                     InfoButton(label: label.lowercased()) { onExplain(explanation) }
-                        // Pulled tight to the label: the two are one unit, and
-                        // the button's own 30 pt target does the rest.
-                        .padding(.leading, -6)
                 }
             }
         }

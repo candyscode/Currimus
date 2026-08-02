@@ -349,6 +349,55 @@ final class RunAnalyticsTests: XCTestCase {
         XCTAssertNil(RunAnalytics.gradeAdjustedPace(route: [], duration: 900))
     }
 
+    /// CUR-40: the run whose GPS died early reported 465:25 /km beside a real
+    /// 21:13, because the whole duration was spread over the flat-equivalent
+    /// length of the *track* rather than of the run.
+    func testAPartialTrackDoesNotSpreadTheWholeRunOverIt() {
+        // Two hours and 5.8 km run; the track stops after 300 m of it. Too
+        // little of the run to speak for it, so there is no measured answer.
+        let stump = straightRoute(seconds: 90)
+        XCTAssertNil(RunAnalytics.gradeAdjustedPace(route: stump, duration: 7_369,
+                                                    distanceKm: 5.8))
+
+        // And where a track does cover enough, the answer is the run's own
+        // pace adjusted for terrain — not twenty times it.
+        let most = straightRoute(seconds: 900)          // 3 of the 5.8 km
+        let gap = RunAnalytics.gradeAdjustedPace(route: most, duration: 7_369, distanceKm: 5.8)
+        XCTAssertEqual(gap ?? 0, 7_369 / 5.8, accuracy: 30)
+    }
+
+    /// A track that describes the run, on ground that is not flat: the terrain
+    /// is read from the gradients, the length from the run.
+    func testTheRunsOwnDistanceSetsTheLengthOfTheAdjustment() throws {
+        // 8 % uphill for 15 minutes over the 3 km the route itself covers, but
+        // HealthKit measured 3.2 km — the GPS track is a little short, as they
+        // always are.
+        let climbing = straightRoute(seconds: 900).map {
+            Coordinate(lat: $0.lat, lon: $0.lon,
+                       elevation: $0.t * (1000.0 / 300.0) * 0.08, t: $0.t)
+        }
+        let overRoute = try XCTUnwrap(
+            RunAnalytics.gradeAdjustedPace(route: climbing, duration: 900))
+        let overRun = try XCTUnwrap(
+            RunAnalytics.gradeAdjustedPace(route: climbing, duration: 900, distanceKm: 3.2))
+        // Same terrain factor, a longer run: the flat-equivalent pace is
+        // proportionally quicker, and nowhere near a different order.
+        XCTAssertEqual(overRun, overRoute * 3.0 / 3.2, accuracy: 3)
+    }
+
+    /// A stored figure that no hill could produce is not used, whatever wrote
+    /// it — runs recorded before this fix are still in the log.
+    func testAnImpossibleStoredAdjustmentIsIgnored() {
+        var run = Run(date: .now, type: .trail, name: "Trail run", distanceKm: 5.8,
+                      duration: 7_369, avgHR: 140)
+        run.climbMeters = 13
+        run.descentMeters = 56
+        run.gradeAdjustedSecPerKm = 27_925          // 465:25 /km
+        XCTAssertFalse(RunAnalytics.hasMeasuredGradeAdjustment(run))
+        // The rule of thumb takes over, and it lands near the real pace.
+        XCTAssertEqual(RunAnalytics.gradeAdjustedPace(run), run.paceSecPerKm, accuracy: 60)
+    }
+
     // MARK: Cardiac drift
 
     private func easyRun(_ pace: TimeInterval, hr: Int, daysAgo: Int) -> Run {

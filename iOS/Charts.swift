@@ -385,7 +385,7 @@ struct MapCard: View {
     var body: some View {
         Group {
             if route.count > 1 {
-                RouteMap(route: route, region: region)
+                RouteMap(route: route)
             } else {
                 empty
             }
@@ -409,7 +409,7 @@ struct MapCard: View {
         .accessibilityLabel(route.count > 1 ? "Route map" : "No GPS track recorded")
         .accessibilityAddTraits(route.count > 1 ? .isButton : [])
         .fullScreenCover(isPresented: $isExpanded) {
-            RouteMapFullScreen(route: route, region: region)
+            RouteMapFullScreen(route: route)
         }
     }
 
@@ -432,22 +432,6 @@ struct MapCard: View {
         }
     }
 
-    /// The track's bounding box with a margin, so the line never runs into
-    /// the card's edge. The floor keeps a lap around a single block from
-    /// filling the frame with one street.
-    private var region: MKCoordinateRegion {
-        let lats = route.map(\.latitude), lons = route.map(\.longitude)
-        guard let minLat = lats.min(), let maxLat = lats.max(),
-              let minLon = lons.min(), let maxLon = lons.max() else {
-            return MKCoordinateRegion()
-        }
-        return MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: (minLat + maxLat) / 2,
-                                           longitude: (minLon + maxLon) / 2),
-            span: MKCoordinateSpan(latitudeDelta: max((maxLat - minLat) * 1.35, 0.003),
-                                   longitudeDelta: max((maxLon - minLon) * 1.35, 0.003))
-        )
-    }
 }
 
 /// `MKMapView` rather than SwiftUI's `Map`.
@@ -460,14 +444,13 @@ struct MapCard: View {
 /// the instruction directly.
 private struct RouteMap: UIViewRepresentable {
     var route: [CLLocationCoordinate2D]
-    var region: MKCoordinateRegion
     /// The card embedded in a scrolling detail screen locks scroll/zoom, so
     /// panning doesn't fight the page; the full-screen presentation is the
     /// one place that turns them back on.
     var interactive: Bool = false
 
-    func makeUIView(context: Context) -> MKMapView {
-        let view = MKMapView()
+    func makeUIView(context: Context) -> FittedMapView {
+        let view = FittedMapView()
         view.delegate = context.coordinator
         view.overrideUserInterfaceStyle = .dark
         view.pointOfInterestFilter = .excludingAll
@@ -477,14 +460,57 @@ private struct RouteMap: UIViewRepresentable {
         view.isPitchEnabled = false
         view.isScrollEnabled = interactive
         view.isZoomEnabled = interactive
-        view.addOverlay(MKPolyline(coordinates: route, count: route.count))
-        view.setRegion(region, animated: false)
+        let line = MKPolyline(coordinates: route, count: route.count)
+        view.addOverlay(line)
+        view.track = line.boundingMapRect
         return view
     }
 
-    func updateUIView(_ view: MKMapView, context: Context) {}
+    func updateUIView(_ view: FittedMapView, context: Context) {}
 
     func makeCoordinator() -> Coordinator { Coordinator() }
+
+    /// A map that keeps the whole track filling it.
+    ///
+    /// The card used to be handed an `MKCoordinateRegion` built from the
+    /// track's bounding box in *degrees*, which has two problems and the
+    /// screenshot in CUR-40 showed both. A degree of longitude is two thirds of
+    /// a degree of latitude at Alpine latitudes, so a square region is not a
+    /// square on the ground; and `setRegion` fits the region into whatever
+    /// aspect the view happens to have by growing it, so a north-south track in
+    /// a card twice as wide as it is tall came out at less than half the size
+    /// it could have been. `MKMapRect` is in projected metres and
+    /// `setVisibleMapRect(_:edgePadding:)` is the call that fits one to a view.
+    ///
+    /// It has to happen once the view has a size, which is why this is a
+    /// subclass and not two lines in `makeUIView`: at that point the frame is
+    /// still zero.
+    final class FittedMapView: MKMapView {
+        var track: MKMapRect = .null {
+            didSet { fittedFor = .zero; setNeedsLayout() }
+        }
+        private var fittedFor: CGSize = .zero
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            guard !track.isNull, bounds.size != fittedFor,
+                  bounds.width > 0, bounds.height > 0 else { return }
+            fittedFor = bounds.size
+            // A lap of one block would otherwise be drawn as a street plan; a
+            // hundred metres is the closest the map is allowed to come.
+            let floor = 100.0 * MKMapPointsPerMeterAtLatitude(centerCoordinate.latitude)
+            var rect = track
+            if rect.size.width < floor {
+                rect = rect.insetBy(dx: -(floor - rect.size.width) / 2, dy: 0)
+            }
+            if rect.size.height < floor {
+                rect = rect.insetBy(dx: 0, dy: -(floor - rect.size.height) / 2)
+            }
+            setVisibleMapRect(rect, edgePadding: UIEdgeInsets(top: 16, left: 16,
+                                                              bottom: 16, right: 16),
+                              animated: false)
+        }
+    }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
@@ -504,13 +530,12 @@ private struct RouteMap: UIViewRepresentable {
 /// scroll-safe preview.
 private struct RouteMapFullScreen: View {
     var route: [CLLocationCoordinate2D]
-    var region: MKCoordinateRegion
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack(alignment: .top) {
             Theme.bg.ignoresSafeArea()
-            RouteMap(route: route, region: region, interactive: true)
+            RouteMap(route: route, interactive: true)
                 .ignoresSafeArea()
             TopScrim {
                 HStack {

@@ -59,37 +59,6 @@ final class RunSession: NSObject, ObservableObject {
         return elapsed
     }
 
-    /// Elapsed time for the frame scheduled at `frame`.
-    ///
-    /// Sampling `elapsedTime` at the moment the frame arrives is what made the
-    /// seconds jump unevenly (CUR-40): the frame lands a few tens of
-    /// milliseconds either side of the boundary it was scheduled for, and which
-    /// side decides whether `1:23` is drawn twice or skipped. The wall clock was
-    /// never wrong — 2½ hours came out within seconds of the reference watch —
-    /// only the instants it was read at.
-    ///
-    /// The frame's *scheduled* date carries no jitter, and the schedule below
-    /// runs from `clockAnchor`, so `frame - clockAnchor` is a whole number of
-    /// seconds by construction. A paused run reads the clock directly instead:
-    /// there the anchor is stale on purpose, until the run resumes and the tick
-    /// moves it by however long the pause was.
-    func displayElapsed(at frame: Date) -> TimeInterval {
-        // Simulated runs drive `elapsed` themselves, and scenario playback runs
-        // it at up to thirty times the wall clock — no anchor can describe that.
-        guard phase == .running, !isSimulated else { return displayElapsed }
-        return max(frame.timeIntervalSince(clockAnchor), 0)
-    }
-
-    /// How far the anchor may drift before it is moved. Below this it is noise
-    /// in the reading; above it, a pause or a real correction from HealthKit.
-    private static let clockAnchorTolerance: TimeInterval = 0.4
-
-    /// Keeps the anchor pointing at the instant the run's clock read zero.
-    private func alignClockAnchor() {
-        let candidate = Date.now.addingTimeInterval(-displayElapsed)
-        guard abs(candidate.timeIntervalSince(clockAnchor)) > Self.clockAnchorTolerance else { return }
-        clockAnchor = candidate
-    }
     @Published private(set) var distanceKm: Double = 0
     @Published private(set) var heartRate: Int = 0
     /// Steps the workout has counted so far — cadence's only ingredient.
@@ -162,6 +131,38 @@ final class RunSession: NSObject, ObservableObject {
     private var locationGate: PromptGate?
 
     // MARK: - Derived
+
+    /// Elapsed time for the frame scheduled at `frame`.
+    ///
+    /// Sampling `elapsedTime` at the moment the frame arrives is what made the
+    /// seconds jump unevenly (CUR-40): the frame lands a few tens of
+    /// milliseconds either side of the boundary it was scheduled for, and which
+    /// side decides whether `1:23` is drawn twice or skipped. The wall clock was
+    /// never wrong — 2½ hours came out within seconds of the reference watch —
+    /// only the instants it was read at.
+    ///
+    /// The frame's *scheduled* date carries no jitter, and the schedule below
+    /// runs from `clockAnchor`, so `frame - clockAnchor` is a whole number of
+    /// seconds by construction. A paused run reads the clock directly instead:
+    /// there the anchor is stale on purpose, until the run resumes and the tick
+    /// moves it by however long the pause was.
+    func displayElapsed(at frame: Date) -> TimeInterval {
+        // Simulated runs drive `elapsed` themselves, and scenario playback runs
+        // it at up to thirty times the wall clock — no anchor can describe that.
+        guard phase == .running, !isSimulated else { return displayElapsed }
+        return max(frame.timeIntervalSince(clockAnchor), 0)
+    }
+
+    /// How far the anchor may drift before it is moved. Below this it is noise
+    /// in the reading; above it, a pause or a real correction from HealthKit.
+    private static let clockAnchorTolerance: TimeInterval = 0.4
+
+    /// Keeps the anchor pointing at the instant the run's clock read zero.
+    private func alignClockAnchor() {
+        let candidate = Date.now.addingTimeInterval(-displayElapsed)
+        guard abs(candidate.timeIntervalSince(clockAnchor)) > Self.clockAnchorTolerance else { return }
+        clockAnchor = candidate
+    }
 
     /// 0 = no heart-rate reading yet — the zone bar stays unlit.
     var currentZone: Int { heartRate > 0 ? zones.zone(for: heartRate) : 0 }
@@ -296,7 +297,7 @@ final class RunSession: NSObject, ObservableObject {
             route: metrics.coordinates.isEmpty ? nil : metrics.coordinates,
             zoneDistanceKm: metrics.zoneDistanceKm,
             gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(
-                route: metrics.coordinates, duration: elapsed),
+                route: metrics.coordinates, duration: elapsed, distanceKm: distanceKm),
             cadenceSpm: cadenceSpm
         )
 

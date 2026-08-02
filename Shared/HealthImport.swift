@@ -180,6 +180,13 @@ enum HealthImport {
         if distance.count < 2 {
             distance = await distanceTrace(of: workout, in: store)
         }
+        // The workout's own distance, so the gradients describe the terrain and
+        // the length comes from what HealthKit measured — a track with gaps in
+        // it must not shorten the run (CUR-40).
+        let meters = workout
+            .statistics(for: HKQuantityType(.distanceWalkingRunning))?
+            .sumQuantity()?
+            .doubleValue(for: .meter())
         return .detail(WorkoutDetail(
             zoneSeconds: zoneSeconds(from: samples, zones: zones, end: workout.endDate),
             route: route,
@@ -187,8 +194,9 @@ enum HealthImport {
             splits: RunAnalytics.splits(trace: distance),
             // Gradients need a track; a treadmill has none, and a flat run's
             // adjusted pace is its pace.
-            gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(route: route,
-                                                                  duration: workout.duration)
+            gradeAdjustedSecPerKm: RunAnalytics.gradeAdjustedPace(
+                route: route, duration: workout.duration,
+                distanceKm: meters.map { $0 / 1000 })
         ))
     }
 
