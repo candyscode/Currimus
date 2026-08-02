@@ -261,6 +261,26 @@ struct RunMetrics: Equatable {
         legPivot = nil
     }
 
+    /// Moves the whole altitude series onto a real scale.
+    ///
+    /// For a barometer that can only report *relative* altitude: the run starts
+    /// measuring immediately, from an arbitrary zero, and the first usable GPS
+    /// fix says where that zero actually was. Everything recorded so far moves
+    /// with it.
+    ///
+    /// Climb and descent are untouched on purpose — they are made of
+    /// differences, and a uniform shift leaves every difference exactly as it
+    /// was. That is what makes measuring from the wrong zero harmless: no metre
+    /// of ascent is lost while waiting for a fix that may never come.
+    mutating func shiftAltitudeBaseline(by offset: Double) {
+        guard offset != 0 else { return }
+        altitudeMeters += offset
+        altitudeProfile = altitudeProfile.map { $0 + offset }
+        smoothedAltitude = smoothedAltitude.map { $0 + offset }
+        leg = leg.map { (start: $0.start + offset, extreme: $0.extreme + offset, isClimb: $0.isClimb) }
+        legPivot = legPivot.map { (low: $0.low + offset, high: $0.high + offset) }
+    }
+
     /// Walks one filtered altitude through the leg state machine above.
     private mutating func accumulate(_ altitude: Double) {
         guard var current = leg else {

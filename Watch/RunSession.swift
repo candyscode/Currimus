@@ -118,6 +118,10 @@ final class RunSession: NSObject, ObservableObject {
     /// Which altitude this run is being measured with; see
     /// `sampleBarometricAltitude`.
     private var altitudeSource: AltitudeSource = .waitingForBarometer
+    /// What to add to a relative barometer's readings to put them above sea
+    /// level. 0 until the first GPS fix says otherwise, and 0 for good on
+    /// hardware that reports absolute altitude in the first place.
+    private var altitudeBaseline: Double = 0
 
     private var timer: AnyCancellable?
     /// Seconds between ticks: 1 for a real or fast-forwarded run, smaller for
@@ -368,6 +372,7 @@ final class RunSession: NSObject, ObservableObject {
         lastFixElapsed = -1
         lastLocationRestart = 0
         altitudeSource = BarometricAltimeter.isAvailable ? .waitingForBarometer : .gps
+        altitudeBaseline = 0
         // A coach carried over from the last run carries its clock with it —
         // `lastFired` sits on the previous run's elapsed time, which suppressed
         // every cue for the first half hour of the next one.
@@ -616,7 +621,15 @@ final class RunSession: NSObject, ObservableObject {
 
     /// Where a run's altitude comes from. Decided once and then left alone —
     /// see `sampleBarometricAltitude`.
-    enum AltitudeSource { case waitingForBarometer, barometer, gps }
+    enum AltitudeSource: Equatable {
+        case waitingForBarometer
+        /// The barometer. `needsBaseline` is true on hardware that can only
+        /// report altitude relative to the start of the run (Series 3–5): the
+        /// climb is already right, and the first GPS fix says how high above
+        /// the sea it happened.
+        case barometer(needsBaseline: Bool)
+        case gps
+    }
     /// How long a run waits for the barometer's first reading before giving up
     /// on it and taking the GPS altitude instead. A denied motion permission
     /// looks exactly like a slow sensor, and neither may cost a run its climb.
@@ -649,7 +662,7 @@ final class RunSession: NSObject, ObservableObject {
                 metrics.resetAltitudeTracking()
                 return
             }
-            altitudeSource = .barometer
+            altitudeSource = .barometer(needsBaseline: altimeter.isRelative)
         case .barometer:
             break
         }
@@ -659,7 +672,13 @@ final class RunSession: NSObject, ObservableObject {
         // between consecutive readings, which a barometer resolves to
         // centimetres. Gating on the absolute figure would throw away a
         // perfectly good series on a day with an unusual pressure system.
-        metrics.ingestAltitude(altitude, verticalAccuracy: 1, at: elapsed)
+        //
+        // The baseline is what a *relative* barometer's readings need to be
+        // above sea level, and it is zero on every other path. It has to be
+        // added here as well as to the series already recorded, or the first
+        // sample after the shift would step back down by the whole offset —
+        // and a step is what the leg tracker banks as climb.
+        metrics.ingestAltitude(altitude + altitudeBaseline, verticalAccuracy: 1, at: elapsed)
     }
 
     /// Restarts a location feed that has gone silent, and says so if it stays
@@ -794,10 +813,25 @@ final class RunSession: NSObject, ObservableObject {
         // two sources disagree by tens of metres, and a step between them in one
         // series is counted as climb. `sampleBarometricAltitude` owns the
         // decision, once per run.
-        if altitudeSource == .gps {
+        switch altitudeSource {
+        case .gps:
             metrics.ingestAltitude(location.altitude,
                                    verticalAccuracy: location.verticalAccuracy,
                                    at: offset)
+        case .barometer(needsBaseline: true):
+            // A relative barometer has been measuring the climb correctly from
+            // an arbitrary zero. This is the one fix that says where that zero
+            // was — the whole series moves onto it, which changes no difference
+            // and therefore no metre of climb.
+            if location.verticalAccuracy >= 0,
+               location.verticalAccuracy < RunMetrics.usableVerticalAccuracy,
+               let relative = altimeter.altitude {
+                altitudeBaseline = location.altitude - relative
+                metrics.shiftAltitudeBaseline(by: altitudeBaseline)
+                altitudeSource = .barometer(needsBaseline: false)
+            }
+        case .barometer, .waitingForBarometer:
+            break
         }
 
         if location.horizontalAccuracy >= 0,

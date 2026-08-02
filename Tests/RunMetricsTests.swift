@@ -173,6 +173,39 @@ final class RunMetricsTests: XCTestCase {
         XCTAssertEqual(metrics.climbMeters, climbed + 22.5, accuracy: 4)
     }
 
+    /// A watch with only a *relative* barometer (Series 3–5, which watchOS 10
+    /// would bring back) measures the climb from an arbitrary zero and learns
+    /// where that zero was from the first GPS fix. Moving the series onto the
+    /// real scale must not change a single metre of what was climbed.
+    func testMovingTheSeriesOntoARealScaleChangesNoClimb() {
+        var metrics = RunMetrics()
+        // Ten minutes of rolling ground, measured from zero.
+        var relative = 0.0
+        for second in 0..<600 {
+            relative += second < 300 ? 0.25 : -0.25
+            metrics.ingestAltitude(relative, verticalAccuracy: 1, at: Double(second))
+        }
+        let climbed = metrics.climbMeters
+        let descended = metrics.descentMeters
+        let profile = metrics.altitudeProfile
+        XCTAssertGreaterThan(climbed, 60)
+
+        // The first fix says the run started 1 204 m above the sea.
+        metrics.shiftAltitudeBaseline(by: 1_204)
+        XCTAssertEqual(metrics.climbMeters, climbed, accuracy: 0.0001)
+        XCTAssertEqual(metrics.descentMeters, descended, accuracy: 0.0001)
+        XCTAssertEqual(metrics.altitudeProfile, profile.map { $0 + 1_204 })
+
+        // And the run carries on from the new scale without a step in it.
+        let before = metrics.climbMeters
+        for second in 600..<900 {
+            relative -= 0.25
+            metrics.ingestAltitude(relative + 1_204, verticalAccuracy: 1, at: Double(second))
+        }
+        XCTAssertEqual(metrics.climbMeters, before, accuracy: 1, "the shift must not read as a climb")
+        XCTAssertGreaterThan(metrics.altitudeMeters, 1_100)
+    }
+
     /// Standing still for half an hour is not a climb, however noisy the sensor.
     func testStandingStillClimbsNothing() {
         var metrics = RunMetrics()
