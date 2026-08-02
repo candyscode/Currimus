@@ -220,16 +220,25 @@ struct RunMetrics: Equatable {
     mutating func ingestAltitude(_ altitude: Double, verticalAccuracy: Double,
                                  at elapsed: TimeInterval) {
         guard verticalAccuracy >= 0, verticalAccuracy < Self.usableVerticalAccuracy else { return }
+        // A reading that goes backwards in time says nothing new, and taking it
+        // in did real damage: it rewound the clock the filter measures against,
+        // so the *next* genuine reading arrived with a gap of the whole run
+        // behind it, an alpha of one, and no filtering at all. One GPS outlier
+        // through that hole clears the hysteresis band and is banked as climb —
+        // the over-count this file exists to prevent, one sample at a time.
+        // CoreLocation replays a cached fix often enough for this to matter;
+        // `integrate` has a clamp for the same reason.
+        if let last = lastAltitudeAt, elapsed <= last { return }
         altitudeMeters = altitude
 
         // Time-aware, because the caller's sample rate is not ours to assume:
         // a real run feeds this at 1 Hz, a reconstruction every ten seconds.
         let smoothed: Double
-        if let previous = smoothedAltitude, let last = lastAltitudeAt, elapsed > last {
+        if let previous = smoothedAltitude, let last = lastAltitudeAt {
             let alpha = 1 - exp(-(elapsed - last) / Self.altitudeTimeConstant)
             smoothed = previous + alpha * (altitude - previous)
         } else {
-            smoothed = smoothedAltitude ?? altitude
+            smoothed = altitude
         }
         smoothedAltitude = smoothed
         lastAltitudeAt = elapsed

@@ -206,6 +206,31 @@ final class RunMetricsTests: XCTestCase {
         XCTAssertGreaterThan(metrics.altitudeMeters, 1_100)
     }
 
+    /// A reading that arrives out of order must not open a hole in the filter.
+    ///
+    /// CoreLocation replays a cached fix from before the run now and then. Such
+    /// a sample used to rewind the clock the low-pass measures against, so the
+    /// *next* genuine reading arrived with the whole run as its gap, an alpha
+    /// of one, and no filtering at all — and a single GPS outlier through that
+    /// hole clears the hysteresis band and is banked as climb.
+    func testACachedFixDoesNotUnfilterTheNextReading() {
+        var metrics = RunMetrics()
+        // Twenty minutes of dead-flat running at 1 Hz.
+        for second in 0..<1_200 {
+            metrics.ingestAltitude(500, verticalAccuracy: 5, at: Double(second))
+        }
+        XCTAssertEqual(metrics.climbMeters, 0, accuracy: 0.5)
+
+        // A replayed fix from before the run, then a single 8 m outlier.
+        metrics.ingestAltitude(500, verticalAccuracy: 5, at: 0)
+        metrics.ingestAltitude(508, verticalAccuracy: 5, at: 1_201)
+        for second in 1_202..<1_260 {
+            metrics.ingestAltitude(500, verticalAccuracy: 5, at: Double(second))
+        }
+        XCTAssertEqual(metrics.climbMeters, 0, accuracy: 1,
+                       "one outlier behind a replayed fix must not become climb")
+    }
+
     /// Standing still for half an hour is not a climb, however noisy the sensor.
     func testStandingStillClimbsNothing() {
         var metrics = RunMetrics()

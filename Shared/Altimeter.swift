@@ -96,6 +96,17 @@ final class BarometricAltimeter {
         altimeter?.stopAbsoluteAltitudeUpdates()
         altimeter?.stopRelativeAltitudeUpdates()
         altimeter = nil
+        // The reading goes with it. One session outlives every run in it, so a
+        // reading left here is the *previous* run's altitude — and the next run
+        // takes it for a current one on its first tick, seeds the filter with
+        // it, and banks the drive to the trailhead as climb. Worse on the
+        // relative path, where the new run's readings restart near zero.
+        //
+        // It also un-deadens the grace period: `sampleBarometricAltitude` waits
+        // for `altitude` to become non-nil, and from run two onwards it never
+        // was nil, so a barometer that had gone silent was never noticed.
+        altitude = nil
+        isRelative = false
     }
     #else
     static var providesAbsoluteAltitude: Bool { false }

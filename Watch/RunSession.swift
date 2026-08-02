@@ -549,26 +549,37 @@ final class RunSession: NSObject, ObservableObject {
         // sync is even attempted, so this is the copy that cannot be lost —
         // see `RunStore.recoverOwnRuns`. Without the type, a recovered trail
         // run would come back as a road run with no climb to its name.
+        //
+        // The rest of the finish is nested inside its completion, rather than
+        // called on the next line. `addMetadata` is asynchronous and the only
+        // documented rule is that metadata must be attached before the workout
+        // is finished; an unawaited call racing `endCollection` has no such
+        // guarantee. Losing that race is silent — the run simply comes back
+        // untyped one day, if it ever has to come back at all.
+        //
+        // The end date is taken here and passed in, so it is when the runner
+        // stopped rather than whenever the metadata call happened to return.
+        let end = Date.now
         builder.addMetadata([
             HealthImport.runTypeKey: type.rawValue,
             HealthImport.runNameKey: defaultName,
-        ]) { added, error in
+        ]) { [routeBuilder] added, error in
             if !added {
                 Log.session.error("run metadata not added: \(error?.localizedDescription ?? "unknown", privacy: .public)")
             }
-        }
-        builder.endCollection(withEnd: .now) { [routeBuilder] ended, error in
-            if !ended {
-                Log.session.error("collection did not end: \(error?.localizedDescription ?? "unknown", privacy: .public)")
-            }
-            builder.finishWorkout { workout, error in
-                guard let workout else {
-                    Log.session.error("workout not saved: \(error?.localizedDescription ?? "unknown", privacy: .public)")
-                    return
+            builder.endCollection(withEnd: end) { ended, error in
+                if !ended {
+                    Log.session.error("collection did not end: \(error?.localizedDescription ?? "unknown", privacy: .public)")
                 }
-                routeBuilder?.finishRoute(with: workout, metadata: nil) { _, error in
-                    if let error {
-                        Log.session.error("route not saved: \(error.localizedDescription, privacy: .public)")
+                builder.finishWorkout { workout, error in
+                    guard let workout else {
+                        Log.session.error("workout not saved: \(error?.localizedDescription ?? "unknown", privacy: .public)")
+                        return
+                    }
+                    routeBuilder?.finishRoute(with: workout, metadata: nil) { _, error in
+                        if let error {
+                            Log.session.error("route not saved: \(error.localizedDescription, privacy: .public)")
+                        }
                     }
                 }
             }

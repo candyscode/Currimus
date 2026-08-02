@@ -68,6 +68,25 @@ final class RunSyncTests: XCTestCase {
         XCTAssertEqual(after.elevation, before.elevation, accuracy: 0.05)
     }
 
+    // MARK: The barometer's state between runs
+
+    /// One `RunSession` — and so one altimeter — outlives every run in an app
+    /// session. A reading left behind by the last run is the altitude of
+    /// somewhere else: the next run takes it for a current one on its first
+    /// tick, seeds the filter with it, and banks the drive to the trailhead as
+    /// climb. It also deadens the grace period that catches a barometer which
+    /// has gone silent, because the reading is then never nil again.
+    @MainActor
+    func testStoppingTheAltimeterForgetsItsReading() {
+        let altimeter = BarometricAltimeter()
+        altimeter.debugRecord(500, isRelative: true)
+        XCTAssertEqual(altimeter.altitude, 500)
+
+        altimeter.stop()
+        XCTAssertNil(altimeter.altitude, "the next run must start with no reading at all")
+        XCTAssertFalse(altimeter.isRelative)
+    }
+
     // MARK: The outbox
 
     private func pending(_ id: String, daysAgo: Double) -> RunSync.Pending {

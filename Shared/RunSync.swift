@@ -132,7 +132,7 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
         queue.async {
             guard let delivery = Self.delivery(for: run) else { return }
             self.remember(delivery.data, id: run.id.uuidString)
-            self.flush()
+            self.flushPending()
         }
     }
 
@@ -219,6 +219,14 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     /// the source of truth for what is in flight, and the phone drops a run it
     /// already holds by id.
     func flush() {
+        queue.async { self.flushPending() }
+    }
+
+    /// The work itself, on `queue`. It decodes every waiting run's whole
+    /// payload and writes the oversized ones to disk — nothing to do on the
+    /// main actor, which is where the foreground call comes from, and the case
+    /// this exists for is precisely the one with a week of trail runs in it.
+    private func flushPending() {
         guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
         let session = WCSession.default
         let inFlight = Set(
@@ -294,14 +302,17 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     /// The same receipt for the runs that travelled as files.
     func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer,
                  error: Error?) {
-        let url = fileTransfer.file.fileURL
+        // Unconditionally, and before anything else can return: the run itself
+        // is safe in the outbox, and `spool` writes the file again from there
+        // on the next attempt. Deleting only on success left one copy of every
+        // failed marathon in the container.
+        try? FileManager.default.removeItem(at: fileTransfer.file.fileURL)
         guard let id = fileTransfer.file.metadata?["id"] as? String else { return }
         if let error {
             Log.sync.error("run \(id, privacy: .public) not delivered: \(error.localizedDescription, privacy: .public)")
             return
         }
         forget(id)
-        try? FileManager.default.removeItem(at: url)
     }
 
     /// The phone coming back into range is the moment a queued run can move.

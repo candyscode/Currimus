@@ -223,7 +223,16 @@ final class RunStore: ObservableObject {
         }
         // What a workout summary does not carry — the route, the splits, the
         // zones — is still in Health beside it.
-        for run in missing { await hydrate(run, force: true) }
+        //
+        // Re-checked each time round, because each one suspends: the watch's
+        // own copy of one of these outings can arrive over WatchConnectivity in
+        // between, and `add` then drops the stand-in being hydrated. Hydrating
+        // it anyway writes a sidecar for a run that is no longer in any list,
+        // and nothing ever comes back for it.
+        for run in missing {
+            guard runs.contains(where: { $0.id == run.id }) else { continue }
+            await hydrate(run, force: true)
+        }
     }
     #endif
 

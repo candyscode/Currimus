@@ -172,6 +172,15 @@ high against Apple Fitness (CUR-40). Apple Fitness uses the barometer.
   be added to every *later* reading too — `RunSession.altitudeBaseline`.
 - No barometer at all (Series 1–2, the simulator) → `isAvailable == false` →
   the GPS altitude path in `integrate`, as before.
+- **`stop()` clears the reading, and it has to.** One `RunSession` — and so one
+  altimeter — outlives every run in an app session. A reading left behind is
+  the last run's altitude, and the next run takes it for a current one on its
+  first tick: the drive to the trailhead gets banked as climb. It also deadens
+  the grace period, since the reading is then never nil again.
+- **`ingestAltitude` rejects a sample that goes backwards in time.** It used to
+  take it and rewind the filter's clock with it, so the next genuine reading
+  came with an alpha of one and no filtering at all — one GPS outlier through
+  that hole is 8 m of climb, measured.
 - **Never feed two sources into one series.** The handover leaves a step of
   tens of metres, and a step is banked as climb. The source is fixed at
   `resetMetrics`, and a run *waits* up to `RunSession.barometerGracePeriod`
