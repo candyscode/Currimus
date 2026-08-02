@@ -150,6 +150,56 @@ own header ends in " km" just like every row does.
   reading|filling|done|nothing` / `-noimport 1` for the first-launch import,
   which on a simulator is over before its progress bar has drawn once.
 
+## Elevation, and why it is not GPS
+
+Climb comes from the **barometer** (`CMAltimeter.startAbsoluteAltitudeUpdates`),
+not from `CLLocation.altitude`. GPS altitude error is two to three times the
+horizontal one and it wanders while standing still; summing it over a run read
+20–25 % high against Apple Fitness (CUR-40). Apple Fitness uses the barometer,
+and `CMAltimeter`'s absolute altitude is the same sensor fusion.
+
+- `NSMotionUsageDescription` is **required**. Without it, touching `CMAltimeter`
+  is a crash, not a denial. It lives in `project.yml` as an
+  `INFOPLIST_KEY_`.
+- Absolute altitude needs a Series 6 or newer, which is also what watchOS 11
+  needs — so on every watch that can run Currimus it is available.
+  `BarometricAltimeter.isAvailable` is asked anyway; a `false` falls back to
+  the GPS altitude path in `integrate`.
+- **Never feed both sources into one series.** The handover leaves a step, and
+  the step is counted as climb.
+- The simulator has no barometer, so nothing here can be tested there. The
+  *arithmetic* is fully covered in `RunMetricsTests` — feed
+  `RunMetrics.ingestAltitude` a synthetic profile with noise on it.
+- The accumulation is per **leg**, not per sample: a rise stays one rise until
+  the altitude falls `climbHysteresis` (3 m) off its high point. If a real run
+  comes back reading *low* against Apple Fitness, that constant is the dial.
+  `altitudeTimeConstant` (6 s) is deliberately light — a heavier filter rounds
+  off summits, and that loss is paid twice at every reversal.
+
+## The live clock's seconds
+
+Read the elapsed time from the **frame's scheduled date**, never from
+`workoutBuilder.elapsedTime` at the moment the frame arrives. A frame lands
+tens of milliseconds either side of its boundary, and which side decides
+whether a second is drawn twice or skipped — the total stays right, so this
+looks like a rendering bug rather than a clock one. `RunTimeline` and
+`RunSession.displayElapsed(at:)` share one anchor, `clockAnchor`; if you add a
+live screen, go through `RunTimeline`.
+
+## Sending a run to the phone
+
+`transferUserInfo` refuses a payload past a limit Apple does not publish, and it
+refuses it **asynchronously** — the call returns a transfer object either way.
+Implement `didFinish(userInfoTransfer:error:)` or the failure is silent, which
+is how a two-hour trail run disappeared between the watch and the phone
+(CUR-40).
+
+`RunSync` now keeps an outbox in the app group and only drops a run when the
+system confirms delivery; `flush()` is called on activation, on reachability
+and on the watch app becoming active. A run's payload is capped at 60 KB —
+coordinates are rounded to a metre and the track decimated until it fits.
+`RunStore.add` drops a run whose id it already holds, so re-offering is free.
+
 ## Watch haptics
 
 `WKInterfaceDevice.play(_:)` is the only haptic API on watchOS, and watchOS

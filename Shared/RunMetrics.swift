@@ -50,6 +50,9 @@ struct RunMetrics: Equatable {
     static let altitudeTimeConstant = 6.0
     /// Vertical accuracy worse than this (or negative = invalid) is discarded.
     static let usableVerticalAccuracy = 12.0
+    /// The default horizontal gate — what `GPSAccuracy.high` asks for. A run
+    /// set to a coarser mode raises it through `horizontalAccuracyLimit`, or
+    /// the fixes it deliberately asked for would all be thrown away.
     static let usableHorizontalAccuracy = 50.0
     /// The window the live climb rate is read over. One minute, not ten: on a
     /// trail the number is there to answer "how hard is *this* climb", and a
@@ -81,6 +84,10 @@ struct RunMetrics: Equatable {
     /// zone and the distance; keeping only the seconds threw away the half
     /// that makes "pace in zone 2" a measurement rather than an estimate.
     private(set) var zoneDistanceKm: [Double] = [0, 0, 0, 0, 0]
+
+    /// How vague a fix may be and still join the track. Set from the run's GPS
+    /// setting; see `GPSAccuracy.usableHorizontalAccuracy`.
+    var horizontalAccuracyLimit = RunMetrics.usableHorizontalAccuracy
 
     /// Mean of every heart-rate reading seen, not just the last one.
     var averageHR: Int { hrSampleCount > 0 ? hrSampleSum / hrSampleCount : 0 }
@@ -268,7 +275,7 @@ struct RunMetrics: Equatable {
     /// Folds one GPS fix into the stored track.
     mutating func ingestCoordinate(latitude: Double, longitude: Double, altitude: Double,
                                    horizontalAccuracy: Double, at elapsed: TimeInterval) {
-        guard horizontalAccuracy >= 0, horizontalAccuracy < Self.usableHorizontalAccuracy else { return }
+        guard horizontalAccuracy >= 0, horizontalAccuracy < horizontalAccuracyLimit else { return }
         guard elapsed - lastRouteSample >= routeInterval else { return }
         lastRouteSample = elapsed
         coordinates.append(Coordinate(lat: latitude, lon: longitude, elevation: altitude, t: elapsed))

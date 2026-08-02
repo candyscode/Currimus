@@ -330,6 +330,9 @@ final class RunSession: NSObject, ObservableObject {
         heartRate = 0
         steps = 0
         metrics = RunMetrics()
+        // The route gate follows the accuracy the runner asked CoreLocation
+        // for; a coarse mode that then discards its own fixes records nothing.
+        metrics.horizontalAccuracyLimit = gpsAccuracy.usableHorizontalAccuracy
         kilometerAlert = nil
         zoneWarning = nil
         lastFixElapsed = -1
@@ -718,7 +721,7 @@ final class RunSession: NSObject, ObservableObject {
         }
 
         if location.horizontalAccuracy >= 0,
-           location.horizontalAccuracy < RunMetrics.usableHorizontalAccuracy {
+           location.horizontalAccuracy < metrics.horizontalAccuracyLimit {
             routeBuilder?.insertRouteData([location]) { inserted, error in
                 if !inserted {
                     Log.session.error("route point dropped: \(error?.localizedDescription ?? "unknown", privacy: .public)")

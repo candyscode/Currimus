@@ -47,6 +47,26 @@ enum GPSAccuracy: String, Codable, CaseIterable, Identifiable {
         case .saving: return 20
         }
     }
+
+    /// How vague a fix may be and still be drawn.
+    ///
+    /// It has to follow the accuracy that was *asked* for, and it did not: the
+    /// route gate was a flat 50 m for every mode, while battery saver asks
+    /// CoreLocation for 100 m fixes. Every one of them was then thrown away, so
+    /// the setting that promises "distance may drift on winding routes"
+    /// silently promised no route at all — and balanced, at 10 m requested,
+    /// lost the stretches where the sky closes in. That is one candidate for
+    /// the half-drawn track in CUR-40.
+    ///
+    /// Generous rather than tight: a coarse point on the map is a coarse point,
+    /// and a missing one is a hole.
+    var usableHorizontalAccuracy: Double {
+        switch self {
+        case .high: return 50
+        case .balanced: return 100
+        case .saving: return 250
+        }
+    }
 }
 
 /// A single GPS fix, stored per run for the map, GPX export and grade math.

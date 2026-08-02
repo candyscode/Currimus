@@ -1228,3 +1228,61 @@ Der Rest der App wurde auf denselben Fehler durchgesehen: keine weitere Stelle z
 #### Link to completed work
 
 https://github.com/candyscode/Currimus/commit/ebe16e2
+
+### CUR-40: Sieben Befunde aus einem mehrstündigen Trailrun
+
+ [ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Andi hat einen mehrstündigen Trailrun mit zwei Uhren parallel gelaufen (Currimus auf der einen, Apple Fitness als Referenz auf der anderen) und danach einen zweiten, abschüssigen Lauf. Sieben Befunde:
+
+1. **Deutlich zu viele Höhenmeter.** Auf 1.000 hm zeigt Currimus 200–250 hm zu viel gegenüber Apple Fitness. Die Höhenmeter sollen genau so berechnet werden wie in Apple Fitness.
+2. **hm/h im Trail-Mode über die letzte Minute**, nicht über die letzten 10 Minuten.
+3. **Die Sekunden springen ungleichmäßig.** Die Intervalle sind mal kürzer, mal länger; die Zeit selbst stimmt (wenige Sekunden Abweichung zur Referenzuhr auf 2,5 h).
+4. **Der erste Run tauchte nach dem Abschluss nicht in Currimus auf.** In Apple Fitness auf dem gekoppelten iPhone war er da — der Workout wurde also gespeichert, nur die Übertragung zur App fehlte.
+5. **Zweiter Run (bergab):** am Anfang kurz 13 hm gezählt, die nie gelaufen wurden; danach korrekt keine hm bergab; als es wieder ~10 min bergauf ging, wurde bis zum Ende kein einziger Höhenmeter mehr gezählt, hm/h blieb auf 0.
+6. **Zweiter Run in der App:** Grade Adjusted Pace ist nicht im Ansatz korrekt (465:25 /km bei 21:13 /km echt), und die Karte ist viel zu weit herausgezoomt — der Track soll bildfüllend sein. Der gezeichnete Track ist außerdem nicht vollständig, nur die ersten Meter.
+7. **Race View auf iOS:** durch das ⓘ-Icon sitzt das Label „ESTIMATION" tiefer als „LONGEST · 50 %".
+
+#### Agent Comments
+
+Alle sieben abgearbeitet. Was dahinter steckte, der Reihe nach:
+
+**1 · Höhenmeter (20–25 % zu viel).** Zwei Ursachen, beide ersetzt.
+
+*Die Quelle.* Die Höhe kam aus dem GPS-Fix. GPS-Höhe ist die schlechteste Zahl, die eine Uhr produziert — ihr Fehler ist zwei- bis dreimal so groß wie der horizontale, und sie wandert im Stehen. Apple misst damit auch nicht: jede Apple Watch hat ein Barometer, und `CMAltimeter`s *absolute* Höhe ist genau die Sensorfusion (Luftdruck, gegen GPS und Wettermodelle korrigiert), auf der Apple Fitness sitzt. Currimus liest jetzt dieselbe Quelle, einmal pro Sekunde, unabhängig von GPS. Ohne Barometer bleibt es beim alten GPS-Weg. Neu: `Shared/Altimeter.swift`, dazu `NSMotionUsageDescription` (ohne den Key ist der Zugriff ein Absturz, keine Ablehnung).
+
+*Die Regel.* Sie lautete „jeder Schritt über 1,5 m ist Anstieg" — und zählt damit jedes Rauschzappeln einmal pro Zappler, den ganzen Lauf lang. Gezählt wird jetzt pro *Etappe*: ein Anstieg bleibt ein Anstieg, bis die Höhe 3 m unter ihren höchsten Punkt zurückfällt. Vierzig 3-m-Buckel ergeben 3 m statt 120. Davor sitzt ein leichter Tiefpass (6 s), bewusst leicht: ein stärkerer filtert besser, rundet aber jede Kuppe ab, und das kostet an welligem Gelände mehr als es bringt.
+
+Belegt durch neue Tests in `RunMetricsTests`: 1.000 hm mit ±3 m Rauschen kommen auf ±5 % heraus (die alte Regel las 1.200–1.250 — genau dein Feldtest), eine halbe Stunde Stillstand ergibt < 10 m, welliges Gelände verliert 5 %.
+
+**2 · hm/h.** Fenster von 10 min auf 1 min, Label „M/H · LAST MIN". Nebeneffekt: kürzer, damit fällt auch der in CUR-13 gemeldete Label-Überlauf auf kleinen Uhren weg.
+
+**3 · Sekundensprünge.** Der Frame las HealthKits `elapsedTime` in dem Moment, in dem er ankam. Ein Frame landet ein paar Zehntelsekunden vor oder nach der Sekundengrenze, für die er geplant war — und welche Seite entscheidet, ob `1:23` zweimal gezeichnet oder übersprungen wird. Die Uhrzeit selbst war nie falsch (deine 2,5 h stimmten ja auf Sekunden). Redraw-Plan und Zeitwert kommen jetzt aus *einem* Anker (`clockAnchor`), also ist die gezeichnete Sekunde konstruktionsbedingt eine ganze Zahl.
+
+**4 · Lauf kam nie am iPhone an.** Jeder Zweig im Übertragungsweg, der ihn verlieren konnte, endete in einem nackten `return`, und der Callback, der es gemeldet hätte (`didFinish(userInfoTransfer:error:)`), war nicht implementiert. Es lässt sich deshalb nicht mehr feststellen, welcher Zweig es war — alle sind jetzt zu:
+
+- Ein **Outbox** in der App-Group: der Lauf liegt dort, bevor irgendetwas versucht wird, und geht erst raus, wenn das System die Zustellung bestätigt. Session noch nicht aktiviert, Watch-App beim Handgelenk-Senken gekillt, iPhone zu Hause — überall wird der Lauf beim nächsten Start / bei der nächsten Erreichbarkeit erneut angeboten.
+- `didFinish` ist implementiert: ein abgelehnter Transfer wird geloggt und wiederholt.
+- **Payload-Deckel 60 KB** — der wahrscheinlichste Kandidat. Ein Vier-Stunden-Lauf trägt 2.000 GPS-Punkte, in voller `Double`-Präzision sechsstellig viel JSON, über einem Limit, das WatchConnectivity nicht veröffentlicht und asynchron durchsetzt. Koordinaten gehen jetzt in der Präzision raus, in der sie gemessen wurden (ein Meter), und eine immer noch zu große Spur wird ausgedünnt statt fallengelassen.
+- Outbox läuft nach 14 Tagen ab, max. 50 Läufe.
+
+**5 · Zweiter Lauf: 13 hm am Anfang, dann nichts mehr.** Die Höhe hängt gar nicht mehr am Location-Feed, ein GPS-Aussetzer kann sie also nicht mehr stoppen. Der Feed selbst wird zusätzlich überwacht: 90 s Stille starten die Updates neu, 5 min melden es auf der Uhr (neuer `RecordingIssue.locationLost`). Die 13 Phantom-hm am Anfang fallen unter Punkt 1.
+
+**6a · Grade Adjusted Pace (465:25 statt ~21:13).** Gelände und Länge kamen aus derselben Quelle: die Zeit wurde über die flach-äquivalente Länge der *Spur* verteilt. Eine Spur, die nach 300 m endet, behauptet damit, die ganzen zwei Stunden seien in 300 m passiert. Jetzt liefern die Steigungen einen maßstabsfreien Faktor und die Distanz des Laufs die Länge. Eine Spur, die weniger als die Hälfte des Laufs abdeckt, spricht gar nicht mehr für ihn (dann greift die Faustregel, und der Screen sagt das ohnehin dazu). Zusätzlich: ein gespeicherter Wert, den kein Berg erzeugen kann, wird ignoriert — dein Lauf liegt ja schon im Log.
+
+**6b · Karte zu klein.** Sie bekam eine Region in *Grad*, und `setRegion` vergrößert die, bis sie ins Seitenverhältnis der Karte passt. Eine Nord-Süd-Spur in einer breiten Karte landete so bei einem Drittel der möglichen Größe (dazu: ein Längengrad ist auf 47° nur zwei Drittel eines Breitengrads). Jetzt wird das projizierte Bounding-Rect der Linie auf die echte View-Größe gefittet, mit 100-m-Untergrenze, damit eine Runde um den Block kein Stadtplan wird.
+
+**6c · Spur unvollständig** (der Teil, den du zurecht extra erwähnt hast). Zwei Dinge gefunden. Erstens der Watchdog aus Punkt 5. Zweitens ein echter Widerspruch in den GPS-Einstellungen: das Routen-Gate lag pauschal bei 50 m, während „Battery saver" CoreLocation um 100-m-Fixes *bittet* — die dann alle verworfen wurden; „Balanced" verlor jede Passage, in der sich der Himmel zuzieht. Das Gate folgt jetzt der eingestellten Genauigkeit.
+
+**7 · Race View.** Das ⓘ machte die Label-Zeile 30 pt hoch, also saß „ESTIMATION" mittig in einer höheren Box als „LONGEST · 50 %" daneben. Das Tap-Target ist jetzt Padding, das dem Layout zurückgegeben wird: Zeile wieder texthoch, Target unverändert 30 pt. Mit UI-Test, weil genau dieser Teil auf keinem Screenshot zu sehen ist.
+
+**Was nicht geprüft werden konnte:** das Barometer selbst. Der Simulator hat keins, `CMAltimeter.isAbsoluteAltitudeAvailable()` ist dort false, und der Simulator-Pfad läuft ohnehin über die Demo-Daten. Der erste echte Lauf ist der erste Test der Quelle — die *Rechnung* dahinter ist dagegen vollständig unter Test. Wenn die Höhenmeter jetzt gegenüber Apple Fitness zu *niedrig* liegen, ist `RunMetrics.climbHysteresis` (3.0) die Schraube, an der zu drehen ist.
+
+#### Link to completed work
+
+- https://github.com/candyscode/Currimus/commit/700f4ef — Barometer, Hysterese-Band, gleichmäßige Sekunde (1, 2, 3, 5)
+- https://github.com/candyscode/Currimus/commit/d6a6978 — Pace, Karte, Label (6a, 6b, 7)
+- https://github.com/candyscode/Currimus/commit/c644c4e — Outbox (4)
