@@ -303,8 +303,10 @@ final class RunSession: NSObject, ObservableObject {
 
         finishWorkout()
         // Not sent either: a recording that measured nothing is not a run, and
-        // the phone has no more use for it than the watch does.
-        if run.hasUsableDistance { RunSync.shared.send(run) }
+        // the phone has no more use for it than the watch does. Nor is a
+        // simulated one — it would sit in the outbox being re-offered to a
+        // phone that does not exist.
+        if run.hasUsableDistance, !isSimulated { RunSync.shared.send(run) }
         return run
     }
 

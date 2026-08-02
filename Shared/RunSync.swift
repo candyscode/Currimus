@@ -91,20 +91,129 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     /// at the exact moment the watch was drawing the summary.
     private let queue = DispatchQueue(label: "com.currimus.app.sync", qos: .utility)
 
+    /// How large a run's payload may be before its track is thinned.
+    ///
+    /// WatchConnectivity refuses a `transferUserInfo` dictionary past a limit it
+    /// does not publish, and it refuses it *asynchronously* — the call returns a
+    /// transfer object either way and the failure arrives, if anyone is
+    /// listening, in `didFinish`. Nobody was listening (CUR-40), so a run that
+    /// was too big to send simply never appeared on the phone while its workout
+    /// sat in Apple Health, saved.
+    ///
+    /// A four-hour trail run carries two thousand GPS points; at full `Double`
+    /// precision that is comfortably six figures of JSON. Sixty kilobytes is far
+    /// under any limit anyone has measured, and a track thinned to fit it still
+    /// draws the same map.
+    static let maxPayloadBytes = 60_000
+
+    /// Hands a finished run to the phone, and keeps hold of it until the system
+    /// confirms it arrived.
+    ///
+    /// The outbox is the point. A run cannot be run again, so every path that
+    /// used to end in `return` — session not activated yet, payload refused,
+    /// watch app killed before the transfer drained — now ends in the run
+    /// staying on disk and being offered again at the next opportunity.
     func send(_ run: Run) {
         guard WCSession.isSupported() else { return }
-        // A transfer queued before activation is dropped, and a finished run
-        // is exactly what must not be dropped.
-        guard WCSession.default.activationState == .activated else {
-            Log.sync.error("run not sent: session not activated")
-            return
-        }
         queue.async {
-            do {
-                WCSession.default.transferUserInfo(["run": try JSONEncoder().encode(run)])
-            } catch {
-                Log.sync.error("run not encoded: \(error.localizedDescription, privacy: .public)")
+            guard let data = Self.payload(for: run) else { return }
+            self.remember(data, id: run.id.uuidString)
+            self.flush()
+        }
+    }
+
+    /// Encodes a run, thinning its track until the result will fit.
+    static func payload(for run: Run) -> Data? {
+        var run = run.roundedForTransfer
+        let encoder = JSONEncoder()
+        do {
+            var data = try encoder.encode(run)
+            while data.count > Self.maxPayloadBytes, (run.route?.count ?? 0) > 2 {
+                run.route = run.route.map { RunMetrics.decimated($0) }
+                data = try encoder.encode(run)
             }
+            if data.count > Self.maxPayloadBytes {
+                Log.sync.error("run payload still \(data.count) bytes with nothing left to thin")
+            }
+            return data
+        } catch {
+            Log.sync.error("run not encoded: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
+    // MARK: - The outbox
+
+    /// One run handed over and not yet confirmed delivered.
+    struct Pending: Codable, Equatable {
+        var id: String
+        var run: Data
+        var queued: Date
+    }
+
+    /// Where they live. The app group rather than memory: the run has to
+    /// survive the watch app being killed, which is exactly what happens when
+    /// someone finishes a run and drops their wrist.
+    private static let outboxKey = "outbox.v1"
+    /// How long a run keeps being re-offered. Long enough to cover a phone left
+    /// at home for a week; short enough that a watch with no phone paired to it
+    /// at all does not accumulate every run it ever recorded.
+    static let outboxLifetime: TimeInterval = 14 * 86_400
+    static let outboxCapacity = 50
+
+    /// Guards the read-modify-write. `UserDefaults` is thread-safe per call,
+    /// which is not the same thing: two runs finishing close together could each
+    /// read the outbox, add themselves and write back, and one of them would be
+    /// the run that goes missing.
+    private let outboxLock = NSLock()
+
+    private var outbox: [Pending] {
+        guard let data = AppDefaults.shared.data(forKey: Self.outboxKey) else { return [] }
+        return (try? JSONDecoder().decode([Pending].self, from: data)) ?? []
+    }
+
+    /// Applies a change to the outbox, oldest first, trimmed on the way out.
+    private func updateOutbox(_ change: (inout [Pending]) -> Void) {
+        outboxLock.withLock {
+            var pending = outbox
+            change(&pending)
+            pending = Self.trimmed(pending)
+            guard let data = try? JSONEncoder().encode(pending) else { return }
+            AppDefaults.shared.set(data, forKey: Self.outboxKey)
+        }
+    }
+
+    /// Drops what has waited too long, and keeps the newest of what is left.
+    static func trimmed(_ pending: [Pending], now: Date = .now) -> [Pending] {
+        pending
+            .filter { now.timeIntervalSince($0.queued) < outboxLifetime }
+            .sorted { $0.queued < $1.queued }
+            .suffix(outboxCapacity)
+            .map { $0 }
+    }
+
+    private func remember(_ data: Data, id: String) {
+        updateOutbox { pending in
+            pending.removeAll { $0.id == id }
+            pending.append(Pending(id: id, run: data, queued: .now))
+        }
+    }
+
+    private func forget(_ id: String) {
+        updateOutbox { $0.removeAll { $0.id == id } }
+    }
+
+    /// Offers everything in the outbox that is not already in flight.
+    ///
+    /// Safe to call as often as anything likes: WatchConnectivity's own queue is
+    /// the source of truth for what is in flight, and the phone drops a run it
+    /// already holds by id.
+    func flush() {
+        guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
+        let inFlight = Set(WCSession.default.outstandingUserInfoTransfers
+            .compactMap { $0.userInfo["id"] as? String })
+        for entry in outbox where !inFlight.contains(entry.id) {
+            WCSession.default.transferUserInfo(["id": entry.id, "run": entry.run])
         }
     }
 
@@ -129,10 +238,34 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
         // Apply any settings that were queued before activation completed.
         applySettings(from: session.receivedApplicationContext)
         publishWatchState(session)
+        // And offer anything a previous launch could not hand over. This is the
+        // path a run took when it was finished before the session was ready.
+        flush()
+    }
+
+    /// The delivery receipt — and, until CUR-40, the callback nobody
+    /// implemented. A transfer that failed said nothing to anyone, and the run
+    /// it carried was gone.
+    func session(_ session: WCSession, didFinish userInfoTransfer: WCSessionUserInfoTransfer,
+                 error: Error?) {
+        guard let id = userInfoTransfer.userInfo["id"] as? String else { return }
+        if let error {
+            // Left in the outbox on purpose: the next flush tries again.
+            Log.sync.error("run \(id, privacy: .public) not delivered: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        forget(id)
+    }
+
+    /// The phone coming back into range is the moment a queued run can move.
+    func sessionReachabilityDidChange(_ session: WCSession) {
+        if session.isReachable { flush() }
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
         guard let data = userInfo["run"] as? Data else { return }
+        // A run may arrive more than once — the watch re-offers anything the
+        // system has not confirmed. `RunStore.add` drops one it already holds.
         do {
             let run = try JSONDecoder().decode(Run.self, from: data)
             Task { @MainActor in self.onReceive?(run) }

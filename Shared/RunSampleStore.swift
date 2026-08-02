@@ -139,6 +139,15 @@ extension Run {
         return copy
     }
 
+    /// The run at the precision it was measured at, for the wire. See
+    /// `Coordinate.rounded`.
+    var roundedForTransfer: Run {
+        var copy = self
+        copy.route = route.map { $0.map(\.rounded) }
+        copy.altitudeSamples = altitudeSamples.map { $0.map { ($0 * 10).rounded() / 10 } }
+        return copy
+    }
+
     /// The run with its samples put back, for a detail screen or an export.
     func merging(_ samples: RunSamples) -> Run {
         var copy = samples.rebuilt.applied(to: self)

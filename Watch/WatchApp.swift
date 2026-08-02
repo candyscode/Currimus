@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct CurrimusWatchApp: App {
     @StateObject private var store = RunStore()
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         FontLoader.registerAll()
@@ -17,6 +18,12 @@ struct CurrimusWatchApp: App {
                 // step with runs other apps recorded. Silent: the Health sheet
                 // belongs at the start of a run, not over one already running.
                 .task { await store.refreshImportedRuns() }
+                // Every time the app comes up, offer anything still waiting to
+                // reach the phone. A run that could not be handed over when it
+                // finished has to have somewhere to be tried again (CUR-40).
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { RunSync.shared.flush() }
+                }
         }
     }
 }

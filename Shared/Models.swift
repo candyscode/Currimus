@@ -57,6 +57,19 @@ struct Coordinate: Codable, Equatable, Hashable {
     /// Wall-clock seconds since the run started — pauses included, so the GPX
     /// timestamps derived from it stay true to when the run actually happened.
     var t: TimeInterval
+
+    /// The same point, written to the precision it was actually measured at.
+    ///
+    /// A `Double` encodes as however many digits it takes to round-trip, and a
+    /// GPS fix carries seventeen of them for an accuracy of about five metres.
+    /// Five decimal places of latitude is a metre — under the noise — and it
+    /// nearly halves what a track costs to send. See `RunSync.payload(for:)`.
+    var rounded: Coordinate {
+        Coordinate(lat: (lat * 100_000).rounded() / 100_000,
+                   lon: (lon * 100_000).rounded() / 100_000,
+                   elevation: (elevation * 10).rounded() / 10,
+                   t: t.rounded())
+    }
 }
 
 /// How the Log/Home present a run. Road runs are auto-classified from their
