@@ -95,14 +95,21 @@ struct TrailRunPager: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     GridRow {
-                        // No triangle here either, and for the same reason as
-                        // on the elevation page: "M CLIMBED" underneath says
-                        // which way it goes, and the mark cost a fifth of the
-                        // column that a four-digit Alpine day needs (CUR-41).
-                        BigStat(value: Format.elevation(session.climbMeters, unit: false),
-                                label: "M CLIMBED", valueColor: palette.value,
-                                size: 17, labelGap: 2.5, labelOutsideLayout: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        // The triangle stays on *this* page (Andi, CUR-41). It
+                        // came off the elevation page, where three columns had
+                        // to share the width; here there are two, and the mark
+                        // beside a single number is the page's one piece of
+                        // ornament.
+                        VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 17)) {
+                            ClimbStat(value: Format.elevation(session.climbMeters, unit: false),
+                                      size: 17, color: palette.value)
+                            Text(verbatim: " ").kicker(8, tracking: 0.1)
+                                .overlay(alignment: .leading) {
+                                    Text("M CLIMBED").kicker(8, color: palette.label, tracking: 0.1)
+                                        .lineLimit(1).fixedSize()
+                                }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(
                             value: "\(Int(session.climbRatePerHour))",
                             label: "M/H · LAST MIN",

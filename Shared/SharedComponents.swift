@@ -29,6 +29,11 @@ struct ClimbStat: View {
                 .font(.stat(size))
                 .foregroundStyle(color)
                 .lineLimit(1)
+                // The mark is a fixed width, so a four-digit Alpine climb takes
+                // what is left — on a 40 mm case that is not enough for
+                // "1,157" and it truncated to "1,…". Scaling costs the Ultra
+                // nothing, because nothing there has to shrink.
+                .minimumScaleFactor(0.7)
         }
     }
 }

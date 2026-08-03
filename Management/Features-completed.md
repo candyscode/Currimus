@@ -1332,7 +1332,9 @@ Aus Andis Alpen-Lauf vom 3. August (Screenshots am Ticket):
 
 #### Agent Comments
 
-**1 · Vierstellige Höhen.** Die Pfeile sind an beiden Stellen weg, an denen ein Label darunter steht — der Elevation-Seite (CLIMBED / DOWN) und der Glance-Seite (M CLIMBED). Der Pfeil im Summary-Hero („6,5 km ▲ 1157") bleibt: dort steht kein Label darunter, dort trägt er die Bedeutung.
+**1 · Vierstellige Höhen.** Die Pfeile sind **nur auf der Elevation-Seite** weg (CLIMBED / DOWN) — dort teilen sich drei Spalten die Breite. Auf der Glance-Seite bleibt der Pfeil (Andis Korrektur), ebenso im Summary-Hero: dort steht er neben einer einzelnen Zahl in einem Zwei-Spalten-Raster und ist der eine Schmuck der Seite.
+
+Damit „▲ 1.157" auf der Glance-Seite auch auf 40 mm passt, hat `ClimbStat` einen `minimumScaleFactor` von 0,7 bekommen: der Pfeil ist fest breit, die Zahl nimmt was übrig ist, und auf der Ultra schrumpft nichts — die Seite ist dort pixelgleich zu vorher.
 
 Das allein hat nicht gereicht, deshalb zusätzlich:
 
@@ -1344,8 +1346,11 @@ Verifiziert per Screenshot auf **Apple Watch Ultra 3 (49 mm)** und **SE 3 (40 mm
 
 Was auf 40 mm **weiter kürzt**: die Achsenbeschriftung des Charts („2.637…"). Das ist Befund 3 aus CUR-13, dort steht „nicht implementieren, erst Freigabe" — deshalb nur dokumentiert, dort ergänzt, nicht angefasst.
 
+**Zum m/h-Label:** „M/H · LAST 10 MIN" heißt seit CUR-40 (`700f4ef`) „M/H · LAST MIN" — Label und Fenster wurden im selben Commit geändert, es steht nirgends mehr „10 MIN". Auf 40 mm passt es damit auch ohne Kürzung, was mit dem alten Label nicht der Fall war (CUR-13, Befund 2).
+
 **2 · Profilhöhe.** 31 → 78 pt (×2,5), die Hairline-Abstände proportional mit (5 → 12,5 und 4 → 10), damit das Profil seine Proportionen behält. Auf der Ultra bleibt „PROFILE" gerade noch über der Kante, „Done" liegt einen Crown-Dreh tiefer — wie besprochen.
 
 #### Link to completed work
 
-https://github.com/candyscode/Currimus/commit/75e7c80
+- https://github.com/candyscode/Currimus/commit/75e7c80 — vierstellige Höhen, höheres Profil
+- Pfeil auf der Glance-Seite zurück, `ClimbStat` skaliert statt zu kürzen
