@@ -1317,3 +1317,35 @@ Die Uhr stempelt zusätzlich Lauftyp und Namen auf den Workout, damit ein wieder
 - https://github.com/candyscode/Currimus/commit/c644c4e — Outbox (4)
 - https://github.com/candyscode/Currimus/commit/10a9121 — GPS-Gate folgt der Einstellung (6c), Agent-Notes
 - https://github.com/candyscode/Currimus/commit/912f162 — zwei Wege nach Hause: `transferFile` statt Ausdünnen, Health-Wiederherstellung (4b)
+
+### CUR-41: Trail-Screens für einen Bergtag
+
+ [ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Aus Andis Alpen-Lauf vom 3. August (Screenshots am Ticket):
+
+1. **Vierstellige Höhen werden abgeschnitten.** Auf der Elevation-Seite las ein Anstieg von 1.157 m als „▲ 11…" — auf der **Ultra**, nicht erst auf einem kleinen Gehäuse. Die Pfeil-rauf-/Pfeil-runter-Icons sollen weg (das Label darunter reicht), danach prüfen, ob es für vierstellig rauf, vierstellige Elevation und vierstellig runter reicht. Im Kontext von CUR-13 (kleinere Uhren) mitbetrachten und das Ticket ggf. ergänzen.
+2. **Der Elevation-Graph im Trail-Complete-Screen ist zu flach.** Auf das 2,5-fache erhöhen. Dass man dafür scrollen muss, ist in Ordnung — der Verlauf ist dann deutlich besser erkennbar.
+
+#### Agent Comments
+
+**1 · Vierstellige Höhen.** Die Pfeile sind an beiden Stellen weg, an denen ein Label darunter steht — der Elevation-Seite (CLIMBED / DOWN) und der Glance-Seite (M CLIMBED). Der Pfeil im Summary-Hero („6,5 km ▲ 1157") bleibt: dort steht kein Label darunter, dort trägt er die Bedeutung.
+
+Das allein hat nicht gereicht, deshalb zusätzlich:
+
+- Die drei Spalten der Elevation-Zeile sind jetzt **gleich breit** (`maxWidth: .infinity`) statt inhaltsbemessen, so teilen sich drei vierstellige Zahlen die Zeile, statt sich gegenseitig hinauszudrängen. Abstand 16 → 12.
+- `minimumScaleFactor` als letzte Reserve: 0,7 auf den Zahlen, 0,6 auf den Labels. Auf der Ultra schrumpft nichts; auf 40 mm braucht „CLIMBED" bei 8 pt rund 38 pt und hat nur ~33.
+- **Alle drei durch denselben Formatter.** Vorher stand in derselben Zeile „1157", „1,637" und „358" — zwei Schreibweisen nebeneinander. Jetzt überall `Format.elevation`.
+
+Verifiziert per Screenshot auf **Apple Watch Ultra 3 (49 mm)** und **SE 3 (40 mm)**, jeweils mit 1.157 / 2.637 / 1.358: alle drei Zahlen und alle drei Labels stehen vollständig. Zwei neue Debug-/Snapshot-Routen halten den Fall fest: `-screen trail-alpine` (Glance) und `-screen elevation-alpine` (Elevation-Seite).
+
+Was auf 40 mm **weiter kürzt**: die Achsenbeschriftung des Charts („2.637…"). Das ist Befund 3 aus CUR-13, dort steht „nicht implementieren, erst Freigabe" — deshalb nur dokumentiert, dort ergänzt, nicht angefasst.
+
+**2 · Profilhöhe.** 31 → 78 pt (×2,5), die Hairline-Abstände proportional mit (5 → 12,5 und 4 → 10), damit das Profil seine Proportionen behält. Auf der Ultra bleibt „PROFILE" gerade noch über der Kante, „Done" liegt einen Crown-Dreh tiefer — wie besprochen.
+
+#### Link to completed work
+
+https://github.com/candyscode/Currimus/commit/75e7c80
