@@ -87,6 +87,11 @@ struct TrailSummaryView: View {
 
                 // The axis carries both extremes now — the old "high … m"
                 // caption is gone, the number sits where the summit is.
+                // Two and a half times the design's 62 px band (Andi, CUR-41).
+                // It costs a scroll to reach — the summary already scrolls —
+                // and buys the one thing the strip could not give: a shape you
+                // can actually read the day off. The hairline insets scale with
+                // it so the profile keeps its proportions.
                 ElevationChart(
                     points: profile,
                     lowMeters: elevationRange.low,
@@ -94,10 +99,10 @@ struct TrailSummaryView: View {
                     showsDot: false,
                     lineWidth: 1.25,
                     labelSize: 6.5,
-                    topInset: 5,      // design 10 px of 62
-                    bottomInset: 4    // design  8 px of 62
+                    topInset: 12.5,   // design 10 px of 62, ×2.5
+                    bottomInset: 10   // design  8 px of 62, ×2.5
                 )
-                .frame(height: 31)   // design 62 px
+                .frame(height: 78)   // design 62 px, ×2.5
                 .padding(.top, 18)
                 Text("PROFILE").kicker(8, color: Theme.bright, tracking: 0.1)
                     .padding(.top, 4)

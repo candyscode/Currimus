@@ -24,6 +24,11 @@ run             | medium | -screen run
 run-aod         | medium | -screen run -aod 1
 run-long        | medium | -screen run-long
 trail           | medium | -screen trail
+# The Alpine day: four digits climbed, four on the altimeter and four
+# descended, all at once. This is the row that ran out of width (CUR-41), and
+# it is the case that breaks first on a narrow case — so it stays pinned.
+trail-alpine    | medium | -screen trail-alpine
+elevation-alpine| medium | -screen elevation-alpine
 pacer-run       | medium | -screen pacer-run
 pacer-run-nodist| medium | -screen pacer-run-nodist
 issue-nodistance| medium | -screen issue-nodistance

@@ -95,15 +95,14 @@ struct TrailRunPager: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     GridRow {
-                        VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 17)) {
-                            ClimbStat(value: "\(Int(session.climbMeters))", size: 17, color: palette.value)
-                            Text(verbatim: " ").kicker(8, tracking: 0.1)
-                                .overlay(alignment: .leading) {
-                                    Text("M CLIMBED").kicker(8, color: palette.label, tracking: 0.1)
-                                        .lineLimit(1).fixedSize()
-                                }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        // No triangle here either, and for the same reason as
+                        // on the elevation page: "M CLIMBED" underneath says
+                        // which way it goes, and the mark cost a fifth of the
+                        // column that a four-digit Alpine day needs (CUR-41).
+                        BigStat(value: Format.elevation(session.climbMeters, unit: false),
+                                label: "M CLIMBED", valueColor: palette.value,
+                                size: 17, labelGap: 2.5, labelOutsideLayout: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         BigStat(
                             value: "\(Int(session.climbRatePerHour))",
                             label: "M/H · LAST MIN",
@@ -238,24 +237,22 @@ struct TrailElevationView: View {
             // Where the design had M TO TOP (a route-relative goal) the live
             // altitude now sits — it takes the Signal because on this page it
             // is the number you came for; climbed and down are the ledger.
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                    ClimbStat(value: "\(Int(session.climbMeters))", size: 15, color: palette.value)
-                    Text("CLIMBED").kicker(8, color: palette.label, tracking: 0.1)
-                }
-                VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                    Text(Format.elevation(session.altitudeMeters, unit: false))
-                        .font(.stat(15))
-                        .foregroundStyle(dimmed ? palette.hero : Theme.signal)
-                        .lineLimit(1)
-                    Text("ELEVATION").kicker(8, color: palette.label, tracking: 0.1)
-                        .lineLimit(1).fixedSize()
-                }
-                VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
-                    ClimbStat(value: "\(Int(session.descentMeters))", size: 15,
-                              color: palette.hero, pointingDown: true)
-                    Text("DOWN").kicker(8, color: palette.label, tracking: 0.1)
-                }
+            // No triangles on this row. They cost a fifth of each column's
+            // width, and an Alpine day spends most of itself in four digits —
+            // "▲ 11…" is what a 1 157 m climb read as (Andi, CUR-41). The word
+            // underneath already says which way the number goes, which the
+            // triangle only ever repeated.
+            HStack(alignment: .top, spacing: 12) {
+                // All three through the same formatter, so a row of three
+                // four-digit numbers is not written two different ways — the
+                // altimeter had a thousands separator and the two beside it did
+                // not.
+                elevationStat(Format.elevation(session.climbMeters, unit: false), "CLIMBED",
+                              color: palette.value)
+                elevationStat(Format.elevation(session.altitudeMeters, unit: false), "ELEVATION",
+                              color: dimmed ? palette.hero : Theme.signal)
+                elevationStat(Format.elevation(session.descentMeters, unit: false), "DOWN",
+                              color: palette.hero)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -263,6 +260,28 @@ struct TrailElevationView: View {
         // The chart reads its colours from the ambient palette, and this page
         // sits outside the run scaffold — so it publishes its own.
         .environment(\.runPalette, palette)
+    }
+
+    /// One of the three columns under the profile.
+    ///
+    /// Equal widths, so three four-digit numbers divide the row rather than
+    /// pushing each other off it, and a scale factor as the last resort for a
+    /// narrow case — the 40 mm one has 86 px less to give than the Ultra.
+    private func elevationStat(_ value: String, _ label: LocalizedStringKey,
+                               color: Color) -> some View {
+        VStack(alignment: .leading, spacing: LineBox.gap(2.5, cropping: 15)) {
+            Text(value)
+                .font(.stat(15))
+                .foregroundStyle(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            // 0.6, not 0.8: three equal columns on a 40 mm case leave about
+            // 33 pt each, and "CLIMBED" at 8 pt with this tracking wants 38.
+            // Scaling is invisible on the Ultra, where nothing has to shrink.
+            Text(label).kicker(8, color: palette.label, tracking: 0.1)
+                .lineLimit(1).minimumScaleFactor(0.6)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The axis is live: it follows what you have actually run.

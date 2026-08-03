@@ -198,6 +198,19 @@ struct WatchRootView: View {
         case "elevation-known":
             session.debugFastForward(.trail, seconds: 4500)
             session.debugSetAltitudeProfile([760, 870, 700, 820, 780, 840, 730, 800])
+        // The four-digit case: an Alpine day where climbed, elevation and
+        // descended are all four digits at once. This is the row that used to
+        // truncate to "11…" on the Ultra, never mind a 40 mm case (CUR-41).
+        // The same four-digit day, but on the glance page — the one a runner
+        // actually looks at on the way up.
+        case "trail-alpine":
+            session.debugFastForward(.trail, seconds: 4500)
+            session.debugSetElevation(climb: 1_157, descent: 1_358,
+                                      profile: [1_860, 2_010, 1_940, 2_180, 2_090, 2_460, 2_310, 2_637])
+        case "elevation-alpine":
+            session.debugFastForward(.trail, seconds: 4500)
+            session.debugSetElevation(climb: 1_157, descent: 1_358,
+                                      profile: [1_860, 2_010, 1_940, 2_180, 2_090, 2_460, 2_310, 2_637])
         case "elevation-flat":
             session.debugFastForward(.trail, seconds: 4500)
             session.debugSetAltitudeProfile([706, 708, 705, 707.5, 706.2, 707, 705.5, 706.8])

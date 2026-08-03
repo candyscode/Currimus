@@ -881,6 +881,14 @@ final class RunSession: NSObject, ObservableObject {
         debugPinnedAltitude = true
     }
 
+    /// Screenshot helper: the Alpine case — four digits climbed, four on the
+    /// altimeter and four descended, which is the row that ran out of width.
+    func debugSetElevation(climb: Double, descent: Double, profile: [Double]) {
+        metrics.overrideClimb(climb, descent: descent)
+        metrics.overrideAltitudeProfile(profile)
+        debugPinnedAltitude = true
+    }
+
     /// Screenshot helper: render an issue banner without a real failure.
     func debugRaiseIssue(_ issue: RecordingIssue) {
         issues = [issue]

@@ -142,6 +142,19 @@ Trail Summary's profile shows "1.024…" where the Ultra shows the full "1.024 m
 
 **Not proposed:** any change to spacing, type scale or layout proportions. The 40 mm screens are tight but correct, and shrinking type to buy margin would cost the glance-ability the whole watch UI is built for. These are three overflow bugs, not a design problem.
 
+---
+
+**Nachtrag 2026-08-03 (CUR-41 hat zwei der drei Befunde schon miterledigt).**
+
+Andis Alpen-Screenshots haben denselben Überlauf auf der **Ultra** gezeigt, nicht nur auf schmalen Gehäusen — vierstellige Höhen sind auf einem Bergtag die Regel, nicht der Randfall. Was CUR-41 dabei mitgenommen hat:
+
+- **Befund 2 ist erledigt.** „M/H · LAST 10 MIN" heißt seit CUR-40 „M/H · LAST MIN" und passt damit auch auf 40 mm — verifiziert per Screenshot. Der `labelOutsideLayout`-Überlauf als *Mechanismus* besteht weiter, hat aber kein Label mehr, das ihn auslöst.
+- **Teilweise Befund 1/2-Verwandtes:** die Drei-Spalten-Zeile der Elevation-Seite (CLIMBED / ELEVATION / DOWN) trägt jetzt gleich breite Spalten mit `minimumScaleFactor`, statt sich nach Inhalt zu bemessen. Auf 40 mm passen damit drei vierstellige Zahlen *und* ihre Labels.
+- **Befund 3 steht unverändert offen** und ist jetzt sogar besser belegt: die Achsenbeschriftung des Elevation-Charts kürzt auf 40 mm zu „2.637…" / „1.860…", weil der Gutter mit 64/308 der Breite fix proportional ist. Neue Snapshot-Route `elevation-alpine` hält den Fall fest. Der Fix gehört weiterhin hierher, nicht in CUR-41 — hier steht ausdrücklich „nicht implementieren, erst Freigabe".
+- **Befund 1 (Caption unter der Uhr) ist unberührt.**
+
+Für Schritt 3 des Plans (zweite Referenzmenge für 40 mm) gibt es jetzt zwei zusätzliche Routen, die genau den kritischen Fall abdecken: `trail-alpine` und `elevation-alpine`.
+
 #### Link to completed work
 
 Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
@@ -153,3 +166,34 @@ Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 [ ] Done
 
 Maybe based on trail run mode but with different metrics? How to exclude from progress page? How to make this clear in the UI?
+
+### CUR-41: Trail-Screens für einen Bergtag
+
+ [ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Aus Andis Alpen-Lauf vom 3. August (Screenshots am Ticket):
+
+1. **Vierstellige Höhen werden abgeschnitten.** Auf der Elevation-Seite las ein Anstieg von 1.157 m als „▲ 11…" — auf der **Ultra**, nicht erst auf einem kleinen Gehäuse. Die Pfeil-rauf-/Pfeil-runter-Icons sollen weg (das Label darunter reicht), danach prüfen, ob es für vierstellig rauf, vierstellige Elevation und vierstellig runter reicht. Im Kontext von CUR-13 (kleinere Uhren) mitbetrachten und das Ticket ggf. ergänzen.
+2. **Der Elevation-Graph im Trail-Complete-Screen ist zu flach.** Auf das 2,5-fache erhöhen. Dass man dafür scrollen muss, ist in Ordnung — der Verlauf ist dann deutlich besser erkennbar.
+
+#### Agent Comments
+
+**1 · Vierstellige Höhen.** Die Pfeile sind an beiden Stellen weg, an denen ein Label darunter steht — der Elevation-Seite (CLIMBED / DOWN) und der Glance-Seite (M CLIMBED). Der Pfeil im Summary-Hero („6,5 km ▲ 1157") bleibt: dort steht kein Label darunter, dort trägt er die Bedeutung.
+
+Das allein hat nicht gereicht, deshalb zusätzlich:
+
+- Die drei Spalten der Elevation-Zeile sind jetzt **gleich breit** (`maxWidth: .infinity`) statt inhaltsbemessen, so teilen sich drei vierstellige Zahlen die Zeile, statt sich gegenseitig hinauszudrängen. Abstand 16 → 12.
+- `minimumScaleFactor` als letzte Reserve: 0,7 auf den Zahlen, 0,6 auf den Labels. Auf der Ultra schrumpft nichts; auf 40 mm braucht „CLIMBED" bei 8 pt rund 38 pt und hat nur ~33.
+- **Alle drei durch denselben Formatter.** Vorher stand in derselben Zeile „1157", „1,637" und „358" — zwei Schreibweisen nebeneinander. Jetzt überall `Format.elevation`.
+
+Verifiziert per Screenshot auf **Apple Watch Ultra 3 (49 mm)** und **SE 3 (40 mm)**, jeweils mit 1.157 / 2.637 / 1.358: alle drei Zahlen und alle drei Labels stehen vollständig. Zwei neue Debug-/Snapshot-Routen halten den Fall fest: `-screen trail-alpine` (Glance) und `-screen elevation-alpine` (Elevation-Seite).
+
+Was auf 40 mm **weiter kürzt**: die Achsenbeschriftung des Charts („2.637…"). Das ist Befund 3 aus CUR-13, dort steht „nicht implementieren, erst Freigabe" — deshalb nur dokumentiert, dort ergänzt, nicht angefasst.
+
+**2 · Profilhöhe.** 31 → 78 pt (×2,5), die Hairline-Abstände proportional mit (5 → 12,5 und 4 → 10), damit das Profil seine Proportionen behält. Auf der Ultra bleibt „PROFILE" gerade noch über der Kante, „Done" liegt einen Crown-Dreh tiefer — wie besprochen.
+
+#### Link to completed work
+

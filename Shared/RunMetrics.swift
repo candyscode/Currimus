@@ -375,5 +375,14 @@ struct RunMetrics: Equatable {
         altitudeMeters = samples.last ?? 0
     }
 
+    /// Pins climb and descent, so a screenshot route can put the four-digit
+    /// case on screen without simulating an Alpine day to reach it.
+    mutating func overrideClimb(_ climb: Double, descent: Double) {
+        committedClimb = climb
+        committedDescent = descent
+        leg = nil
+        legPivot = nil
+    }
+
     mutating func setRollingPace(_ pace: TimeInterval) { rollingPace = pace }
 }
