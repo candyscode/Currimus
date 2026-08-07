@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import WidgetKit
 #if canImport(HealthKit)
 import HealthKit
 #endif
@@ -223,7 +224,7 @@ final class RunStore: ObservableObject {
     }
     #endif
 
-    #if canImport(HealthKit) && os(iOS)
+    #if canImport(HealthKit)
     /// Files any run of ours that Apple Health holds and the log does not.
     ///
     /// The safety net under the whole watch→phone crossing (CUR-40). The watch
@@ -233,11 +234,20 @@ final class RunStore: ObservableObject {
     ///
     /// Runs on every foreground, costs one workout query, and adds nothing when
     /// the transfer worked — which is almost always.
-    func recoverOwnRuns() async {
+    ///
+    /// The watch runs it too, over the importer's window rather than the
+    /// recovery one and without hydrating (CUR-46). Its reason is different:
+    /// the watch's log holds only what *this* watch recorded and kept, while
+    /// the imported list deliberately excludes everything Currimus itself
+    /// recorded. A workout of ours that the local log has lost — a reinstall
+    /// wipes the app group, a replaced watch never had it — therefore fell
+    /// through both, and the widget's year total was short by exactly those
+    /// runs while Apple Fitness listed every one of them.
+    func recoverOwnRuns(since: Date? = nil, hydrating: Bool = true) async {
         guard !isDemo, HealthImport.isAvailable else { return }
-        let since = Calendar.current.date(byAdding: .day,
-                                          value: -HealthImport.recoveryWindowDays,
-                                          to: .now) ?? .distantPast
+        let since = since ?? Calendar.current.date(byAdding: .day,
+                                                   value: -HealthImport.recoveryWindowDays,
+                                                   to: .now) ?? .distantPast
         let candidates = await HealthImport.fetchOwnRuns(healthStore, since: since)
         let missing = candidates.filter { candidate in
             !runs.contains { overlaps($0, candidate) } && !wasDeletedOnPurpose(candidate)
@@ -249,8 +259,11 @@ final class RunStore: ObservableObject {
             add(run)
         }
         // What a workout summary does not carry — the route, the splits, the
-        // zones — is still in Health beside it.
-        //
+        // zones — is still in Health beside it. Only where it gets drawn: the
+        // watch shows no detail screen for an old run, so pulling every
+        // heart-rate sample of eighteen months of them would spend a battery
+        // filling screens that do not exist.
+        guard hydrating else { return }
         // Re-checked each time round, because each one suspends: the watch's
         // own copy of one of these outings can arrive over WatchConnectivity in
         // between, and `add` then drops the stand-in being hydrated. Hydrating
@@ -668,6 +681,11 @@ final class RunStore: ObservableObject {
         // app's run" — for the rest of that foreground.
         #if os(iOS)
         await recoverOwnRuns()
+        #else
+        // The watch reads back its own history rather than only the last
+        // ninety days, because here recovery is what *completes the log*, not
+        // what patches a failed transfer — see the note on `recoverOwnRuns`.
+        await recoverOwnRuns(since: HealthImport.importWindowStart(), hydrating: false)
         #endif
         let fetched = await HealthImport.fetchRuns(healthStore)
         let merged = HealthImport.merging(fetched, with: runs).map(carryingHydratedZones)
@@ -806,9 +824,16 @@ final class RunStore: ObservableObject {
     private func write<T: Encodable & Sendable>(_ value: T, forKey key: String) {
         guard !isLoading, !isDemo else { return }
         nonisolated(unsafe) let defaults = self.defaults
+        let isLog = key == AppDefaults.runsKey || key == AppDefaults.importedKey
         Self.ioQueue.async {
             do {
                 defaults.set(try JSONEncoder().encode(value), forKey: key)
+                // Once the bytes are down, and only for the two keys a widget
+                // reads. Nothing asked the complications to refresh before, so
+                // they redrew on their own half-hourly schedule: a run could
+                // finish and the week bar not move for half an hour, and the
+                // totals corrected by an import waited just as long (CUR-46).
+                if isLog { WidgetCenter.shared.reloadAllTimelines() }
             } catch {
                 Log.store.error("could not save \(key, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }

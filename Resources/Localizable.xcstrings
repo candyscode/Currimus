@@ -79,6 +79,9 @@
         }
       }
     },
+    "%@ /km" : {
+
+    },
     "%@ /km · %@" : {
       "localizations" : {
         "en" : {
@@ -124,6 +127,9 @@
           }
         }
       }
+    },
+    "%@ km this week" : {
+
     },
     "%@ km, %@. Every total and record is recalculated without it, and the workout is removed from Apple Health." : {
       "localizations" : {
@@ -418,6 +424,9 @@
     "Dismiss" : {
 
     },
+    "DISTANCE (KM)" : {
+
+    },
     "Done" : {
 
     },
@@ -668,6 +677,9 @@
     "MAX HEART RATE" : {
 
     },
+    "MONTH" : {
+
+    },
     "MONTHLY CLIMB · M" : {
 
     },
@@ -768,6 +780,9 @@
 
     },
     "of %lld" : {
+
+    },
+    "of %lld km" : {
 
     },
     "Off" : {
@@ -1059,6 +1074,9 @@
     "waiting for pace" : {
 
     },
+    "WEEK" : {
+
+    },
     "Weekly goal" : {
 
     },
@@ -1081,6 +1099,9 @@
 
     },
     "Workout not started" : {
+
+    },
+    "YEAR" : {
 
     },
     "You held %lld steps a minute at %@ /km. Aiming for about %lld — five per cent quicker — shortens the stride without changing the pace, so the foot lands under you instead of out in front. That is where most of the impact your knees absorb comes from, after %@. It helps to imagine running on a slippery path: short, light, frequent steps." : {

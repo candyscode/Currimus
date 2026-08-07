@@ -27,6 +27,14 @@ enum HealthImport {
     /// foreground would cost far more than it could ever find.
     static let recoveryWindowDays = 90
 
+    /// How far back the *importer* reads. A year total has to be able to see a
+    /// whole year, and a month total the month before this one.
+    static let importWindowMonths = 18
+
+    static func importWindowStart(from now: Date = .now) -> Date {
+        Calendar.current.date(byAdding: .month, value: -importWindowMonths, to: now) ?? .distantPast
+    }
+
     /// Runs **Currimus itself** recorded, read back out of Apple Health.
     ///
     /// The guarantee behind CUR-40 finding 4. The watch saves the workout to
@@ -108,7 +116,7 @@ enum HealthImport {
     /// Every running workout from another app in the given window.
     static func fetchRuns(
         _ store: HKHealthStore,
-        since: Date = Calendar.current.date(byAdding: .month, value: -18, to: .now) ?? .distantPast
+        since: Date = importWindowStart()
     ) async -> [Run] {
         guard isAvailable else { return [] }
         let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [

@@ -75,6 +75,20 @@ final class WidgetSnapshotTests: XCTestCase {
         XCTAssertEqual(DistanceTotals.current(defaults: defaults), .placeholder)
     }
 
+    /// The widget's year total can only be right if the importer reads back at
+    /// least a year — and its month total needs the month before this one, so
+    /// a window measured in whole months has to clear thirteen (CUR-46). The
+    /// recovery window is a different thing entirely: a safety net for a
+    /// transfer that failed, not a second importer.
+    func testTheImportWindowCoversAWholeYear() {
+        let now = DateComponents(calendar: .runWeek, year: 2026, month: 8, day: 5).date!
+        let start = HealthImport.importWindowStart(from: now)
+        let months = Calendar.current.dateComponents([.month], from: start, to: now).month ?? 0
+        XCTAssertGreaterThanOrEqual(months, 13)
+        XCTAssertLessThan(HealthImport.recoveryWindowDays, 365,
+                          "the recovery window is not the import window — see recoverOwnRuns")
+    }
+
     // MARK: - Formatting
 
     /// Under 100 km a tenth is worth reading; past it, four glyphs plus a point

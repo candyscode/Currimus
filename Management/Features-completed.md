@@ -1490,3 +1490,35 @@ Der Preis, ausdrücklich benannt: der Tick markiert nicht mehr den Monatsanfang,
 #### Link to completed work
 
 - https://github.com/candyscode/Currimus/commit/46485c3
+
+### CUR-46: Distance widget totals are lower than Apple Fitness
+
+ [ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Andi, 2026-08-07: Das Distance-Widget zeigt für das Jahr — und vermutlich auch für den Monat — zu niedrige Werte. Alle Läufe aus Apple Fitness sollen mitgezählt werden.
+
+Akzeptanz: Wochen-, Monats- und Jahressumme des Widgets decken jeden Lauf ab, den Apple Health kennt, egal welche App ihn aufgezeichnet hat und auf welchem Gerät.
+
+#### Agent Comments
+
+**Die Lücke sitzt zwischen den zwei Listen, aus denen das Widget summiert.** Ein Widget liest die App-Group des Geräts, auf dem es läuft, und das ist bisher immer die Uhr. Die Summe ist also `runs.v2 + imported.v1`, wie die *Uhr* sie hält — nie das Log des iPhones, das nie hinübergeschoben wird. Und diese beiden Listen decken zusammen nicht alles ab:
+
+- `runs.v2` auf der Uhr ist nur, was **diese Uhr** aufgezeichnet und noch hat. Eine Neuinstallation löscht die App-Group, eine getauschte Uhr hatte die Historie nie.
+- `imported.v1` ist absichtlich **alles außer Currimus** — `fetchRuns` filtert auf `!bundleIdentifier.hasPrefix(ownBundlePrefix)`, damit dieselbe Ausfahrt nicht doppelt zählt.
+
+Ein eigener Workout, den das lokale Log verloren hat, fällt damit durch beide durch. In Apple Fitness steht er, in der Jahressumme nicht — genau der gemeldete Effekt, und er trifft das Jahr härter als die Woche, weil die Woche nur aus frischen Läufen besteht, die die Uhr selbst noch hat.
+
+**Der Fix:** `recoverOwnRuns` läuft jetzt auch auf der Uhr. Dort mit anderem Zuschnitt: über `HealthImport.importWindowStart()` (18 Monate) statt `recoveryWindowDays` (90 Tage), und ohne Hydration — auf der Uhr gibt es keinen Detailscreen für einen alten Lauf, und jede Herzfrequenz-Spur von achtzehn Monaten zu ziehen wäre eine Batterie für Bildschirme, die nicht existieren. Auf dem iPhone ändert sich nichts: dieselbe Methode, dieselben Defaults.
+
+Die zwei Fenster bleiben getrennt und heißen jetzt auch so. `recoveryWindowDays` ist das Sicherheitsnetz für eine fehlgeschlagene Übertragung, `importWindowMonths` ist, wie weit eine Summe zurücksehen kann. Ein Test hält fest, dass Letzteres mindestens dreizehn Monate deckt — das Jahr braucht zwölf, der Monatsbucket vergleicht gegen den davor.
+
+**Zweiter Befund, beim Nachsehen gefunden:** im ganzen Projekt gab es keinen einzigen Aufruf von `WidgetCenter.reloadAllTimelines()`. Die Komplikationen zeichneten sich also ausschließlich auf ihrem eigenen Halbstundenplan neu — ein Lauf konnte fertig sein und der Wochenbalken sich eine halbe Stunde nicht bewegen, und die von einem Import korrigierten Summen hätten genauso lange gewartet. `RunStore.write` stößt den Reload jetzt an, sobald die zwei Log-Schlüssel auf der Platte sind, und nur für diese beiden.
+
+**Was hier nicht verifiziert werden konnte:** der Simulator hat keine Health-Daten, der Pfad ist auf diesem Rechner nicht ausführbar. Nachweisbar ist die Lücke aus dem Code — die beiden Filter schließen sich gegenseitig aus und lassen dazwischen etwas liegen —, und der Test deckt das Fenster ab. Auf dem Gerät reicht es, die Watch-App einmal zu öffnen; die Summen stehen danach beim nächsten Zeichnen richtig.
+
+#### Link to completed work
+
+- Uhr-seitige Wiederherstellung eigener Läufe, Importfenster benannt, Widget-Reload

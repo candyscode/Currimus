@@ -215,6 +215,35 @@ Implement `didFinish(userInfoTransfer:error:)` or the failure is silent, which
 is how a two-hour trail run disappeared between the watch and the phone
 (CUR-40).
 
+## What the watch's widgets can actually see
+
+A widget reads the **app group of the device it runs on**, and today that is
+only ever the watch. So a total in a complication is `runs.v2 + imported.v1` as
+the *watch* holds them — never the phone's log, which is never pushed over.
+
+Those two lists have a hole between them, and it is the whole of CUR-46:
+
+- `runs.v2` on the watch is only what **this watch** recorded and still has. An
+  app reinstall wipes the app group; a replaced watch never had the history.
+- `imported.v1` is deliberately **everything except Currimus** —
+  `fetchRuns` filters on `!bundleIdentifier.hasPrefix(ownBundlePrefix)`.
+
+So a workout of ours that the local log has lost belongs to neither, and the
+year total reads short while Apple Fitness lists every one of those runs. The
+watch therefore runs `recoverOwnRuns` too, over `HealthImport.importWindowStart()`
+(18 months) instead of `recoveryWindowDays` (90), and with `hydrating: false` —
+there is no detail screen on the watch to fill.
+
+**Two windows, two jobs, do not merge them.** `recoveryWindowDays` is a safety
+net for a transfer that failed; `importWindowMonths` is how far back a total can
+see. A year total needs at least thirteen months, since the month bucket also
+compares against the month before.
+
+**Nothing reloads a widget on its own.** `RunStore.write` calls
+`WidgetCenter.shared.reloadAllTimelines()` after the two log keys land, or the
+complications redraw on their own half-hourly schedule — a run could finish and
+the week bar not move for half an hour.
+
 ## The route in Apple Health is not saved with the workout
 
 `finishWorkout` and `finishRoute` fail in different ways, and the difference is
