@@ -140,6 +140,10 @@ targets:
     sources:
       - Watch
       - Shared
+      # The widget views, so `-push widgets` can render them inside the app.
+      # A complication is otherwise only visible by putting it on a face by
+      # hand — which is how the tinted-mode bug in CUR-42 got out.
+      - path: WatchWidgets/WidgetSurfaces.swift
       - path: Fonts
         buildPhase: resources
       - path: Resources/Localizable.xcstrings

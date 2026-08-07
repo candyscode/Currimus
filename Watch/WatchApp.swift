@@ -58,6 +58,21 @@ struct WatchRootView: View {
 
     @ViewBuilder
     private var content: some View {
+        #if DEBUG
+        // `-screen widgets` is not a phase of the app — it is the complications
+        // held up next to each other, in colour and tinted. See WidgetPreview.
+        if let screen = DebugFlags.screen, screen.hasPrefix("widgets") {
+            WidgetPreviewView(tinted: screen == "widgets-tint")
+        } else {
+            phaseContent
+        }
+        #else
+        phaseContent
+        #endif
+    }
+
+    @ViewBuilder
+    private var phaseContent: some View {
         switch session.phase {
         case .idle:
             WatchHomeView(

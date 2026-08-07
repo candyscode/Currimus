@@ -18,6 +18,13 @@ trail-summary   | strict | -screen trail-summary
 pacer-summary   | strict | -screen pacer-summary
 paused          | strict | -screen paused
 blocked-health  | strict | -screen blocked-health
+# The two rectangular complications, held up next to each other in the app
+# (Watch/WidgetPreview.swift). A widget is otherwise only visible by editing a
+# face by hand, and the tinted pass needs a face colour on top of that — which
+# is how the week bar shipped invisible on every face but "Bunt" (CUR-42).
+# Both entries are fabricated, so the numbers do not move.
+widgets         | strict | -screen widgets
+widgets-tint    | strict | -screen widgets-tint
 
 kmalert         | medium | -screen kmalert
 run             | medium | -screen run

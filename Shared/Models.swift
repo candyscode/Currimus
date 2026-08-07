@@ -602,6 +602,13 @@ enum Format {
             .grouping(.never).locale(fixed))
     }
 
+    /// Distance for a narrow column — a tenth under 100 km, whole numbers past
+    /// it. Four glyphs plus a point plus a decimal do not fit a third of a
+    /// rectangular complication, and at 400 km the tenth is noise anyway.
+    static func compactKm(_ km: Double) -> String {
+        Self.km(km, decimals: km < 100 ? 1 : 0)
+    }
+
     /// Elevation with grouping and a non-breaking unit: 1622 → "1,622 m".
     /// `unit: false` drops the suffix for stat rows, where the label carries it.
     static func elevation(_ meters: Double, unit: Bool = true) -> String {

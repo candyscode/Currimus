@@ -240,6 +240,42 @@ Three rules keep the two from fighting:
 The watch stamps `HealthImport.runTypeKey` / `runNameKey` on the workout so a
 recovered trail run comes back as a trail run.
 
+## Widgets, and the tinted watch face
+
+A watch face in any colour but the full-colour one ("Bunt") renders its
+complications in **accented** mode: watchOS replaces every colour with the
+face's own and **keeps nothing but the alpha channel**. So two opaque colours —
+say a `0x2E2E2E` track under an `0xFF4D00` fill — arrive as one flat line of
+identical white. That is not a subtle shift; the week widget's progress bar was
+simply invisible on every tinted face until CUR-42.
+
+- **Express contrast as opacity, not as hue,** in anything a widget draws.
+  `WidgetPalette` (in `WatchWidgets/WidgetSurfaces.swift`) is the one place
+  that decides: it reads `\.widgetRenderingMode` and returns the design's greys
+  in full colour, `.white.opacity(…)` when tinted.
+- `.widgetAccentable()` puts a view in the accent group, which the system gives
+  the face's vivid colour while the rest gets a dimmer shade. Useful, but not
+  something to rely on alone — the opacity has to carry the meaning.
+- **`\.widgetFamily` and `\.widgetRenderingMode` are read-only** environment
+  keys. `.environment(\.widgetFamily, …)` does not compile, so a preview cannot
+  inject either. Each rectangular surface is therefore its own view (addressable
+  without a family) with an optional `mode:` that stands in for the environment;
+  both are nil in the widgets themselves.
+
+**Looking at a complication without putting it on a face:** `-screen widgets`
+and `-screen widgets-tint` render both rectangular widgets inside the watch app
+(`Watch/WidgetPreview.swift`), and both are pinned in the snapshot references.
+The tinted pane emulates the flattening with `tint.mask(view)`, which is
+literally the same operation — every pixel becomes the tint, alpha preserved.
+It is the worst case, since the real thing has two shades, so a layout that
+reads there reads on a face. Note the masked view needs a `.hidden()` copy
+underneath to carry the size: a mask is as flexible as the colour it masks and
+the pane otherwise collapses to nothing.
+
+`WatchWidgets/WidgetSurfaces.swift` is compiled into **both** the widget
+extension and the watch app — that is what makes the preview possible, and it is
+declared file-by-file in `project.yml` under `CurrimusWatch`.
+
 ## Watch haptics
 
 `WKInterfaceDevice.play(_:)` is the only haptic API on watchOS, and watchOS

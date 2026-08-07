@@ -1,6 +1,9 @@
 import WidgetKit
 import SwiftUI
 
+// The bundle, the timeline providers and the widget configurations. The views
+// they render live in `WidgetSurfaces.swift`, which the watch app compiles too.
+
 @main
 struct CurrimusWidgets: WidgetBundle {
     init() {
@@ -9,15 +12,8 @@ struct CurrimusWidgets: WidgetBundle {
 
     var body: some Widget {
         WeekWidget()
+        DistanceWidget()
     }
-}
-
-struct WeekEntry: TimelineEntry {
-    var date: Date
-    var weekKm: Double
-    var goalKm: Double
-    var lastPace: TimeInterval
-    var runCount: Int
 }
 
 struct WeekProvider: TimelineProvider {
@@ -60,68 +56,35 @@ struct WeekWidget: Widget {
     }
 }
 
-struct WeekWidgetView: View {
-    @Environment(\.widgetFamily) private var family
-    var entry: WeekEntry
-
-    var body: some View {
-        switch family {
-        case .accessoryRectangular: rectangular
-        case .accessoryInline: Text("C · \(Format.km(entry.weekKm, decimals: 1)) km this week")
-        default: circular
-        }
+struct DistanceProvider: TimelineProvider {
+    private func entry() -> DistanceEntry {
+        DistanceEntry(date: .now, totals: DistanceTotals.current())
     }
 
-    private var circular: some View {
-        VStack(spacing: 2) {
-            Text("WEEK")
-                .font(.sg(7, weight: .medium))
-                .kerning(0.8)
-                .foregroundStyle(Theme.muted)
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text("\(Int(entry.weekKm))").font(.stat(17))
-                Text("km").font(.sg(9)).foregroundStyle(Theme.muted)
-            }
-            ProgressCapsule(fraction: entry.weekKm / max(entry.goalKm, 1))
-                .frame(width: 30, height: 3)
-        }
+    func placeholder(in context: Context) -> DistanceEntry { entry() }
+
+    func getSnapshot(in context: Context, completion: @escaping (DistanceEntry) -> Void) {
+        completion(entry())
     }
 
-    private var rectangular: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                Text("THIS WEEK")
-                    .font(.sg(8, weight: .medium))
-                    .kerning(0.9)
-                    .foregroundStyle(Theme.muted)
-                Spacer()
-                Text("C").font(.sg(9, weight: .bold)).foregroundStyle(Theme.signal)
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(Format.km(entry.weekKm, decimals: 1)).font(.stat(19))
-                Text("of \(Int(entry.goalKm)) km").font(.sg(9)).foregroundStyle(Theme.muted)
-                Spacer()
-                Text("last \(Format.pace(entry.lastPace)) /km")
-                    .font(.stat(9, weight: .regular))
-                    .foregroundStyle(Theme.muted)
-            }
-            ProgressCapsule(fraction: entry.weekKm / max(entry.goalKm, 1))
-                .frame(height: 4)
-        }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<DistanceEntry>) -> Void) {
+        // Same half-hour cadence as the week widget. Both are cheap reads of
+        // the app group, and neither number can move without the app having
+        // run — a finished run refreshes the timelines directly.
+        completion(Timeline(entries: [entry()], policy: .after(.now.addingTimeInterval(1800))))
     }
 }
 
-struct ProgressCapsule: View {
-    var fraction: Double
-
-    var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Theme.track)
-                Capsule()
-                    .fill(Theme.signal)
-                    .frame(width: proxy.size.width * min(max(fraction, 0), 1))
-            }
+/// Week, month and year distance side by side — no goals, no judgement, just
+/// how far the legs have carried you over three horizons.
+struct DistanceWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "CurrimusDistance", provider: DistanceProvider()) { entry in
+            DistanceWidgetView(entry: entry)
+                .containerBackground(Theme.bg, for: .widget)
         }
+        .configurationDisplayName("Distance")
+        .description("Kilometers run this week, this month and this year.")
+        .supportedFamilies([.accessoryRectangular, .accessoryInline])
     }
 }

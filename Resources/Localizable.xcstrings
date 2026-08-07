@@ -504,6 +504,9 @@
     "Goal time" : {
 
     },
+    "GPS lost" : {
+
+    },
     "GPX / CSV" : {
 
     },
@@ -711,6 +714,9 @@
 
     },
     "No distance was recorded, so this run was not saved." : {
+
+    },
+    "No GPS fix has arrived for several minutes, so the route has a gap in it. Distance, pace and heart rate are unaffected." : {
 
     },
     "No GPS track for this run" : {
