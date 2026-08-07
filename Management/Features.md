@@ -166,25 +166,3 @@ Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 [ ] Done
 
 Maybe based on trail run mode but with different metrics? How to exclude from progress page? How to make this clear in the UI?
-
-### CUR-42: Watch widget — tinted progress bar, legibility, and a distance-totals widget
-
- [ ] In Specification
-[ ] Open
-[X] WIP
-[ ] Done
-
-Four changes to the watchOS widgets, reported from a real watch face by Andi (2026-08-07).
-
-1. **The progress bar breaks on every watch face colour but "Bunt".** The large (rectangular) widget shows the week's kilometres against the weekly goal, with a progress bar underneath. In a full-colour face it is right: grey track, orange fill. Pick any tinted face colour (red, for example) and the whole bar renders as one flat white line — at 7 km of a 55 km goal it is impossible to tell whether it means 0 % or 100 %, and both readings would be wrong.
-2. **The type in the widget is too small to read.** Roughly +20 % across the widget.
-3. **The type is too dark.** Brighter, less grey.
-4. **Remove the "C"** in the widget's top-right corner.
-
-Plus a **new widget**, designed to match the rest: running distance **this week**, **this month**, **this year** — three plain values, no goals.
-
-Acceptance: the progress bar is readable in a tinted face as well as a full-colour one; the new widget shows three correct totals and is legible in both rendering modes.
-
-#### Agent Comments
-
-#### Link to completed work

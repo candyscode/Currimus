@@ -1354,3 +1354,45 @@ Was auf 40 mm **weiter kürzt**: die Achsenbeschriftung des Charts („2.637…"
 
 - https://github.com/candyscode/Currimus/commit/75e7c80 — vierstellige Höhen, höheres Profil
 - Pfeil auf der Glance-Seite zurück, `ClimbStat` skaliert statt zu kürzen
+
+### CUR-42: Watch widget — tinted progress bar, legibility, and a distance-totals widget
+
+ [ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Four changes to the watchOS widgets, reported from a real watch face by Andi (2026-08-07).
+
+1. **The progress bar breaks on every watch face colour but "Bunt".** The large (rectangular) widget shows the week's kilometres against the weekly goal, with a progress bar underneath. In a full-colour face it is right: grey track, orange fill. Pick any tinted face colour (red, for example) and the whole bar renders as one flat white line — at 7 km of a 55 km goal it is impossible to tell whether it means 0 % or 100 %, and both readings would be wrong.
+2. **The type in the widget is too small to read.** Roughly +20 % across the widget.
+3. **The type is too dark.** Brighter, less grey.
+4. **Remove the "C"** in the widget's top-right corner.
+
+Plus a **new widget**, designed to match the rest: running distance **this week**, **this month**, **this year** — three plain values, no goals.
+
+Acceptance: the progress bar is readable in a tinted face as well as a full-colour one; the new widget shows three correct totals and is legible in both rendering modes.
+
+#### Agent Comments
+
+**1 · Warum der Balken kaputt ging, und warum es kein Farbfehler war.**
+
+Ein Zifferblatt in irgendeiner Farbe außer „Bunt" rendert seine Komplikationen im **accented mode**: watchOS ersetzt *jede* Farbe durch die des Zifferblatts und behält **nichts außer dem Alphakanal**. Zwei deckende Farben — `0x2E2E2E` Track unter `0xFF4D00` Füllung — kommen damit als eine einzige flache weiße Linie an. Der Balken war nicht falsch gefärbt, er war strukturlos.
+
+Kontrast wird jetzt überall, wo ein Widget zeichnet, **als Deckkraft ausgedrückt statt als Farbton**. `WidgetPalette` ist die eine Stelle, die das entscheidet: sie liest `\.widgetRenderingMode` und gibt in Farbe die Grautöne des Designs zurück, getönt `.white.opacity(…)`. Die Füllung trägt zusätzlich `.widgetAccentable()`, damit die kräftige Zifferblattfarbe auf dem Teil landet, der etwas bedeutet — aber die Bedeutung hängt an der Deckkraft, nicht daran.
+
+**2 · Größer, heller, ohne „C".** Typo im rechteckigen Wochen-Widget rund +20 % (8 → 10, 19 → 23, 9 → 11) und eine Stufe heller (`Theme.muted` 0x6B6B6B → `Theme.bright` 0xA8A8A8); der Balken 4 → 5 pt. Das „C" ist raus — aus dem rechteckigen Widget *und* aus der Inline-Variante, wo es als „C · 7.0 km this week" stand. Die zuletzt gelaufene Pace ist in die frei gewordene Ecke gewandert: das ist es, was der Wertezeile ihre Breite verschafft, ohne die die 23 pt nicht gepasst hätten.
+
+**3 · Das Distance-Widget.** Woche, Monat, Jahr nebeneinander, keine Ziele. Gleich breite Spalten (`maxWidth: .infinity`) statt inhaltsbemessener, damit eine vierstellige Jahressumme die Woche nicht über die Kante schiebt — die Lehre aus CUR-41 —, plus `minimumScaleFactor(0.6)`. Die Einheit steht **einmal** in der Kopfzeile statt dreimal über 170 pt. Monat und Jahr lassen ihre Nachkommastelle ab 100 km fallen (`Format.compactKm`); bei 400 km ist das Zehntel ohnehin Rauschen. Die Woche trägt als einzige die Signalfarbe und ist die akzentuierte Gruppe — sie ist die Zahl, auf die man reagiert.
+
+**4 · Wie man ein Widget überhaupt zu sehen bekommt.** Genau das ist der Grund, warum der Fehler in Produktion ging: eine Komplikation ist sonst nur sichtbar, indem man ein Zifferblatt von Hand bearbeitet, und für den getönten Fall braucht es zusätzlich eine gesetzte Zifferblattfarbe. Deshalb rendern `-screen widgets` und `-screen widgets-tint` beide rechteckigen Flächen **innerhalb der Watch-App**, und beide sind als Snapshot-Referenz gepinnt. Die getönte Fläche emuliert das Flatten mit `tint.mask(view)` — buchstäblich dieselbe Operation, jedes Pixel wird zur Tönung, Alpha bleibt. Das ist der schlechteste Fall (echt sind es zwei Abstufungen), also liest sich auf einem Zifferblatt alles, was hier lesbar ist.
+
+Dafür ist `WatchWidgets/WidgetSurfaces.swift` jetzt in **beide** Targets kompiliert. Zwei Dinge, die dabei Zeit gekostet haben und in `docs/AGENT-NOTES.md` stehen: `\.widgetFamily` und `\.widgetRenderingMode` sind **read-only** Environment-Keys, injizieren geht also nicht — jede rechteckige Fläche ist deshalb eine eigene View mit optionalem `mode:`. Und die maskierte View braucht eine `.hidden()`-Kopie darunter, die die Größe trägt, sonst kollabiert das Panel auf null.
+
+**5 · Daten.** `DistanceTotals` steht neben `WeekSnapshot` in `Shared`, beide lesen die App-Group über ein gemeinsames `SharedRuns.all`: Montags-Wochen (`Calendar.runWeek`), Monate und Jahre nach Gerätekalender, importierte Runs eingerechnet — exakt wie `RunStore` bucketet. Ein Widget, das der Ansicht dahinter widerspricht, wäre schlimmer als keins. Sechs Tests in `Tests/WidgetSnapshotTests.swift` decken die Grenzen ab (inkl. Sonntag gehört zur Montags-Woche) und die Formatierung.
+
+Verifiziert per Screenshot auf Apple Watch Ultra 3 (49 mm), in Farbe und getönt: bei 7 von 55 km stehen ~13 % kräftig gefüllter Balken gegen einen erkennbar dunkleren Track. Alle Tests grün (`CurrimusTests`), beide Targets bauen.
+
+#### Link to completed work
+
+- https://github.com/candyscode/Currimus/commit/2df7601 — getönter Balken, größere Typo, Distance-Widget, Preview-Route
