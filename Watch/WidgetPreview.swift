@@ -22,9 +22,12 @@ struct WidgetPreviewView: View {
     var tinted: Bool
 
     private let week = WeekEntry(date: .now, weekKm: 7, goalKm: 55, lastPace: 312, runCount: 2)
+    /// Andi's own numbers from the report that became CUR-43 — the case where
+    /// the row read as shifted left, because two of the three labels are wider
+    /// than the number above them.
     private let totals = DistanceEntry(
         date: .now,
-        totals: DistanceTotals(weekKm: 7, monthKm: 84.2, yearKm: 1204)
+        totals: DistanceTotals(weekKm: 8.8, monthKm: 8.8, yearKm: 600)
     )
 
     private var tint: Color? { tinted ? .red : nil }

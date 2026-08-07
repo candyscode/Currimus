@@ -215,6 +215,39 @@ Implement `didFinish(userInfoTransfer:error:)` or the failure is silent, which
 is how a two-hour trail run disappeared between the watch and the phone
 (CUR-40).
 
+## The route in Apple Health is not saved with the workout
+
+`finishWorkout` and `finishRoute` fail in different ways, and the difference is
+the whole of CUR-44:
+
+- **`finishWorkout` is an XPC call healthd carries out on its own.** Once made,
+  the workout is saved whether or not this process ever runs again.
+- **`finishRoute` is a call we still have to make afterwards** — it needs the
+  saved workout — and a suspended process never makes it.
+
+watchOS suspends the app within seconds of a run ending; the wrist drops the
+moment the runner taps Finish. So the run appears in Apple Fitness with no map,
+while Currimus draws one perfectly well from its own copy of the track. Two
+things now stand against it:
+
+1. The whole finish chain runs inside `ProcessInfo.performExpiringActivity`,
+   held open by a semaphore the completion signals. The block is invoked a
+   second time with `expired == true` if the time runs out — signal from there
+   too, or the assertion is held for nothing.
+2. `RouteRepair` sweeps on watch launch: for each recent run of ours whose
+   workout has no `HKWorkoutRoute`, it rebuilds one from the stored track.
+   **This has to run on the watch** — HealthKit only lets an app attach objects
+   to a workout it saved itself, and the watch is what saved these. Answered
+   runs are remembered in `AppDefaults`/`RouteRepair.settledKey` so a launch
+   costs nothing.
+
+`insertRouteData` rejects a location with a negative accuracy, and the stored
+track carries none — `RouteRepair.locations` states
+`RunMetrics.usableHorizontalAccuracy` back as an honest upper bound, since every
+point in the track cleared that filter live.
+
+## Sending a run to the phone
+
 There are **two** independent paths home, on purpose:
 
 1. `RunSync` keeps an outbox in the app group and only drops a run when the

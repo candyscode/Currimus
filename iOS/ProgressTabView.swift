@@ -25,32 +25,59 @@ struct TrendMonthAxis: View {
         return weekTicks(weeks ?? 0)
     }
 
+    /// Four labels at 0, ⅓, ⅔ and 1 of the width — the oldest month, the
+    /// newest, and two evenly between them.
+    ///
+    /// It used to take every third month from the oldest and then force the
+    /// last one in regardless. Over twelve months that put labels at 0, 3, 6, 9
+    /// and 11, so the final gap was two months wide where every other one was
+    /// three (CUR-45). Stepping back from the end instead gives equal gaps but
+    /// drops the oldest month, and the headline right above says "since Sep" —
+    /// an axis that starts at Nov then contradicts it. So the *positions* are
+    /// fixed and even, and each label is the month nearest that position:
+    /// eleven months do not divide into three equal whole steps, and half a
+    /// month of rounding is invisible where a whole month of unevenness was
+    /// not.
     private func monthTicks(_ months: [Date]) -> [(String, Double)] {
         guard months.count > 1 else { return [] }
-        // Every third month, and always the last one, so the axis ends where
-        // the line does.
-        let step = max(months.count / 4, 1)
-        return months.enumerated().compactMap { index, month in
-            guard index % step == 0 || index == months.count - 1 else { return nil }
-            return (month.formatted(.dateTime.month(.abbreviated)),
-                    Double(index) / Double(months.count - 1))
+        let last = Double(months.count - 1)
+        let ticks = min(months.count, 4)
+        return (0..<ticks).map { k in
+            let fraction = Double(k) / Double(ticks - 1)
+            let index = Int((fraction * last).rounded())
+            return (months[index].formatted(.dateTime.month(.abbreviated)), fraction)
         }
     }
 
+    /// One label per month the window covers, spread evenly across the axis.
+    ///
+    /// The labels used to sit where each month actually began, which is
+    /// truthful and looks broken: months are four or five weeks long, so over
+    /// twelve weeks May→Jun came out half the width of Jul→Aug (CUR-45). Even
+    /// spacing costs the tick its exact position — it now says *which* months
+    /// the line covers rather than where each one starts — which is what a
+    /// chart headed "LAST 12 WEEKS" is asking of it anyway.
     private func weekTicks(_ weeks: Int) -> [(String, Double)] {
         let calendar = Calendar.runWeek
         var seenMonths: Set<Int> = []
-        var out: [(String, Double)] = []
+        var labels: [String] = []
         for offset in (0..<weeks).reversed() {
             guard let week = calendar.date(byAdding: .weekOfYear, value: -offset, to: .now)
             else { continue }
             let month = calendar.component(.month, from: week)
             guard seenMonths.insert(month).inserted else { continue }
-            let index = weeks - 1 - offset
-            out.append((week.formatted(.dateTime.month(.abbreviated)),
-                        Double(index) / Double(max(weeks - 1, 1))))
+            labels.append(week.formatted(.dateTime.month(.abbreviated)))
         }
-        return out
+        return Self.spacedEvenly(labels)
+    }
+
+    /// Labels at 0, 1/(n-1) … 1. A single label sits at the start rather than
+    /// dividing by zero.
+    static func spacedEvenly(_ labels: [String]) -> [(String, Double)] {
+        guard labels.count > 1 else { return labels.map { ($0, 0) } }
+        return labels.enumerated().map { index, label in
+            (label, Double(index) / Double(labels.count - 1))
+        }
     }
 
     var body: some View {

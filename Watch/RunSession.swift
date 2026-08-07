@@ -560,10 +560,64 @@ final class RunSession: NSObject, ObservableObject {
         // The end date is taken here and passed in, so it is when the runner
         // stopped rather than whenever the metadata call happened to return.
         let end = Date.now
-        builder.addMetadata([
+        let metadata: [String: Any] = [
             HealthImport.runTypeKey: type.rawValue,
             HealthImport.runNameKey: defaultName,
-        ]) { [routeBuilder] added, error in
+        ]
+        let route = routeBuilder
+        workoutSession = nil
+        workoutBuilder = nil
+        routeBuilder = nil
+
+        // The whole chain runs under a background assertion, and this is why:
+        // watchOS suspends the app within seconds of a run ending — the wrist
+        // drops the moment the runner taps Finish. `finishWorkout` is an XPC
+        // call that healthd carries out on its own, so the *workout* survives a
+        // suspension whatever happens to us. `finishRoute` is a call this
+        // process still has to make afterwards, and a process that never wakes
+        // again never makes it. That asymmetry is exactly the reported symptom:
+        // the run present in Apple Fitness, the map missing (CUR-44).
+        //
+        // The block blocks its own queue on a semaphore, which is how
+        // `performExpiringActivity` is meant to be held open. It is invoked a
+        // second time with `expired` if the time runs out; signalling from
+        // there releases the first one rather than sitting on the assertion.
+        let done = DispatchSemaphore(value: 0)
+        ProcessInfo.processInfo.performExpiringActivity(
+            withReason: "Saving the run to Apple Health"
+        ) { expired in
+            guard !expired else {
+                Log.session.error("health finish ran out of background time")
+                done.signal()
+                return
+            }
+            Self.saveToHealth(builder: builder, route: route, metadata: metadata, end: end) {
+                done.signal()
+            }
+            _ = done.wait(timeout: .now() + 30)
+        }
+    }
+
+    /// Metadata, then end of collection, then the workout, then its route —
+    /// each waiting on the one before it.
+    ///
+    /// Nested rather than called in sequence: `addMetadata` is asynchronous and
+    /// the only documented rule is that metadata must be attached before the
+    /// workout is finished, which an unawaited call racing `endCollection` has
+    /// no guarantee of. Losing that race is silent — the run simply comes back
+    /// untyped one day, if it ever has to come back at all.
+    ///
+    /// `completion` fires on every path, including the failures: it releases
+    /// the background assertion, and one that is never released is worse than
+    /// one that ends early.
+    private nonisolated static func saveToHealth(
+        builder: HKLiveWorkoutBuilder,
+        route: HKWorkoutRouteBuilder?,
+        metadata: [String: Any],
+        end: Date,
+        completion: @escaping () -> Void
+    ) {
+        builder.addMetadata(metadata) { added, error in
             if !added {
                 Log.session.error("run metadata not added: \(error?.localizedDescription ?? "unknown", privacy: .public)")
             }
@@ -574,18 +628,18 @@ final class RunSession: NSObject, ObservableObject {
                 builder.finishWorkout { workout, error in
                     guard let workout else {
                         Log.session.error("workout not saved: \(error?.localizedDescription ?? "unknown", privacy: .public)")
-                        return
+                        return completion()
                     }
-                    routeBuilder?.finishRoute(with: workout, metadata: nil) { _, error in
-                        if let error {
-                            Log.session.error("route not saved: \(error.localizedDescription, privacy: .public)")
+                    guard let route else { return completion() }
+                    route.finishRoute(with: workout, metadata: nil) { saved, error in
+                        if saved == nil {
+                            Log.session.error("route not saved: \(error?.localizedDescription ?? "unknown", privacy: .public)")
                         }
+                        completion()
                     }
                 }
             }
         }
-        workoutSession = nil
-        workoutBuilder = nil
     }
 
     // MARK: - Per-second tick

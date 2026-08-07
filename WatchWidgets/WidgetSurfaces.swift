@@ -145,49 +145,63 @@ struct DistanceRectangularView: View {
 
     private var palette: WidgetPalette { WidgetPalette(mode: mode ?? environmentMode) }
 
-    /// The unit is stated once, in the header, so the three columns stay pure
-    /// number — repeating "km" across 170 pt is what makes a rectangular
-    /// complication look busy, and the columns need every point they have.
+    /// Three columns whose width is the **number's**, with the leftover split
+    /// into two equal spacers.
+    ///
+    /// That is what makes the row sit straight (CUR-43). Equal columns did
+    /// not: each was as wide as the wider of its number and its label, so
+    /// "WEEK" pushed "8.8" away from its column's left edge while "600" left a
+    /// gap at the right, and the whole row read as shifted left. Sizing by the
+    /// label is no better — at 8.8 / 8.8 / 600 the two gaps between the
+    /// numbers came out 9 pt apart. So the numbers own the layout and the
+    /// labels are drawn outside it; two identical spacers then put exactly the
+    /// same gap between all three, with the first number on the left inset and
+    /// the last one on the right.
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Text("DISTANCE")
-                    .font(.sg(10, weight: .medium))
-                    .kerning(1.1)
-                    .foregroundStyle(palette.label)
-                Spacer(minLength: 0)
-                Text("KM")
-                    .font(.sg(10, weight: .medium))
-                    .kerning(1.1)
-                    .foregroundStyle(palette.secondary)
-            }
-            HStack(spacing: 4) {
+            Text("DISTANCE")
+                .font(.sg(10, weight: .medium))
+                .kerning(1.1)
+                .foregroundStyle(palette.label)
+            HStack(spacing: 0) {
                 column("WEEK", Format.km(entry.totals.weekKm, decimals: 1), accented: true)
+                Spacer(minLength: 6)
                 column("MONTH", Format.compactKm(entry.totals.monthKm))
+                Spacer(minLength: 6)
                 column("YEAR", Format.compactKm(entry.totals.yearKm))
             }
         }
+        // A hair of breathing room off the face's own edge, and the same on
+        // both sides — the row is symmetric now, so the inset has to be too.
+        .padding(.horizontal, 3)
     }
 
-    /// One horizon: the number, and under it what it counts. Equal columns
-    /// rather than content-sized ones, so a four-digit year total cannot push
-    /// the week column off the edge — the lesson of CUR-41's elevation row.
-    /// The week is the one that carries the signal colour: it is the number a
-    /// runner acts on, and in a tinted face it is what the accent group tints.
+    /// One horizon: the number, and under it what it counts. The week is the
+    /// one that carries the signal colour — it is the number a runner acts on,
+    /// and in a tinted face it is what the accent group tints.
     private func column(_ label: LocalizedStringKey, _ value: String, accented: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(value)
                 .font(.stat(20))
                 .foregroundStyle(accented ? palette.fill : palette.value)
                 .widgetAccentable(accented)
+            // Zero layout width, natural drawn width: the label hangs out of
+            // its column to the right rather than widening it, so it cannot
+            // move the number above it. The same overflow trick `BigStat`
+            // uses on the watch. It has room — the widest label (MONTH, ~36 pt
+            // at 9 pt) overhangs the narrowest number by less than half the
+            // gap between two columns.
             Text(label)
                 .font(.sg(9, weight: .medium))
                 .kerning(0.9)
                 .foregroundStyle(palette.label)
+                .fixedSize()
+                .frame(width: 0, alignment: .leading)
         }
         .lineLimit(1)
+        // The last reserve on a narrow case: three four-digit totals do not
+        // fit 40 mm at full size.
         .minimumScaleFactor(0.6)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     static func inline(_ totals: DistanceTotals) -> String {

@@ -17,7 +17,13 @@ struct CurrimusWatchApp: App {
                 // Keeps the shared store — and with it the complications — in
                 // step with runs other apps recorded. Silent: the Health sheet
                 // belongs at the start of a run, not over one already running.
-                .task { await store.refreshImportedRuns() }
+                .task {
+                    await store.refreshImportedRuns()
+                    // After the import, not before: both talk to Health, and
+                    // the runs the log is missing want filing before anything
+                    // sweeps over it.
+                    await store.restoreMissingRoutes()
+                }
                 // Every time the app comes up, offer anything still waiting to
                 // reach the phone. A run that could not be handed over when it
                 // finished has to have somewhere to be tried again (CUR-40).

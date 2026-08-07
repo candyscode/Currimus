@@ -20,13 +20,16 @@
 		09EBF23F41922D677F296915 /* PromptGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BA66CF16A42E87B54B69AC /* PromptGate.swift */; };
 		0AF2B49944699FB95A35180D /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
 		0EA2B10143253AB324128562 /* Sources.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9C70AAD130EFB356A706713 /* Sources.swift */; };
+		0EDD3D8D6D89F675E906E916 /* RouteRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F82C0A3FDC2C0B292641E07 /* RouteRepair.swift */; };
 		1036F046D58875E97CB5C429 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
 		10AAF1A5FFD45EB38E9620D8 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		1242EDB609907C5835F455E1 /* RunStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6A62A4E92A05F4D05C253 /* RunStore.swift */; };
 		15A07B566AA46A7CF40BF54D /* RunSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2BADCCD49E145AF145AB341 /* RunSessionTests.swift */; };
 		18D1C40B1D4614C0E2361BEE /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		190698F50C3CAC3A718B9688 /* RunExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4AE7EB972483756B1B4BD09 /* RunExport.swift */; };
+		1A0AFBBD37D6A14EDBCB9A5B /* RouteRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F82C0A3FDC2C0B292641E07 /* RouteRepair.swift */; };
 		1BD32BBFC315091BD60197B7 /* PromptGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BA66CF16A42E87B54B69AC /* PromptGate.swift */; };
+		1CF0986BCAF2B5809809F194 /* RouteRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F82C0A3FDC2C0B292641E07 /* RouteRepair.swift */; };
 		1D12E2E7D9CE27DE6661BE45 /* Sources.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9C70AAD130EFB356A706713 /* Sources.swift */; };
 		1FC8AAD616A439E490E45ACA /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E47BCF44600BC83F472F7AE0 /* Theme.swift */; };
 		23E607B7EDD9A5C9C3E7FC2F /* Reconstruction.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE5027A1297C7F0EAA258CB2 /* Reconstruction.swift */; };
@@ -51,6 +54,7 @@
 		37AA319A734A079DE2D3F54C /* WidgetSurfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55282640A13153CD3F51EF1 /* WidgetSurfaces.swift */; };
 		3B9AAD3CBBED7A363608CBC2 /* RunHintsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1743CD59636C6E4B5816C5E /* RunHintsTests.swift */; };
 		3BF77CAB3DF7E39F5F5C0F62 /* SwipeToDeleteUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2896414722F0534F76F64E00 /* SwipeToDeleteUITests.swift */; };
+		3D865059F525EF2B2A206CAE /* RouteRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F82C0A3FDC2C0B292641E07 /* RouteRepair.swift */; };
 		3EDCB951E6A8420B6587553D /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
 		40C032F8B5AB2EB41D26E2F6 /* DeletePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A9E23B763A0D6F79209CA6 /* DeletePrompt.swift */; };
 		40D4E4DB344B503AAF1DF4B9 /* RunSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99659A5B888C4EF67485D477 /* RunSync.swift */; };
@@ -137,6 +141,7 @@
 		928FB6A679175338A1AB032B /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
 		93255DA28113F874A9452E1C /* RunNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225DF9B1EA413677BA231AD9 /* RunNaming.swift */; };
 		935D1899E69304A859A0EC09 /* HeartRateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FBB797F1648FC729833297 /* HeartRateProfile.swift */; };
+		942BD8EB8A6AFD6618B60623 /* RouteRepair.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F82C0A3FDC2C0B292641E07 /* RouteRepair.swift */; };
 		942C5A4FBE38FA0C656C9E05 /* ZoneCoach.swift in Sources */ = {isa = PBXBuildFile; fileRef = 730680C78DD898F3B49BC2BB /* ZoneCoach.swift */; };
 		95057FCF29C634615715C893 /* ProgressTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2093769E1832392AF743C8EC /* ProgressTabView.swift */; };
 		96564A5742B832ABF1C70033 /* RunSampleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */; };
@@ -204,6 +209,7 @@
 		CB051C7B414C753DA3945E3A /* RunMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4FBEACE59FC61F61A04220 /* RunMetrics.swift */; };
 		CC1B179680B906105DE2B187 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA58C9AB36DB9CE81261E36 /* Log.swift */; };
 		CD917544413675BA57B69C43 /* RunHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51FB40448E3F1E3BB0DE9E3A /* RunHints.swift */; };
+		CEF2B13EAE7E776712DA3205 /* RouteRepairTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7034592505125AF1C51D5F /* RouteRepairTests.swift */; };
 		D03CFF6F549424CF8B570758 /* RecordingPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CB59BCA4018F4C3EBBFD25 /* RecordingPolicyTests.swift */; };
 		D3C9971367CBA431B1365E4A /* CurrimusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752748C2C4376164266AC885 /* CurrimusApp.swift */; };
 		D47B33063F6CCE2BCC5A6DB3 /* DebugFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31E09415889FE9881BBFFB33 /* DebugFlags.swift */; };
@@ -303,6 +309,7 @@
 		35A2BF1160B61F7331AC0308 /* RunSampleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSampleStore.swift; sourceTree = "<group>"; };
 		367A4044965F5409D34C5401 /* CurrimusWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrimusWidgets.swift; sourceTree = "<group>"; };
 		3C9CB42153EFED5140123404 /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsView.swift; sourceTree = "<group>"; };
+		3D7034592505125AF1C51D5F /* RouteRepairTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteRepairTests.swift; sourceTree = "<group>"; };
 		3DB6B5A2E80C367BEE291B1F /* Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass.swift; sourceTree = "<group>"; };
 		3E3F1A48729A6BD0B5FC67DE /* WatchHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHomeView.swift; sourceTree = "<group>"; };
 		41AB578CE8E812E62FAA0FE8 /* RunSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSyncTests.swift; sourceTree = "<group>"; };
@@ -316,6 +323,7 @@
 		56F5464BE0196BC03E8F0255 /* RunWeek.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunWeek.swift; sourceTree = "<group>"; };
 		591C33FACB6B9A5D87A858BB /* RunSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunSession.swift; sourceTree = "<group>"; };
 		5CD6D8198237FDA19530FD50 /* RunEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunEditView.swift; sourceTree = "<group>"; };
+		5F82C0A3FDC2C0B292641E07 /* RouteRepair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteRepair.swift; sourceTree = "<group>"; };
 		60332871CFEA2AFE9925CDAE /* RunPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunPalette.swift; sourceTree = "<group>"; };
 		611382FAA1F022D0C04A790D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		61423834EFBB80EBFAC112C9 /* CurrimusWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CurrimusWatchWidgets.entitlements; sourceTree = "<group>"; };
@@ -401,6 +409,7 @@
 				03BA66CF16A42E87B54B69AC /* PromptGate.swift */,
 				AE5027A1297C7F0EAA258CB2 /* Reconstruction.swift */,
 				1EC5D9A0957780EACF963837 /* RecordingIssue.swift */,
+				5F82C0A3FDC2C0B292641E07 /* RouteRepair.swift */,
 				506DE4D0BFC1892ED9C97D97 /* RunAnalytics.swift */,
 				C4AE7EB972483756B1B4BD09 /* RunExport.swift */,
 				51FB40448E3F1E3BB0DE9E3A /* RunHints.swift */,
@@ -516,6 +525,7 @@
 			children = (
 				98521C771A99F28A1A83C8B0 /* PromptGateTests.swift */,
 				A2CB59BCA4018F4C3EBBFD25 /* RecordingPolicyTests.swift */,
+				3D7034592505125AF1C51D5F /* RouteRepairTests.swift */,
 				0D053C6FDC95B6C0D9F8CA7C /* RunAnalyticsTests.swift */,
 				E024589EC7343ED3809D8F41 /* RunExportTests.swift */,
 				B1743CD59636C6E4B5816C5E /* RunHintsTests.swift */,
@@ -823,6 +833,7 @@
 				BC6A7A09761F69E74D22F6C2 /* Reconstruction.swift in Sources */,
 				E7AD9B70C6E27CE0D4CB116D /* RecordingIssue.swift in Sources */,
 				EC55258A7F95B65787BEEDD2 /* RecordingIssueViews.swift in Sources */,
+				942BD8EB8A6AFD6618B60623 /* RouteRepair.swift in Sources */,
 				46B6E33C7D7A8381DA916D62 /* RunAnalytics.swift in Sources */,
 				1036F046D58875E97CB5C429 /* RunExport.swift in Sources */,
 				CD917544413675BA57B69C43 /* RunHints.swift in Sources */,
@@ -872,6 +883,8 @@
 				4864046326371C45263D078C /* Reconstruction.swift in Sources */,
 				9ADAF4F78A56DF1F635A50C9 /* RecordingIssue.swift in Sources */,
 				D03CFF6F549424CF8B570758 /* RecordingPolicyTests.swift in Sources */,
+				0EDD3D8D6D89F675E906E916 /* RouteRepair.swift in Sources */,
+				CEF2B13EAE7E776712DA3205 /* RouteRepairTests.swift in Sources */,
 				651D84C9E3CC69E39CF29428 /* RunAnalytics.swift in Sources */,
 				B9AB9B26A8F7D7B113454FE8 /* RunAnalyticsTests.swift in Sources */,
 				A4E9CEEEFE94B2D7711201C3 /* RunExport.swift in Sources */,
@@ -919,6 +932,7 @@
 				4E48CE6EE2C15C6723AA4A17 /* PromptGate.swift in Sources */,
 				A594B885F6676492787FAF41 /* Reconstruction.swift in Sources */,
 				5B29CAA45111F1A2496CB5B5 /* RecordingIssue.swift in Sources */,
+				1CF0986BCAF2B5809809F194 /* RouteRepair.swift in Sources */,
 				C2486B37815CA4713B1A972F /* RunAnalytics.swift in Sources */,
 				190698F50C3CAC3A718B9688 /* RunExport.swift in Sources */,
 				DFE3AE9703B785C2C8B87651 /* RunHints.swift in Sources */,
@@ -957,6 +971,7 @@
 				983E423E5113AF77E35CF486 /* PromptGate.swift in Sources */,
 				A6508286066C8B85D4ADAC57 /* Reconstruction.swift in Sources */,
 				983D2010E3BB67F246F2C0BF /* RecordingIssue.swift in Sources */,
+				3D865059F525EF2B2A206CAE /* RouteRepair.swift in Sources */,
 				D90E2C0A15EFF4E640787E91 /* RunAnalytics.swift in Sources */,
 				ED34D0949048BED15D347B04 /* RunExport.swift in Sources */,
 				019B2DE5A07E3038871D7EAC /* RunHints.swift in Sources */,
@@ -1007,6 +1022,7 @@
 				23E607B7EDD9A5C9C3E7FC2F /* Reconstruction.swift in Sources */,
 				489D187DA8A40C27BC216EDE /* RecordingIssue.swift in Sources */,
 				B1750243611A3E10BDCD574D /* RecordsView.swift in Sources */,
+				1A0AFBBD37D6A14EDBCB9A5B /* RouteRepair.swift in Sources */,
 				898A0FE20D45DAF944B06D0A /* RunAnalytics.swift in Sources */,
 				C469BBBED55020F61200FDB1 /* RunDeletion.swift in Sources */,
 				8F585BDDC2AF5605F11907F7 /* RunDetailView.swift in Sources */,

@@ -166,3 +166,36 @@ Evaluation only: https://github.com/candyscode/Currimus/commit/04a0a83
 [ ] Done
 
 Maybe based on trail run mode but with different metrics? How to exclude from progress page? How to make this clear in the UI?
+
+### CUR-43: Distance widget — even margins and gaps
+
+ [ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Andi, 2026-08-07, vom Ultra-Simulator: das Distance-Widget wirkt unharmonisch, weil der Abstand vom linken Bildschirmrand zur ersten Zahl und der vom rechten Rand zur letzten Ziffer der letzten Zahl nicht gleich sind — insgesamt sitzt es „zu weit links".
+
+1. Das „KM" in der oberen rechten Ecke entfernen.
+2. Die linkeste Zahl (WEEK) ganz leicht nach rechts, also etwas mehr Abstand zum Bildschirmrand — aber wirklich nur wenig.
+3. Die Zahlen so setzen, dass die Abstände zwischen ihnen jeweils **genau gleich** sind und die rechte Zahl (YEAR) genau so viel Abstand zum rechten Rand hat wie die linke zum linken.
+
+### CUR-44: GPX route missing in Apple Fitness
+
+ [ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Andi, 2026-08-07: Der GPS-Track eines Laufs wird in Currimus angezeigt, in der Apple Fitness App aber nicht — beim selben Lauf. Der Workout selbst ist da, die Karte fehlt.
+
+Akzeptanz: ein auf der Uhr aufgezeichneter Lauf hat in Apple Health eine `HKWorkoutRoute` und zeigt in Fitness eine Karte. Läufe, die bereits ohne Route gespeichert wurden, bekommen sie nachträglich.
+
+### CUR-45: Month labels on the Progress charts are unevenly spaced
+
+ [ ] In Specification
+[ ] Open
+[X] WIP
+[ ] Done
+
+Andi, 2026-08-07: Die Diagramme auf der iOS-Seite Progress haben Monate als X-Achse. Innerhalb eines Diagramms sind die Abstände zwischen zwei Monaten aber nicht gleich — Jun und Jul stehen weiter auseinander als Jul und Aug. Die Abstände müssen gleich sein.

@@ -541,6 +541,22 @@ enum HealthImport {
         })
     }
 
+    /// The one workout Currimus itself saved for this run, if it is findable.
+    ///
+    /// More than one match means the question could not be answered — two runs
+    /// that close together are indistinguishable by time alone, and attaching a
+    /// route to the wrong one would be a lie drawn on a map. `RouteRepair` uses
+    /// this; the delete path has its own, looser lookup on purpose.
+    static func ownWorkout(matching run: Run, in store: HKHealthStore) async -> HKWorkout? {
+        let found = await ownWorkouts(matching: run, in: store).workouts
+        return found.count == 1 ? found.first : nil
+    }
+
+    /// Whether a workout already carries a GPS track.
+    static func hasRoute(_ workout: HKWorkout, in store: HKHealthStore) async -> Bool {
+        await routeSeries(of: workout, in: store) != nil
+    }
+
     private static func routes(of workout: HKWorkout, in store: HKHealthStore) async -> [HKObject] {
         await withCheckedContinuation { continuation in
             let query = HKSampleQuery(

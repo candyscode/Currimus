@@ -196,6 +196,33 @@ final class RunStore: ObservableObject {
     /// in it, which no simulator has; this is the decision it turns on.
     func wasDeletedOnPurposeForTesting(_ run: Run) -> Bool { wasDeletedOnPurpose(run) }
 
+    #if os(watchOS)
+    /// Gives back the GPS track of any of our own workouts in Health that was
+    /// saved without one (CUR-44).
+    ///
+    /// Only on the watch: HealthKit lets an app attach objects to a workout it
+    /// saved itself and to no other, and the watch is what saved these. Costs
+    /// nothing once a run has been answered — the ids that came back settled
+    /// are never asked about again.
+    func restoreMissingRoutes() async {
+        guard !isDemo, HealthImport.isAvailable else { return }
+        var settled = Set(routesSettled)
+        let candidates = RouteRepair.candidates(from: runs, settled: settled)
+        guard !candidates.isEmpty else { return }
+        let answered = await RouteRepair.sweep(candidates, in: healthStore)
+        guard !answered.isEmpty else { return }
+        settled.formUnion(answered)
+        // Bounded by the log itself, so the list cannot outgrow the runs it
+        // describes — the same pruning `RunSampleStore` gets.
+        routesSettled = Array(settled.intersection(runs.map(\.id)))
+    }
+
+    private var routesSettled: [UUID] {
+        get { (defaults.array(forKey: RouteRepair.settledKey) as? [String] ?? []).compactMap(UUID.init) }
+        set { defaults.set(newValue.map(\.uuidString), forKey: RouteRepair.settledKey) }
+    }
+    #endif
+
     #if canImport(HealthKit) && os(iOS)
     /// Files any run of ours that Apple Health holds and the log does not.
     ///
