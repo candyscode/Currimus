@@ -28,7 +28,15 @@ struct CurrimusWatchApp: App {
                 // reach the phone. A run that could not be handed over when it
                 // finished has to have somewhere to be tried again (CUR-40).
                 .onChange(of: scenePhase) { _, phase in
-                    if phase == .active { RunSync.shared.flush() }
+                    guard phase == .active else { return }
+                    RunSync.shared.flush()
+                    // And the same import on every foreground the iPhone does.
+                    // `.task` above fires once per launch, so the log-completing
+                    // sweep only ever ran on a cold start — and on the launch
+                    // right after an install it finds nothing, because Health
+                    // read access is not granted until the first run begins.
+                    // It would then not try again until the app was killed.
+                    Task { await store.refreshImportedRuns() }
                 }
         }
     }

@@ -163,6 +163,31 @@ final class RunStore: ObservableObject {
         importedRuns = HealthImport.merging(importedRuns, with: runs)
     }
 
+    /// Files a whole recovery at once: one sort, one merge, one save.
+    ///
+    /// `add` is the right shape for a run arriving on its own, and the wrong
+    /// one for three hundred. Each call re-sorts the log and rebuilds the
+    /// imported list against it — `merging` is imported × own — and each of the
+    /// two `@Published` writes queues a JSON encode of the entire log. On the
+    /// reinstalled watch this exists for, `missing` is the whole history, and
+    /// that is tens of millions of range comparisons on the main actor at
+    /// launch plus six hundred full encodes.
+    ///
+    /// Safe to skip the rest of `add`: `missing` is already filtered to runs
+    /// that overlap nothing in the log, so neither the duplicate-id guard nor
+    /// the replaces-a-stand-in branch has anything to do, and a run rebuilt
+    /// from a workout summary carries no samples to store.
+    private func file(recovered missing: [Run]) {
+        var merged = runs
+        for var run in missing {
+            run.recovered = true
+            merged.append(run.strippingSamples)
+        }
+        merged.sort { $0.date > $1.date }
+        runs = merged
+        importedRuns = HealthImport.merging(importedRuns, with: runs)
+    }
+
     /// Two records of the same outing — the only way to pair a run that came
     /// over from the watch with the same run read back out of Health, since
     /// the two carry different identities.
@@ -180,11 +205,14 @@ final class RunStore: ObservableObject {
         set { if !isDemo { defaults.set(newValue, forKey: AppDefaults.deletedOutingsKey) } }
     }
 
+    /// A tombstone has to outlive every sweep that could put the run back, and
+    /// the longest of those is now the importer's window, not the recovery's
+    /// (CUR-46). Pruning against ninety days meant deleting a run older than
+    /// that recorded no tombstone at all — and the watch's eighteen-month pass
+    /// would then file it straight back, as a run the user had disowned.
     private func remember(deleted runs: [Run]) {
         #if canImport(HealthKit)
-        let cutoff = Calendar.current.date(byAdding: .day,
-                                           value: -HealthImport.recoveryWindowDays,
-                                           to: .now) ?? .distantPast
+        let cutoff = HealthImport.importWindowStart()
         deletedOutings = (deletedOutings + runs.map(\.date)).filter { $0 >= cutoff }
         #endif
     }
@@ -254,10 +282,7 @@ final class RunStore: ObservableObject {
         }
         guard !missing.isEmpty else { return }
         Log.store.notice("recovering \(missing.count) run(s) from Health that never arrived")
-        for var run in missing {
-            run.recovered = true
-            add(run)
-        }
+        file(recovered: missing)
         // What a workout summary does not carry — the route, the splits, the
         // zones — is still in Health beside it. Only where it gets drawn: the
         // watch shows no detail screen for an old run, so pulling every
@@ -833,10 +858,44 @@ final class RunStore: ObservableObject {
                 // they redrew on their own half-hourly schedule: a run could
                 // finish and the week bar not move for half an hour, and the
                 // totals corrected by an import waited just as long (CUR-46).
-                if isLog { WidgetCenter.shared.reloadAllTimelines() }
+                if isLog { Self.reloadWidgets() }
             } catch {
                 Log.store.error("could not save \(key, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
+        }
+    }
+
+    /// At most one widget reload per minute, with the first one immediate.
+    ///
+    /// **The reload has to be throttled, and a per-write reload is worse than
+    /// none.** WidgetKit gives a widget a daily budget of timeline reloads and
+    /// stops refreshing it for the rest of the day once that is spent. The log
+    /// is written per *run* in three places — `hydrate` assigns into one
+    /// element, and both `rebuildEverythingFromHealth` and `startFirstImport`
+    /// walk the whole log calling it — so a first import of a few hundred runs
+    /// would have burned the whole day's budget in one burst and left the
+    /// complications frozen, which is precisely what CUR-46 set out to fix.
+    ///
+    /// Leading edge, so a finished run moves the week bar at once; trailing
+    /// edge, so the last write of a burst is not the one that gets dropped.
+    /// Called on `ioQueue`, which is serial — hence no lock of its own.
+    private nonisolated(unsafe) static var lastWidgetReload = Date.distantPast
+    private nonisolated(unsafe) static var widgetReloadQueued = false
+    private static let widgetReloadInterval: TimeInterval = 60
+
+    private static func reloadWidgets() {
+        let waited = Date.now.timeIntervalSince(lastWidgetReload)
+        guard waited < widgetReloadInterval else {
+            lastWidgetReload = .now
+            WidgetCenter.shared.reloadAllTimelines()
+            return
+        }
+        guard !widgetReloadQueued else { return }
+        widgetReloadQueued = true
+        ioQueue.asyncAfter(deadline: .now() + (widgetReloadInterval - waited)) {
+            widgetReloadQueued = false
+            lastWidgetReload = .now
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 

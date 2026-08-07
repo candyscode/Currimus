@@ -239,10 +239,27 @@ net for a transfer that failed; `importWindowMonths` is how far back a total can
 see. A year total needs at least thirteen months, since the month bucket also
 compares against the month before.
 
-**Nothing reloads a widget on its own.** `RunStore.write` calls
-`WidgetCenter.shared.reloadAllTimelines()` after the two log keys land, or the
-complications redraw on their own half-hourly schedule — a run could finish and
-the week bar not move for half an hour.
+**Nothing reloads a widget on its own** — and a reload per write is worse than
+none. `RunStore.write` asks for one after the two log keys land, through
+`reloadWidgets()`, which throttles to one a minute on the leading *and* trailing
+edge. WidgetKit gives a widget a daily budget of timeline reloads and freezes it
+for the rest of the day once that is spent, and the log is written **per run**
+in three places (`hydrate`, and the two loops in `rebuildEverythingFromHealth` /
+`startFirstImport`) — a first import of a few hundred runs would spend the whole
+budget in one burst.
+
+**`add` is for one run, not for three hundred.** Each call re-sorts the log and
+rebuilds the imported list against it (`merging` is imported × own), and each of
+its two `@Published` writes queues a full JSON encode. A recovery files its runs
+through `file(recovered:)` instead: one sort, one merge, one save.
+
+**A delete tombstone must outlive every sweep that could undo it.**
+`deletedOutings` is pruned against `HealthImport.importWindowStart()`, not
+`recoveryWindowDays` — pruned against ninety days, deleting a run older than
+that recorded nothing at all, and the watch's eighteen-month pass filed it back.
+Still open by design: tombstones are per device, so a run deleted on the phone
+whose workout survives in Health (share access refused) can still return on a
+reinstalled watch.
 
 ## The route in Apple Health is not saved with the workout
 

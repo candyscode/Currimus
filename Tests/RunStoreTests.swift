@@ -100,6 +100,37 @@ final class RunStoreTests: XCTestCase {
         XCTAssertTrue(store.wasDeletedOnPurposeForTesting(recovered))
     }
 
+    /// The tombstone has to outlive every sweep that could put the run back,
+    /// and the longest of those is the importer's window — the watch reads
+    /// eighteen months of its own workouts to complete its log (CUR-46).
+    /// Pruning against the ninety-day recovery window meant deleting anything
+    /// older recorded no tombstone at all, and the next sweep filed it back.
+    func testAnOldRunDeletedOnPurposeStaysDeleted() {
+        let store = makeStore()
+        let lastAutumn = Date.now.addingTimeInterval(-300 * 86_400)
+        let mistake = run("Autumn long run", km: 24, minutes: 128, date: lastAutumn)
+        store.add(mistake)
+        store.delete([mistake])
+
+        var recovered = run("Autumn long run", km: 24, minutes: 128, date: lastAutumn)
+        recovered.recovered = true
+        XCTAssertTrue(store.wasDeletedOnPurposeForTesting(recovered))
+    }
+
+    /// Older than anything any sweep reads: the tombstone is dropped, because
+    /// a list that only grows is its own kind of leak.
+    func testATombstoneOlderThanEverySweepIsForgotten() {
+        let store = makeStore()
+        let ancient = Date.now.addingTimeInterval(-3 * 365 * 86_400)
+        let mistake = run("Old run", km: 10, minutes: 52, date: ancient)
+        store.add(mistake)
+        store.delete([mistake])
+
+        var recovered = run("Old run", km: 10, minutes: 52, date: ancient)
+        recovered.recovered = true
+        XCTAssertFalse(store.wasDeletedOnPurposeForTesting(recovered))
+    }
+
     // MARK: - Demo log
 
     func testDemoStoreHasRaceAndRuns() {
