@@ -1396,3 +1396,94 @@ Verifiziert per Screenshot auf Apple Watch Ultra 3 (49 mm), in Farbe und getönt
 #### Link to completed work
 
 - https://github.com/candyscode/Currimus/commit/2df7601 — getönter Balken, größere Typo, Distance-Widget, Preview-Route
+
+### CUR-43: Distance widget — even margins and gaps
+
+ [ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Andi, 2026-08-07, vom Ultra-Simulator: das Distance-Widget wirkt unharmonisch, weil der Abstand vom linken Bildschirmrand zur ersten Zahl und der vom rechten Rand zur letzten Ziffer der letzten Zahl nicht gleich sind — insgesamt sitzt es „zu weit links".
+
+1. Das „KM" in der oberen rechten Ecke entfernen.
+2. Die linkeste Zahl (WEEK) ganz leicht nach rechts, also etwas mehr Abstand zum Bildschirmrand — aber wirklich nur wenig.
+3. Die Zahlen so setzen, dass die Abstände zwischen ihnen jeweils **genau gleich** sind und die rechte Zahl (YEAR) genau so viel Abstand zum rechten Rand hat wie die linke zum linken.
+
+#### Agent Comments
+
+**Warum es schief stand.** Die drei Spalten waren gleich breit (`maxWidth: .infinity`) — aus CUR-42 übernommen, damit eine vierstellige Jahressumme die Woche nicht hinausschiebt. Eine Spalte ist aber so breit wie das *breitere* ihrer beiden Elemente, und bei Andis Zahlen ist das zweimal das Label: „WEEK" ist breiter als „8.8", „MONTH" breiter als „8.8", „YEAR" schmaler als „600". Also stand die erste Zahl eingerückt in ihrer Spalte, während „600" rechts bündig abschloss — genau der Eindruck „zu weit links".
+
+Nach Inhalt bemessene Spalten reichen auch nicht: dann sind zwar die Ränder gleich, aber die Abstände *zwischen den Zahlen* nicht — bei 8.8 / 8.8 / 600 gerechnet 9 pt Unterschied, weil die Labels weiterhin die Spaltenbreite bestimmen.
+
+**Der Fix:** die Zahlen bestimmen das Layout, die Labels werden daneben gezeichnet — `.fixedSize()` plus `.frame(width: 0, alignment: .leading)`, also null Layoutbreite bei natürlicher Zeichenbreite. Derselbe Overflow-Trick, den `BigStat` auf der Uhr schon benutzt. Dazwischen zwei identische `Spacer`. Damit liegt die erste Zahl auf dem linken Inset, die letzte auf dem rechten, und die beiden Lücken sind konstruktionsbedingt gleich.
+
+**Gemessen** am Screenshot des Ultra-Simulators (Pixel, 2×): Zahlenkästen bei [32, 88], [176, 232], [319, 388] → Lücken 87 und 86 px, also gleich bis auf Rundung; linker Rand 32 px, rechter 34 px — die 1 pt Differenz ist die Seitenbreite der Glyphen, nicht das Layout.
+
+„KM" ist raus, und die ganze Zeile sitzt 3 pt weiter innen (`.padding(.horizontal, 3)`) — auf beiden Seiten gleich, denn eine symmetrische Zeile verträgt kein einseitiges Inset. Das breiteste Label (MONTH, ~36 pt) überhängt die schmalste Zahl um weniger als die halbe Spaltenlücke, kollidiert also nicht.
+
+Die Snapshot-Route `widgets` zeigt jetzt Andis eigene Zahlen (8.8 / 8.8 / 600) — der Fall, der falsch war.
+
+#### Link to completed work
+
+- https://github.com/candyscode/Currimus/commit/46485c3
+
+### CUR-44: GPX route missing in Apple Fitness
+
+ [ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Andi, 2026-08-07: Der GPS-Track eines Laufs wird in Currimus angezeigt, in der Apple Fitness App aber nicht — beim selben Lauf. Der Workout selbst ist da, die Karte fehlt.
+
+Akzeptanz: ein auf der Uhr aufgezeichneter Lauf hat in Apple Health eine `HKWorkoutRoute` und zeigt in Fitness eine Karte. Läufe, die bereits ohne Route gespeichert wurden, bekommen sie nachträglich.
+
+#### Agent Comments
+
+**Die Diagnose steckt in der Asymmetrie der beiden Aufrufe.** Ein Lauf wird am Ende in vier verschachtelten Schritten gespeichert: `addMetadata` → `endCollection` → `finishWorkout` → `finishRoute`. Der Workout *ist* in Fitness, die Route nicht — also sind die ersten drei Schritte durchgelaufen und der vierte nicht. Warum genau der:
+
+- **`finishWorkout` ist ein XPC-Aufruf, den healthd selbst ausführt.** Einmal abgesetzt, wird der Workout gespeichert, egal ob dieser Prozess je wieder läuft.
+- **`finishRoute` ist ein Aufruf, den *wir* danach noch machen müssen** — er braucht den gespeicherten Workout. Ein suspendierter Prozess macht ihn nie.
+
+watchOS suspendiert die App wenige Sekunden nach Laufende; das Handgelenk sinkt in dem Moment, in dem der Läufer „Finish" tippt. Genau dazwischen liegt das Fenster. Das erklärt das Symptom vollständig: Lauf da, Karte weg, und Currimus zeigt trotzdem eine Karte, weil es seine eigene Kopie des Tracks mitschickt.
+
+**Zwei Maßnahmen, weil eine nicht reicht:**
+
+1. **Prävention.** Die ganze Finish-Kette läuft jetzt in `ProcessInfo.performExpiringActivity`, offengehalten von einem Semaphor, den *jeder* Pfad signalisiert — auch die Fehlerpfade, denn eine nie freigegebene Assertion ist schlimmer als eine zu früh beendete. Der Block wird ein zweites Mal mit `expired == true` aufgerufen, wenn die Zeit ausgeht; auch von dort wird signalisiert.
+2. **Reparatur**, denn Punkt 1 hilft nur künftigen Läufen. `RouteRepair` läuft beim Start der Watch-App: für jeden der letzten eigenen Läufe, dessen Workout in Health keine `HKWorkoutRoute` hat, baut es eine aus dem gespeicherten Track. **Das muss auf der Uhr laufen** — HealthKit lässt eine App nur Objekte an einen Workout hängen, den sie selbst gespeichert hat, und das war die Uhr. Beantwortete Läufe werden gemerkt (`RouteRepair.settledKey`), ein Start nach dem ersten kostet also nichts.
+
+Details, die Zeit gekostet haben und in `docs/AGENT-NOTES.md` stehen: `insertRouteData` weist eine Location mit negativer Genauigkeit zurück, und der gespeicherte Track trägt keine — jeder Punkt darin hat live den 50-m-Filter passiert, also wird `RunMetrics.usableHorizontalAccuracy` als ehrliche Obergrenze zurückgeschrieben. Die Zeitstempel sind Laufbeginn plus der Wanduhr-Offset jedes Punkts, Pausen also inklusive, wie beim GPX-Export.
+
+**Was hier nicht verifiziert werden konnte:** kein Simulator hat HealthKit-Daten und keiner hat GPS — der Pfad ist auf diesem Rechner grundsätzlich nicht ausführbar. Sieben Tests decken alles ab, worauf der Sweep beruht: welche Läufe überhaupt gefragt werden (eigene, jung genug, nicht frisch beendet, noch nicht beantwortet, neueste zuerst, auf eine Charge gedeckelt) und was aus dem Track auf dem Weg zu `insertRouteData` wird. Der Rest ist ein Gerätetest: einmal laufen, danach in Fitness nachsehen — und für die Altläufe reicht es, die Watch-App einmal zu öffnen.
+
+#### Link to completed work
+
+- https://github.com/candyscode/Currimus/commit/46485c3
+
+### CUR-45: Month labels on the Progress charts are unevenly spaced
+
+ [ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Andi, 2026-08-07: Die Diagramme auf der iOS-Seite Progress haben Monate als X-Achse. Innerhalb eines Diagramms sind die Abstände zwischen zwei Monaten aber nicht gleich — Jun und Jul stehen weiter auseinander als Jul und Aug. Die Abstände müssen gleich sein.
+
+#### Agent Comments
+
+Zwei getrennte Ursachen, eine pro Diagrammtyp.
+
+**Die 12-Wochen-Achse** („AVG PACE · LAST 12 WEEKS", auch die Trail-Variante) setzte jedes Label dorthin, wo der Monat tatsächlich beginnt. Monate sind vier oder fünf Wochen lang, also kam May→Jun auf die halbe Breite von Jul→Aug. Die Labels stehen jetzt auf festen, gleichen Bruchteilen der Breite.
+
+Der Preis, ausdrücklich benannt: der Tick markiert nicht mehr den Monatsanfang, sondern sagt nur noch, *welche* Monate die Linie abdeckt. Bei einem Diagramm, das „LAST 12 WEEKS" überschrieben ist, ist das ohnehin die Frage, die die Achse beantwortet — die Position der Datenpunkte liest niemand von einem Monatsnamen ab.
+
+**Die 12-Monats-Achse** („PACE IN ZONE 2 · LAST 12 MONTHS") nahm jeden dritten Monat vom ältesten aus und erzwang dann zusätzlich den letzten: Labels bei 0, 3, 6, 9 und 11, also eine Lücke von zwei, wo alle anderen drei breit waren. Hier wäre Zurückschreiten vom Ende (11, 8, 5, 2) gleichmäßig gewesen, hätte aber den ältesten Monat verloren — und direkt darüber steht „−0:13 since Sep", eine Achse, die bei Nov anfängt, widerspricht dem. Also sind die *Positionen* fix und gleichmäßig (0, ⅓, ⅔, 1) und jedes Label ist der Monat, der dieser Position am nächsten liegt: elf Monate lassen sich nicht in drei gleiche ganze Schritte teilen, und ein halber Monat Rundung fällt nicht auf, wo ein ganzer Monat Ungleichmäßigkeit auffiel.
+
+**Gemessen** am Screenshot (iPhone 17 Pro, Demo-Daten): 12-Wochen-Achse May/Jun/Jul/Aug bei 81, 392, 704, 1015 px → Lücken 311, 312, 311. 12-Monats-Achse Sep/Jan/Apr/Aug bei 80, 392, 703, 1015 → 312, 311, 312. Anfang und Ende der Linie sind in beiden Fällen beschriftet.
+
+`TrendMonthAxis` liegt im iOS-Target, das die Test-Bundle nicht kompiliert (`CurrimusTests` baut `Tests` + `Shared`) — abgesichert ist das über die Snapshot-Referenz `progress-road`.
+
+#### Link to completed work
+
+- https://github.com/candyscode/Currimus/commit/46485c3
