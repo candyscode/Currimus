@@ -32,12 +32,13 @@ struct TrendMonthAxis: View {
     /// last one in regardless. Over twelve months that put labels at 0, 3, 6, 9
     /// and 11, so the final gap was two months wide where every other one was
     /// three (CUR-45). Stepping back from the end instead gives equal gaps but
-    /// drops the oldest month, and the headline right above says "since Sep" —
-    /// an axis that starts at Nov then contradicts it. So the *positions* are
-    /// fixed and even, and each label is the month nearest that position:
-    /// eleven months do not divide into three equal whole steps, and half a
-    /// month of rounding is invisible where a whole month of unevenness was
-    /// not.
+    /// drops the oldest month — and the headline right above names that same
+    /// month ("since <the first month of the window that carries a value>"), so
+    /// an axis starting two months later would contradict it. So the
+    /// *positions* are fixed and even, and each label is the month nearest that
+    /// position: eleven months do not divide into three equal whole steps, and
+    /// half a month of rounding is invisible where a whole month of unevenness
+    /// was not.
     private func monthTicks(_ months: [Date]) -> [(String, Double)] {
         guard months.count > 1 else { return [] }
         let last = Double(months.count - 1)
