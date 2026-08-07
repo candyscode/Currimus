@@ -1424,9 +1424,12 @@ Nach Inhalt bemessene Spalten reichen auch nicht: dann sind zwar die Ränder gle
 
 Die Snapshot-Route `widgets` zeigt jetzt Andis eigene Zahlen (8.8 / 8.8 / 600) — der Fall, der falsch war.
 
+**Nachtrag (Andi, gleicher Tag): die Einheit gehört in die Headline.** „DISTANCE" heißt jetzt „DISTANCE (KM)". Das war der Preis dafür, das „KM" aus der Ecke zu nehmen: die drei Spalten sind reine Zahlen, danach stand nirgends mehr, was sie sind. Kilometer ohne Fallunterscheidung — eine Suche über `Shared/`, `iOS/` und `Watch/` nach `mile`, `imperial`, `unitSystem` findet nichts, die App kennt kein imperiales System, und eine Einheit, die sich ändern könnte, wäre eine, die lügt. Falls Meilen je dazukommen, ist diese Zeile eine der Stellen, die mitwandern müssen.
+
 #### Link to completed work
 
-- https://github.com/candyscode/Currimus/commit/46485c3
+- https://github.com/candyscode/Currimus/commit/46485c3 — Ränder, Abstände, „KM" aus der Ecke
+- Einheit in der Headline
 
 ### CUR-44: GPX route missing in Apple Fitness
 

@@ -159,7 +159,11 @@ struct DistanceRectangularView: View {
     /// the last one on the right.
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("DISTANCE")
+            // The unit belongs in the header: the three columns are pure
+            // number, so nothing else in the widget says what they are.
+            // Kilometres unconditionally — the app has no imperial mode
+            // anywhere, so a unit that could change is a unit that would lie.
+            Text("DISTANCE (KM)")
                 .font(.sg(10, weight: .medium))
                 .kerning(1.1)
                 .foregroundStyle(palette.label)
