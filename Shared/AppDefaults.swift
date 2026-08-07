@@ -15,6 +15,10 @@ enum AppDefaults {
     /// When runs the user deleted began. Read by the Health recovery sweep so
     /// a deliberate delete is not undone by it — see `RunStore.recoverOwnRuns`.
     static let deletedOutingsKey = "deletedOutings.v1"
+    /// Week/month/year distance as the **iPhone** worked it out, pushed over
+    /// for the watch's complications. The watch cannot arrive at these numbers
+    /// itself — see `DistanceTotals`.
+    static let totalsKey = "totals.v1"
     static let goalKey = "weeklyGoal"
     static let gpsAccuracyKey = "gpsAccuracy"
 

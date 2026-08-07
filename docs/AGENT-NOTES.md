@@ -217,9 +217,30 @@ is how a two-hour trail run disappeared between the watch and the phone
 
 ## What the watch's widgets can actually see
 
-A widget reads the **app group of the device it runs on**, and today that is
-only ever the watch. So a total in a complication is `runs.v2 + imported.v1` as
-the *watch* holds them — never the phone's log, which is never pushed over.
+**The Apple Watch's HealthKit store is not a copy of the phone's.** It holds
+what the watch itself recorded plus a short window synced from the iPhone —
+*not* a history. So no query the watch can run will produce a correct year
+total: everything older than that window is simply not on the device, along with
+every run some phone-only app recorded. A clean install read 37 km for a year
+that was many times that (CUR-46), with the recovery sweep working exactly as
+written. This is the ceiling on anything computed watch-side, and it cannot be
+raised by trying harder.
+
+So **the iPhone works the totals out and pushes them**: `DistanceTotals` goes
+over the `updateApplicationContext` channel beside the settings and lands in
+`AppDefaults.totalsKey`. `DistanceTotals.current()` prefers that record and adds
+only the runs the watch holds that are *newer* than its `pushedAt` — the near
+edge the phone has not heard about yet — so nothing is counted twice and a run
+finished on the walk home still shows. With no push at all (never paired, first
+launch) it falls back to the watch's own log: short beats blank.
+
+`updateApplicationContext` **replaces** the dictionary rather than merging, so
+`RunSync` keeps the last settings and the last totals and always writes both
+keys. Sending one alone erases the other.
+
+A widget otherwise reads the **app group of the device it runs on**, and today
+that is only ever the watch. So a locally computed total is `runs.v2 +
+imported.v1` as the *watch* holds them.
 
 Those two lists have a hole between them, and it is the whole of CUR-46:
 

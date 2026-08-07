@@ -29,6 +29,60 @@ final class WidgetSnapshotTests: XCTestCase {
         defaults.set(try! JSONEncoder().encode(runs), forKey: key)
     }
 
+    private func push(_ totals: DistanceTotals) {
+        defaults.set(try! JSONEncoder().encode(totals), forKey: AppDefaults.totalsKey)
+    }
+
+    // MARK: - What the iPhone pushes
+
+    /// The watch cannot add these up itself — its HealthKit store holds what it
+    /// recorded plus a short synced window, not a history (CUR-46). So when the
+    /// phone has spoken, its numbers win outright over anything the watch could
+    /// work out from its own log.
+    func testThePhonesTotalsReplaceTheWatchsOwnArithmetic() {
+        let now = Date()
+        write([run(6, now)])
+        push(DistanceTotals(weekKm: 42, monthKm: 180, yearKm: 1400,
+                            pushedAt: now.addingTimeInterval(60)))
+        let totals = DistanceTotals.current(defaults: defaults, now: now)
+        XCTAssertEqual(totals.yearKm, 1400, accuracy: 0.001)
+        XCTAssertEqual(totals.weekKm, 42, accuracy: 0.001,
+                       "the local run is older than the push, so it is already in it")
+    }
+
+    /// A run recorded on the watch after the last push is the one thing the
+    /// watch knows and the phone does not yet. It counts on top, so a run
+    /// finished on the walk home shows before the phone has heard about it.
+    func testARunNewerThanThePushIsAddedOnTop() {
+        let now = Date()
+        push(DistanceTotals(weekKm: 42, monthKm: 180, yearKm: 1400,
+                            pushedAt: now.addingTimeInterval(-3600)))
+        write([run(8, now)])
+        let totals = DistanceTotals.current(defaults: defaults, now: now)
+        XCTAssertEqual(totals.weekKm, 50, accuracy: 0.001)
+        XCTAssertEqual(totals.yearKm, 1408, accuracy: 0.001)
+    }
+
+    /// Never twice. The push carries the moment it was taken, and everything at
+    /// or before it is already counted in the numbers beside it.
+    func testARunOlderThanThePushIsNotCountedTwice() {
+        let now = Date()
+        let earlier = now.addingTimeInterval(-7200)
+        write([run(9, earlier)])
+        push(DistanceTotals(weekKm: 9, monthKm: 9, yearKm: 9, pushedAt: now))
+        let totals = DistanceTotals.current(defaults: defaults, now: now)
+        XCTAssertEqual(totals.weekKm, 9, accuracy: 0.001)
+    }
+
+    /// A watch that has never heard from a phone still shows what it has.
+    /// Short is better than blank.
+    func testWithoutAPushTheWatchFallsBackToItsOwnLog() {
+        let now = Date()
+        write([run(6, now)])
+        XCTAssertEqual(DistanceTotals.current(defaults: defaults, now: now).weekKm,
+                       6, accuracy: 0.001)
+    }
+
     // MARK: - Distance totals
 
     func testTotalsBucketRunsIntoWeekMonthAndYear() {

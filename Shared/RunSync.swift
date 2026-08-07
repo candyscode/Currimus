@@ -1,5 +1,6 @@
 import Foundation
 import WatchConnectivity
+import WidgetKit
 
 /// Settings the iPhone owns and the watch consumes at the start of a run.
 struct WatchSettings: Codable, Equatable {
@@ -260,14 +261,52 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
     }
 
     func send(settings: WatchSettings) {
+        contextLock.lock()
+        lastSettings = try? JSONEncoder().encode(settings)
+        contextLock.unlock()
+        pushContext()
+    }
+
+    /// The phone's own week/month/year distance, for the watch's complications.
+    ///
+    /// The watch cannot work these out for itself: its HealthKit store holds
+    /// only what it recorded plus a short window synced from the phone, so a
+    /// year total read on the watch is short by everything older than that
+    /// window and by every run some phone-side app recorded (CUR-46). The
+    /// phone's log is the one place with the whole picture.
+    func send(totals: DistanceTotals) {
+        contextLock.lock()
+        lastTotals = try? JSONEncoder().encode(totals)
+        contextLock.unlock()
+        pushContext()
+    }
+
+    /// One application context, both payloads, every time.
+    ///
+    /// `updateApplicationContext` **replaces** the dictionary rather than
+    /// merging into it, so sending only the key that changed would silently
+    /// drop the other one — a settings change would erase the totals until the
+    /// next run finished, and vice versa.
+    private func pushContext() {
         guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
+        contextLock.lock()
+        var context: [String: Any] = [:]
+        if let lastSettings { context["settings"] = lastSettings }
+        if let lastTotals { context["totals"] = lastTotals }
+        contextLock.unlock()
+        guard !context.isEmpty else { return }
         do {
-            let data = try JSONEncoder().encode(settings)
-            try WCSession.default.updateApplicationContext(["settings": data])
+            try WCSession.default.updateApplicationContext(context)
         } catch {
-            Log.sync.error("settings not sent: \(error.localizedDescription, privacy: .public)")
+            Log.sync.error("context not sent: \(error.localizedDescription, privacy: .public)")
         }
     }
+
+    /// Both senders are called from the store's io queue, and the delegate
+    /// callbacks arrive on a queue of WatchConnectivity's choosing.
+    private let contextLock = NSLock()
+    private var lastSettings: Data?
+    private var lastTotals: Data?
 
     // MARK: - WCSessionDelegate
 
@@ -349,6 +388,23 @@ final class RunSync: NSObject, WCSessionDelegate, @unchecked Sendable {
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         applySettings(from: applicationContext)
+        applyTotals(from: applicationContext)
+    }
+
+    /// Straight into the shared defaults, off the main actor and without the
+    /// store: the complications read this key and nothing else has to happen
+    /// for them to be right. `RunStore` picks it up as a side effect of living
+    /// in the same app group.
+    private func applyTotals(from context: [String: Any]) {
+        #if os(watchOS)
+        guard let data = context["totals"] as? Data else { return }
+        guard (try? JSONDecoder().decode(DistanceTotals.self, from: data)) != nil else {
+            Log.sync.error("arriving totals unreadable")
+            return
+        }
+        AppDefaults.shared.set(data, forKey: AppDefaults.totalsKey)
+        WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 
     private func applySettings(from context: [String: Any]) {

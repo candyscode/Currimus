@@ -1528,7 +1528,24 @@ Die zwei Fenster bleiben getrennt und heißen jetzt auch so. `recoveryWindowDays
 
 Ein fünfter Befund war keiner: die Scheme-Datei `CurrimusWatch.xcscheme` steht im Commit von `version = "1.7"` auf `"1.3"` zurück. Das ist die Ausgabe von `xcodegen generate`, und das `.xcodeproj` ist generiert — Xcode hatte die Datei beim Öffnen hochgezogen, nicht umgekehrt. Die verschwundenen Attribute sind ohnehin die Defaults. Ein Revert würde beim nächsten `xcodegen generate` wieder zurückgedreht.
 
+**Zweiter Anlauf (Andi, gleicher Tag): „Da steht immer noch 37,3 km dieses Jahr, das war viel viel mehr!" — Uhr über Xcode neu installiert, Widget neu hinzugefügt, unverändert.**
+
+Die erste Diagnose war richtig, aber nicht die Wurzel. Der Sweep tat, was er sollte; er hatte nur nichts zu finden. **Der HealthKit-Store auf der Apple Watch ist keine Kopie des iPhone-Stores.** Er hält, was die Uhr selbst aufgezeichnet hat, plus ein kurzes vom iPhone synchronisiertes Fenster — keine Historie. Damit kann *keine* Abfrage, die auf der Uhr läuft, eine richtige Jahressumme liefern: alles Ältere liegt schlicht nicht auf dem Gerät, ebenso wenig jeder Lauf, den eine reine iPhone-App aufgezeichnet hat. Das ist die Decke für alles uhrseitig Gerechnete, und sie lässt sich nicht durch mehr Anstrengung heben.
+
+37,3 km ist genau das, was man erwartet, wenn nur das synchronisierte Fenster da ist.
+
+**Also rechnet das iPhone und schiebt das Ergebnis.** `DistanceTotals` geht über denselben `updateApplicationContext`-Kanal wie die Settings und landet in `AppDefaults.totalsKey`. Das Widget bevorzugt diesen Datensatz und addiert nur die Läufe, die die Uhr hält und die **jünger** als dessen `pushedAt` sind — der nahe Rand, von dem das iPhone noch nichts weiß. Damit zählt nichts doppelt, und ein Lauf, der auf dem Heimweg endet, steht sofort in der Komplikation. Ohne jeden Push (nie gekoppelt, erster Start) fällt es auf das eigene Log zurück: kurz ist besser als leer.
+
+Eine Falle dabei: `updateApplicationContext` **ersetzt** das Dictionary, es merged nicht. `RunSync` hält deshalb den letzten Settings- und den letzten Totals-Stand und schreibt immer beide Schlüssel — sonst hätte eine Einstellungsänderung die Summen gelöscht und umgekehrt.
+
+Der Push läuft über dieselbe Drossel wie der Widget-Reload (einer pro Minute, führende und nachlaufende Flanke) und wird beim Start des iPhone-Stores einmal angestoßen, damit eine Uhr nicht auf den nächsten fertigen Lauf warten muss.
+
+Was aus dem ersten Anlauf bleibt und richtig war: die uhrseitige Wiederherstellung eigener Läufe schließt weiterhin die Lücke zwischen den zwei Listen, soweit die Daten auf der Uhr überhaupt vorhanden sind, und die Drossel verhindert weiterhin, dass das Reload-Budget verbrannt wird.
+
+**Prüfbar auf dem Gerät:** iPhone-App einmal öffnen (der Store stößt den Push beim Start an), dann die Watch-App. Falls die Zahl dann immer noch nicht stimmt, ist die nächste Frage, ob die iPhone-App selbst die richtige Jahressumme anzeigt — dort ist das Log vollständig, und wenn schon das kleiner ist, liegt der Fehler eine Ebene tiefer.
+
 #### Link to completed work
 
 - https://github.com/candyscode/Currimus/commit/07a497c — Uhr-seitige Wiederherstellung eigener Läufe, Importfenster benannt, Widget-Reload
 - Review-Fixes: Reload gedrosselt, Batch-Recovery, Grabsteinfenster, Foreground-Import
+- iPhone rechnet die Summen und schiebt sie zur Uhr

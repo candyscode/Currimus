@@ -46,7 +46,7 @@ final class RunStore: ObservableObject {
 
     /// Encoding the log used to happen synchronously inside `didSet`, i.e. on
     /// the main thread on every single mutation. It is off the main thread now.
-    private static let ioQueue = DispatchQueue(label: "com.currimus.app.store-io", qos: .utility)
+    private nonisolated static let ioQueue = DispatchQueue(label: "com.currimus.app.store-io", qos: .utility)
 
     init(seeded: Bool = DebugFlags.seedsDemoContent,
          defaults: UserDefaults = AppDefaults.shared,
@@ -88,6 +88,17 @@ final class RunStore: ObservableObject {
         #endif
         RunSync.shared.activate()
         pushSettings()
+        #if os(iOS)
+        // The app's own store, not a test's scratch one, and not a demo store:
+        // whoever reads the real app group is who the watch hears from.
+        if defaults == AppDefaults.shared, !self.isDemo {
+            Self.totalsSource = self
+            // Seed it once. A watch paired to a phone that has not run since
+            // the update would otherwise wait for the next finished run to
+            // learn a year total it could never work out itself.
+            Self.announce()
+        }
+        #endif
     }
 
     // MARK: - Log
@@ -858,46 +869,71 @@ final class RunStore: ObservableObject {
                 // they redrew on their own half-hourly schedule: a run could
                 // finish and the week bar not move for half an hour, and the
                 // totals corrected by an import waited just as long (CUR-46).
-                if isLog { Self.reloadWidgets() }
+                if isLog { Self.logDidChange() }
             } catch {
                 Log.store.error("could not save \(key, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
         }
     }
 
-    /// At most one widget reload per minute, with the first one immediate.
+    /// The log has been written, so two audiences want telling: the
+    /// complications on this device, and — from the iPhone only — the watch,
+    /// which cannot add these totals up for itself.
     ///
-    /// **The reload has to be throttled, and a per-write reload is worse than
-    /// none.** WidgetKit gives a widget a daily budget of timeline reloads and
-    /// stops refreshing it for the rest of the day once that is spent. The log
-    /// is written per *run* in three places — `hydrate` assigns into one
-    /// element, and both `rebuildEverythingFromHealth` and `startFirstImport`
-    /// walk the whole log calling it — so a first import of a few hundred runs
-    /// would have burned the whole day's budget in one burst and left the
-    /// complications frozen, which is precisely what CUR-46 set out to fix.
+    /// **Both have to be throttled, and per-write is worse than never.**
+    /// WidgetKit gives a widget a daily budget of timeline reloads and stops
+    /// refreshing it for the rest of the day once that is spent, and
+    /// `updateApplicationContext` is a hop into another process. The log is
+    /// written per *run* in three places — `hydrate` assigns into one element,
+    /// and both `rebuildEverythingFromHealth` and `startFirstImport` walk the
+    /// whole log calling it — so a first import of a few hundred runs would
+    /// burn the whole day's budget in one burst and leave the complications
+    /// frozen, which is precisely what CUR-46 set out to fix.
     ///
     /// Leading edge, so a finished run moves the week bar at once; trailing
     /// edge, so the last write of a burst is not the one that gets dropped.
     /// Called on `ioQueue`, which is serial — hence no lock of its own.
-    private nonisolated(unsafe) static var lastWidgetReload = Date.distantPast
-    private nonisolated(unsafe) static var widgetReloadQueued = false
-    private static let widgetReloadInterval: TimeInterval = 60
+    private nonisolated(unsafe) static var lastAnnounce = Date.distantPast
+    private nonisolated(unsafe) static var announceQueued = false
+    private nonisolated static let announceInterval: TimeInterval = 60
 
-    private static func reloadWidgets() {
-        let waited = Date.now.timeIntervalSince(lastWidgetReload)
-        guard waited < widgetReloadInterval else {
-            lastWidgetReload = .now
-            WidgetCenter.shared.reloadAllTimelines()
+    private nonisolated static func logDidChange() {
+        let waited = Date.now.timeIntervalSince(lastAnnounce)
+        guard waited < announceInterval else {
+            lastAnnounce = .now
+            announce()
             return
         }
-        guard !widgetReloadQueued else { return }
-        widgetReloadQueued = true
-        ioQueue.asyncAfter(deadline: .now() + (widgetReloadInterval - waited)) {
-            widgetReloadQueued = false
-            lastWidgetReload = .now
-            WidgetCenter.shared.reloadAllTimelines()
+        guard !announceQueued else { return }
+        announceQueued = true
+        ioQueue.asyncAfter(deadline: .now() + (announceInterval - waited)) {
+            announceQueued = false
+            lastAnnounce = .now
+            announce()
         }
     }
+
+    private nonisolated static func announce() {
+        WidgetCenter.shared.reloadAllTimelines()
+        #if os(iOS)
+        // Read on the main actor and recomputed from the log as it stands,
+        // rather than from a value captured when the write was queued: a burst
+        // collapses to one push, and it must be the *last* state that goes.
+        Task { @MainActor in
+            guard let store = totalsSource, !store.isDemo else { return }
+            var totals = DistanceTotals.local(store.allRuns)
+            totals.pushedAt = .now
+            ioQueue.async { RunSync.shared.send(totals: totals) }
+        }
+        #endif
+    }
+
+    #if os(iOS)
+    /// The store whose log is the truth for the watch's complications. Weak,
+    /// and set by the one store the app builds — tests make their own and must
+    /// not push anything at a real watch.
+    private nonisolated(unsafe) static weak var totalsSource: RunStore?
+    #endif
 
     private func persist() {
         write(runs, forKey: AppDefaults.runsKey)
