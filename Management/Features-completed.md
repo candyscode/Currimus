@@ -1549,3 +1549,28 @@ Was aus dem ersten Anlauf bleibt und richtig war: die uhrseitige Wiederherstellu
 - https://github.com/candyscode/Currimus/commit/07a497c — Uhr-seitige Wiederherstellung eigener Läufe, Importfenster benannt, Widget-Reload
 - Review-Fixes: Reload gedrosselt, Batch-Recovery, Grabsteinfenster, Foreground-Import
 - iPhone rechnet die Summen und schiebt sie zur Uhr
+
+### CUR-47: The swipe tile cuts into the pace mid-gesture
+
+ [ ] In Specification
+[ ] Open
+[ ] WIP
+[X] Done
+
+Andi, 2026-08-08, mit Screenshot vom Gerät: Beim „links wischen zum Löschen" sieht es hässlich aus, wenn man sich doch gegen das Löschen entscheidet und die Zeile zurückwischt. Die wischbare Kachel endet dann ohne Padding direkt am Text, was abgeschnitten aussieht. Rechts vom Text soll etwas Padding hin — oder anderweitig schön gemacht werden, damit der Text „breathing room" hat.
+
+#### Agent Comments
+
+**Der Abstand existierte, aber nur an einer einzigen Stelle des Wischwegs.** `openOffset` ist `-(actionWidth + actionGap)`, also 88 + 14 pt: in der *Ruhelage* der offenen Zeile steht die Kachel damit exakt 14 pt neben der Pace. Der Kommentar im Code sagte sogar genau das („so the pace does not sit flush against the delete button once the row settles") — „once the row settles" war die ganze Einschränkung.
+
+Bei jedem Offset dazwischen stimmte es nicht. Die Zeile schiebt sich nach links, ihre deckende Hintergrundfüllung endet aber genau an ihrer eigenen Kante — und `LogRow` setzt die Pace bündig an diese Kante, denn der Einzug ringsum gehört dem Screen, nicht der Zeile. Also lag die sichtbare Kante der Kachel exakt an der letzten Ziffer und fraß sich bei kleineren Offsets in sie hinein. Am auffälligsten beim Zurückwischen, weil die Animation von 102 pt auf 0 durch genau diesen Bereich läuft.
+
+**Der Fix ist eine Zeile und verschiebt nichts.** Die Hintergrundfüllung ragt jetzt `actionGap` über die Zeilenkante hinaus: `Theme.bg.padding(.trailing, -actionGap)`. Negatives Padding auf einer Background-View wächst über den Rahmen hinaus, ohne am Layout zu drehen — derselbe Trick, den die Maske in derselben Datei schon für den linken Rand benutzt. Damit ist der Abstand zwischen Pace und sichtbarer Kachelkante über den **ganzen** Wischweg konstant 14 pt, statt nur am Endpunkt. Die Ruhelage ist pixelgleich zu vorher.
+
+**Warum das niemand gesehen hat, und was jetzt dagegen steht.** Die Snapshot-Route `log-swipe` zeigt die offene Ruhelage — genau den einen Zustand, in dem der Fehler nicht sichtbar war. Eine Geste lässt sich nicht per `simctl` injizieren, also gab es für die Mitte der Bewegung überhaupt keinen Blick. Neu: `-swipe half` hält die Zeile bei 45 % an, und `log-swipe-half` hält den Fall als Referenz fest. Verifiziert per Screenshot auf iPhone 17 Pro, halb und offen.
+
+`CurrimusUITests` (das Target, das es für genau diese Geste gibt) läuft weiter durch — der Fix fasst nur die Füllung an, nicht die Trefferflächen.
+
+#### Link to completed work
+
+- Hintergrundfüllung ragt über die Zeilenkante, `-swipe half` als Route

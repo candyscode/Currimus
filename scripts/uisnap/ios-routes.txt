@@ -28,6 +28,10 @@ home-raceday     | loose  | -demo 1 -home raceday
 log              | loose  | -demo 1 -tab log
 log-select       | loose  | -demo 1 -tab log -select 1
 log-swipe        | loose  | -demo 1 -tab log -swipe 1
+# The middle of the gesture, where the tile meets the row. The resting state
+# above has its gap built into `openOffset` and looked right while this one had
+# the tile eating the pace (CUR-47) — so the open state alone guards nothing.
+log-swipe-half   | loose  | -demo 1 -tab log -swipe half
 progress-road    | loose  | -demo 1 -tab progress
 race             | loose  | -demo 1 -push race
 race-setup       | loose  | -demo 1 -push raceSetup

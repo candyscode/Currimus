@@ -120,6 +120,14 @@ Elements need identifiers to be addressable: rows carry `log-row`, the swipe
 tile carries `swipe-action`. Matching on visible text is fragile — the log's
 own header ends in " km" just like every row does.
 
+**The resting open state guards nothing about the middle of the gesture.** The
+gap between the row and the tile used to live in `openOffset` alone, so
+`-swipe 1` looked right while every partial offset had the tile drawn over the
+pace (CUR-47). It is expressed as an overhang on the row's own background fill
+now — `Theme.bg.padding(.trailing, -actionGap)` — which holds at every offset.
+`-swipe half` stops the row partway so that state can be screenshotted at all;
+a drag cannot be injected into `simctl`.
+
 ## HealthKit, learned the hard way
 
 - **Deleting** a workout is a *write*: it needs share authorization for

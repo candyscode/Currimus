@@ -55,6 +55,20 @@ struct SwipeToRevealRow<Content: View>: View {
     /// somewhere to go instead of ending against a wall.
     private static var overshoot: CGFloat { 28 }
 
+    /// Where a row opened from outside the gesture comes to rest.
+    ///
+    /// Normally that is `openOffset`. `-swipe half` stops it partway instead:
+    /// a drag cannot be injected into a screenshot, so the *middle* of the
+    /// gesture — where the tile meets the row, and where CUR-47 was ugly — had
+    /// no way of being looked at at all. The resting open state hid the fault
+    /// completely, because there the gap is built into `openOffset`.
+    private static var restingOffset: CGFloat {
+        #if DEBUG
+        if DebugFlags.opensFirstSwipeHalfway { return openOffset * 0.45 }
+        #endif
+        return openOffset
+    }
+
     /// How far a finger travels before this row takes the drag.
     ///
     /// Measured, not chosen (CUR-38). At 14 pt the log did not scroll at all
@@ -78,7 +92,19 @@ struct SwipeToRevealRow<Content: View>: View {
         content
             // The rows are transparent, so without a fill of the app's own
             // background the action tile would show straight through them.
-            .background(Theme.bg)
+            //
+            // The fill runs `actionGap` past the row's trailing edge, and that
+            // overhang is what the gap is actually made of. `LogRow` puts the
+            // pace flush against its own trailing edge — the inset around the
+            // list is the screen's, not the row's — so a fill that stopped
+            // there let the tile appear against the last digit of the pace and
+            // eat into it for most of the gesture, worst of all on the way back
+            // when the row is settling to nothing (Andi, CUR-47). The gap used
+            // to exist only at the resting open position, where `openOffset`
+            // builds it in; expressed here it holds at every offset in between.
+            .background(alignment: .leading) {
+                Theme.bg.padding(.trailing, -Self.actionGap)
+            }
             .offset(x: offset)
             // Applied outside the offset: `offset` moves what is drawn, not
             // the layout, so this background stays put while the row slides.
@@ -117,7 +143,7 @@ struct SwipeToRevealRow<Content: View>: View {
             .onAppear {
                 // A row can be created already open: the marking mode leaves
                 // and re-enters, and the screenshot route opens one on launch.
-                if openRow == id, offset == 0 { offset = Self.openOffset }
+                if openRow == id, offset == 0 { offset = Self.restingOffset }
             }
             .onChange(of: openRow) { _, now in
                 // Opened from outside the gesture — the screenshot route does

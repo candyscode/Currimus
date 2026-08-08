@@ -52,7 +52,14 @@ enum DebugFlags {
     static var opensLogSelection: Bool { isSet("select") }
     /// iOS: open the first log row's swipe action. A drag cannot be injected
     /// into a screenshot, so this is the only way to look at the open state.
-    static var opensFirstSwipe: Bool { isSet("swipe") }
+    /// Any value opens it — `-swipe 1` for the resting state, `-swipe half`
+    /// for the middle of the gesture.
+    static var opensFirstSwipe: Bool { string("swipe") != nil }
+    /// iOS: the same row stopped *partway* through the gesture (`-swipe half`).
+    /// The resting open state has its gap built into `openOffset` and so looks
+    /// right even when the middle of the swipe does not — which is how CUR-47
+    /// went unseen.
+    static var opensFirstSwipeHalfway: Bool { string("swipe") == "half" }
     /// iOS: the first-launch screen after an import that found nothing. Health
     /// always answers in the simulator's own terms, so this state cannot be
     /// produced there by pressing the button.
